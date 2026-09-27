@@ -30,9 +30,14 @@ import com.chartyar.app.analysis.ImageProcessor.CandlePixel
 import com.chartyar.app.analysis.OcrHelper
 import com.chartyar.app.analysis.SampleData
 import com.chartyar.app.analysis.SignalEngine
+import com.chartyar.app.analysis.SignalType
+import com.chartyar.app.analysis.TrendType
+import com.chartyar.app.data.AnalysisHistory
+import com.chartyar.app.data.AppDatabase
 import com.chartyar.app.data.PrefsManager
 import com.chartyar.app.ui.CalibrationScreen
 import com.chartyar.app.ui.DisclaimerScreen
+import com.chartyar.app.ui.HistoryScreen
 import com.chartyar.app.ui.HomeScreen
 import com.chartyar.app.ui.ResultScreen
 import com.chartyar.app.ui.UploadScreen
@@ -49,6 +54,7 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
 
     private lateinit var prefs: PrefsManager
+    private lateinit var db: AppDatabase
 
     private var pendingBitmap: Bitmap? = null
     private var pendingCandlePixels: List<CandlePixel>? = null
@@ -58,6 +64,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = PrefsManager(applicationContext)
+        db = AppDatabase.get(applicationContext)
 
         setContent {
             ChartYarTheme {
@@ -69,6 +76,14 @@ class MainActivity : ComponentActivity() {
                 var statusMessage by remember { mutableStateOf("در حال پردازش تصویر...") }
                 var detectedHigh by remember { mutableStateOf<Double?>(null) }
                 var detectedLow by remember { mutableStateOf<Double?>(null) }
+                var historyItems by remember { mutableStateOf<List<AnalysisHistory>>(emptyList()) }
+
+                // بارگذاری تاریخچه
+                LaunchedEffect(currentScreen) {
+                    if (currentScreen == "history") {
+                        historyItems = db.historyDao().getAll().first()
+                    }
+                }
 
                 LaunchedEffect(Unit) {
                     disclaimerAccepted = prefs.isDisclaimerAccepted.first()
@@ -99,7 +114,7 @@ class MainActivity : ComponentActivity() {
                         when (currentScreen) {
                             "home" -> HomeScreen(
                                 onUploadClick = { currentScreen = "upload" },
-                                onHistoryClick = { }
+                                onHistoryClick = { currentScreen = "history" }
                             )
 
                             "upload" -> UploadScreen(
@@ -162,7 +177,13 @@ class MainActivity : ComponentActivity() {
                                         lifecycleScope.launch {
                                             val result = runAnalysis(high, low, selectedTimeframe)
                                             analysisResult = result
-                                            currentScreen = if (result != null) "result" else "error"
+                                            if (result != null) {
+                                                // ذخیره در تاریخچه
+                                                saveToHistory(result, selectedTimeframe)
+                                                currentScreen = "result"
+                                            } else {
+                                                currentScreen = "error"
+                                            }
                                         }
                                     }
                                 )
@@ -183,6 +204,25 @@ class MainActivity : ComponentActivity() {
                                 } else {
                                     currentScreen = "home"
                                 }
+                            }
+
+                            "history" -> {
+                                HistoryScreen(
+                                    items = historyItems,
+                                    onBack = { currentScreen = "home" },
+                                    onDelete = { id ->
+                                        lifecycleScope.launch {
+                                            db.historyDao().deleteById(id)
+                                            historyItems = db.historyDao().getAll().first()
+                                        }
+                                    },
+                                    onClearAll = {
+                                        lifecycleScope.launch {
+                                            db.historyDao().clearAll()
+                                            historyItems = emptyList()
+                                        }
+                                    }
+                                )
                             }
 
                             "error" -> {
@@ -296,5 +336,39 @@ class MainActivity : ComponentActivity() {
     private fun fallbackToSample(timeframe: String): AnalysisResult? {
         val sampleCandles = SampleData.generateBullishCandles(100)
         return SignalEngine.analyze(sampleCandles, timeframe)
+    }
+
+    private suspend fun saveToHistory(result: AnalysisResult, timeframe: String) {
+        try {
+            val signalText = when (result.signal) {
+                SignalType.STRONG_BUY -> "خرید قوی"
+                SignalType.BUY -> "خرید"
+                SignalType.NEUTRAL -> "خنثی"
+                SignalType.SELL -> "فروش"
+                SignalType.STRONG_SELL -> "فروش قوی"
+            }
+            val trendText = when (result.trend) {
+                TrendType.UPTREND -> "صعودی"
+                TrendType.DOWNTREND -> "نزولی"
+                TrendType.RANGE -> "رنج"
+            }
+            db.historyDao().insert(
+                AnalysisHistory(
+                    timestamp = System.currentTimeMillis(),
+                    timeframe = timeframe,
+                    signalText = signalText,
+                    confidence = result.confidence,
+                    currentPrice = result.currentPrice,
+                    entry = result.entry,
+                    stopLoss = result.stopLoss,
+                    target1 = result.target1,
+                    target2 = result.target2,
+                    target3 = result.target3,
+                    trendText = trendText
+                )
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
