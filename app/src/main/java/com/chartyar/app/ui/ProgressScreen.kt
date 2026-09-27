@@ -9,9 +9,11 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -63,7 +65,6 @@ fun ProgressScreen(
 
         Spacer(Modifier.height(40.dp))
 
-        // نوار پیشرفت
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -75,10 +76,10 @@ fun ProgressScreen(
                 progress = animatedProgress,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(6.dp)),
+                    .height(12.dp),
                 color = AccentBlue,
-                trackColor = DarkCard
+                trackColor = DarkCard,
+                strokeCap = StrokeCap.Round
             )
         }
 
@@ -102,7 +103,6 @@ fun ProgressScreen(
 
         Spacer(Modifier.height(40.dp))
 
-        // راهنمای مراحل
         ProgressSteps(progress)
     }
 }
