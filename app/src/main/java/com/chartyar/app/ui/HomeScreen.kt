@@ -1,15 +1,44 @@
 package com.chartyar.app.ui
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -18,10 +47,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chartyar.app.ui.theme.*
+import com.chartyar.app.ui.theme.AccentBlue
+import com.chartyar.app.ui.theme.DarkBg
+import com.chartyar.app.ui.theme.DarkSurface
+import com.chartyar.app.ui.theme.Divider
+import com.chartyar.app.ui.theme.TextPrimary
+import com.chartyar.app.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onUploadClick: () -> Unit,
@@ -61,7 +94,7 @@ fun HomeScreen(
             )
             IconButton(onClick = onSettingsClick) {
                 Icon(
-                    Icons.Filled.Settings,
+                    imageVector = Icons.Filled.Settings,
                     contentDescription = "تنظیمات",
                     tint = TextSecondary
                 )
@@ -101,7 +134,7 @@ fun HomeScreen(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
             ) {
                 Icon(
-                    Icons.Filled.Refresh,
+                    imageVector = Icons.Filled.Refresh,
                     contentDescription = null,
                     tint = AccentBlue,
                     modifier = Modifier.size(20.dp)
@@ -195,10 +228,10 @@ private fun MainUploadCard(onUploadClick: () -> Unit) {
                     contentColor = TextPrimary
                 )
             ) {
-                Icon(Icons.Filled.Add, contentDescription = null)
+                Icon(imageVector = Icons.Filled.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "انتخاب تصویر چارت",
+                    text = "انتخاب تصویر چارت",
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleLarge
                 )
@@ -214,7 +247,8 @@ private fun QuickStatsRow() {
             .fillMaxWidth()
             .background(DarkSurface, RoundedCornerShape(14.dp))
             .padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         QuickStat("⚡", "۱۰+", "اندیکاتور")
         Box(
@@ -240,13 +274,13 @@ private fun QuickStat(emoji: String, value: String, label: String) {
         Text(emoji, fontSize = 20.sp)
         Spacer(Modifier.height(4.dp))
         Text(
-            value,
+            text = value,
             color = AccentBlue,
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp
         )
         Text(
-            label,
+            text = label,
             color = TextSecondary,
             fontSize = 12.sp
         )
