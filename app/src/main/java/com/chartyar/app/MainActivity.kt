@@ -40,6 +40,7 @@ import com.chartyar.app.ui.HistoryScreen
 import com.chartyar.app.ui.HomeScreen
 import com.chartyar.app.ui.ProgressScreen
 import com.chartyar.app.ui.ResultScreen
+import com.chartyar.app.ui.SettingsScreen
 import com.chartyar.app.ui.SplashScreen
 import com.chartyar.app.ui.UploadScreen
 import com.chartyar.app.ui.theme.AccentBlue
@@ -81,7 +82,19 @@ class MainActivity : ComponentActivity() {
                 var detectedLow by remember { mutableStateOf<Double?>(null) }
                 var historyItems by remember { mutableStateOf<List<AnalysisHistory>>(emptyList()) }
 
-                // بارگذاری تاریخچه
+                var autoSaveHistory by remember { mutableStateOf(true) }
+                var showWarnings by remember { mutableStateOf(true) }
+                var defaultTimeframe by remember { mutableStateOf("4H") }
+                var themeSetting by remember { mutableStateOf("dark") }
+
+                LaunchedEffect(Unit) {
+                    autoSaveHistory = prefs.autoSaveHistory.first()
+                    showWarnings = prefs.showWarnings.first()
+                    defaultTimeframe = prefs.defaultTimeframe.first()
+                    themeSetting = prefs.theme.first()
+                    selectedTimeframe = defaultTimeframe
+                }
+
                 LaunchedEffect(currentScreen) {
                     if (currentScreen == "history") {
                         historyItems = db.historyDao().getAll().first()
@@ -89,7 +102,6 @@ class MainActivity : ComponentActivity() {
                 }
 
                 LaunchedEffect(Unit) {
-                    // نمایش Splash حداقل ۱.۵ ثانیه
                     val startTime = System.currentTimeMillis()
                     disclaimerAccepted = prefs.isDisclaimerAccepted.first()
                     val elapsed = System.currentTimeMillis() - startTime
@@ -118,7 +130,8 @@ class MainActivity : ComponentActivity() {
                         when (currentScreen) {
                             "home" -> HomeScreen(
                                 onUploadClick = { currentScreen = "upload" },
-                                onHistoryClick = { currentScreen = "history" }
+                                onHistoryClick = { currentScreen = "history" },
+                                onSettingsClick = { currentScreen = "settings" }
                             )
 
                             "upload" -> UploadScreen(
@@ -201,7 +214,9 @@ class MainActivity : ComponentActivity() {
 
                                             analysisResult = result
                                             if (result != null) {
-                                                saveToHistory(result, selectedTimeframe)
+                                                if (autoSaveHistory) {
+                                                    saveToHistory(result, selectedTimeframe)
+                                                }
                                                 currentScreen = "result"
                                             } else {
                                                 currentScreen = "error"
@@ -239,6 +254,53 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onClearAll = {
+                                        lifecycleScope.launch {
+                                            db.historyDao().clearAll()
+                                            historyItems = emptyList()
+                                        }
+                                    }
+                                )
+                            }
+
+                            "settings" -> {
+                                SettingsScreen(
+                                    autoSaveHistory = autoSaveHistory,
+                                    showWarnings = showWarnings,
+                                    defaultTimeframe = defaultTimeframe,
+                                    theme = themeSetting,
+                                    onBack = { currentScreen = "home" },
+                                    onAutoSaveChange = { value ->
+                                        autoSaveHistory = value
+                                        lifecycleScope.launch {
+                                            prefs.setAutoSaveHistory(value)
+                                        }
+                                    },
+                                    onShowWarningsChange = { value ->
+                                        showWarnings = value
+                                        lifecycleScope.launch {
+                                            prefs.setShowWarnings(value)
+                                        }
+                                    },
+                                    onDefaultTimeframeChange = { value ->
+                                        defaultTimeframe = value
+                                        lifecycleScope.launch {
+                                            prefs.setDefaultTimeframe(value)
+                                        }
+                                    },
+                                    onThemeChange = { value ->
+                                        themeSetting = value
+                                        lifecycleScope.launch {
+                                            prefs.setTheme(value)
+                                        }
+                                    },
+                                    onResetDisclaimer = {
+                                        lifecycleScope.launch {
+                                            prefs.resetDisclaimer()
+                                            disclaimerAccepted = false
+                                            currentScreen = "home"
+                                        }
+                                    },
+                                    onClearHistory = {
                                         lifecycleScope.launch {
                                             db.historyDao().clearAll()
                                             historyItems = emptyList()
