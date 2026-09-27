@@ -1,5 +1,6 @@
 package com.chartyar.app
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import com.chartyar.app.data.PrefsManager
 import com.chartyar.app.ui.DisclaimerScreen
 import com.chartyar.app.ui.HomeScreen
+import com.chartyar.app.ui.UploadScreen
 import com.chartyar.app.ui.theme.ChartYarTheme
 import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.TextPrimary
@@ -32,6 +34,9 @@ class MainActivity : ComponentActivity() {
             ChartYarTheme {
                 var isLoading by remember { mutableStateOf(true) }
                 var disclaimerAccepted by remember { mutableStateOf(false) }
+                var currentScreen by remember { mutableStateOf("home") }
+                var selectedUri by remember { mutableStateOf<Uri?>(null) }
+                var selectedTimeframe by remember { mutableStateOf("4H") }
 
                 LaunchedEffect(Unit) {
                     disclaimerAccepted = prefs.isDisclaimerAccepted.first()
@@ -59,10 +64,31 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     else -> {
-                        HomeScreen(
-                            onUploadClick = { },
-                            onHistoryClick = { }
-                        )
+                        when (currentScreen) {
+                            "home" -> HomeScreen(
+                                onUploadClick = { currentScreen = "upload" },
+                                onHistoryClick = { }
+                            )
+                            "upload" -> UploadScreen(
+                                onBack = { currentScreen = "home" },
+                                onAnalyze = { uri, tf ->
+                                    selectedUri = uri
+                                    selectedTimeframe = tf
+                                    currentScreen = "result"
+                                }
+                            )
+                            "result" -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize().background(DarkBg),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "تصویر انتخاب شد: $selectedTimeframe\nفاز ۳ به زودی...",
+                                        color = TextPrimary
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
