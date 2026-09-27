@@ -23,7 +23,8 @@ data class AnalysisResult(
     val reasons: List<String>,
     val warnings: List<String>,
     val timeframe: String,
-    val indicatorScores: Map<String, Int>
+    val indicatorScores: Map<String, Int>,
+    val patterns: List<DetectedPattern> = emptyList()
 )
 
 object SignalEngine {
@@ -41,7 +42,6 @@ object SignalEngine {
         val trendScore = analyzeMarketStructure(candles, reasons)
         scores["ساختار بازار"] = trendScore
 
-        // تشخیص روند کلی
         val trend = when {
             trendScore >= 40 -> TrendType.UPTREND
             trendScore <= -40 -> TrendType.DOWNTREND
@@ -84,7 +84,6 @@ object SignalEngine {
                 macdLine < signalLine && histogram < 0 -> { reasons.add("⚠️ MACD کراس نزولی — مومنتوم منفی"); -50 }
                 else -> 0
             }
-            // بررسی قدرت مومنتوم
             val prevHist = macdResult.histogram.dropLast(1).lastOrNull()
             if (prevHist != null && histogram > prevHist && histogram > 0) {
                 macdScore += 10
@@ -128,7 +127,6 @@ object SignalEngine {
                 adx > 25 -> { adxScore = 15; reasons.add("ADX متوسط (${"%.1f".format(adx)}) — روند فعال") }
                 else -> { warnings.add("ADX ضعیف (${"%.1f".format(adx)}) — بازار رنج") }
             }
-            // جهت ADX رو با EMA چک می‌کنیم
             if (ema9 != null && ema21 != null && ema9 < ema21) adxScore = -adxScore
         }
         scores["ADX"] = adxScore
@@ -166,7 +164,31 @@ object SignalEngine {
         val priceActionScore = analyzePriceAction(candles, reasons, warnings)
         scores["Price Action"] = priceActionScore
 
-        // ============ ۱۰. تایم‌فریم ============
+        // ============ ۱۰. الگوهای کلاسیک (جدید) ============
+        val detectedPatterns = PatternDetector.detectAll(candles)
+        var patternScore = 0
+        if (detectedPatterns.isNotEmpty()) {
+            // بالاترین الگو رو در نظر بگیر
+            val bestPattern = detectedPatterns.first()
+            patternScore = (bestPattern.direction * bestPattern.confidence * 0.8).toInt()
+
+            val dirText = when (bestPattern.direction) {
+                1 -> "صعودی"
+                -1 -> "نزولی"
+                else -> "خنثی"
+            }
+            reasons.add("الگوی ${bestPattern.name} — سیگنال $dirText (اطمینان ${bestPattern.confidence}%)")
+
+            // اگه الگوهای دیگه‌ای هم هستن
+            if (detectedPatterns.size > 1) {
+                detectedPatterns.drop(1).take(2).forEach {
+                    reasons.add("الگوی اضافی: ${it.name}")
+                }
+            }
+        }
+        scores["الگوهای کلاسیک"] = patternScore
+
+        // ============ وزن‌دهی بر اساس تایم‌فریم ============
         val weights = getTimeframeWeights(timeframe)
 
         // ============ جمع‌بندی امتیاز ============
@@ -217,6 +239,16 @@ object SignalEngine {
         if (rr < 2.0) warnings.add("نسبت ریسک به ریوارد کمتر از ۲ — احتیاط")
         if (trend == TrendType.RANGE) warnings.add("بازار در حالت رنج — سیگنال‌ها ممکنه کاذب باشن")
 
+        // اگه الگوها با سیگنال مخالف بودن، هشدار بده
+        detectedPatterns.firstOrNull()?.let { p ->
+            if (p.direction != 0 && isBuy && p.direction == -1) {
+                warnings.add("الگوی ${p.name} نزولیه ولی سیگنال خرید صادر شده — احتیاط")
+            }
+            if (p.direction != 0 && !isBuy && p.direction == 1) {
+                warnings.add("الگوی ${p.name} صعودیه ولی سیگنال فروش صادر شده — احتیاط")
+            }
+        }
+
         return AnalysisResult(
             signal = signal,
             trend = trend,
@@ -233,11 +265,11 @@ object SignalEngine {
             reasons = reasons,
             warnings = warnings,
             timeframe = timeframe,
-            indicatorScores = scores
+            indicatorScores = scores,
+            patterns = detectedPatterns
         )
     }
 
-    // ============ تحلیل ساختار بازار ============
     private fun analyzeMarketStructure(candles: List<Candle>, reasons: MutableList<String>): Int {
         if (candles.size < 20) return 0
         val recent = candles.takeLast(30)
@@ -269,7 +301,6 @@ object SignalEngine {
         return score
     }
 
-    // ============ تحلیل Price Action ============
     private fun analyzePriceAction(
         candles: List<Candle>,
         reasons: MutableList<String>,
@@ -282,19 +313,16 @@ object SignalEngine {
 
         var score = 0
 
-        // Hammer در کف
         if (last.lowerWick > last.body * 2 && last.upperWick < last.body * 0.5 && last.isBullish) {
             score += 40
             reasons.add("الگوی Hammer — احتمال برگشت صعودی")
         }
 
-        // Shooting Star در سقف
         if (last.upperWick > last.body * 2 && last.lowerWick < last.body * 0.5 && last.isBearish) {
             score -= 40
             reasons.add("⚠️ الگوی Shooting Star — احتمال برگشت نزولی")
         }
 
-        // Bullish Engulfing
         if (prev.isBearish && last.isBullish &&
             last.open <= prev.close && last.close >= prev.open &&
             last.body > prev.body) {
@@ -302,7 +330,6 @@ object SignalEngine {
             reasons.add("الگوی Bullish Engulfing — سیگنال قوی صعودی")
         }
 
-        // Bearish Engulfing
         if (prev.isBullish && last.isBearish &&
             last.open >= prev.close && last.close <= prev.open &&
             last.body > prev.body) {
@@ -310,21 +337,18 @@ object SignalEngine {
             reasons.add("⚠️ الگوی Bearish Engulfing — سیگنال قوی نزولی")
         }
 
-        // Morning Star
         if (prev2.isBearish && prev.body < prev2.body * 0.5 &&
             last.isBullish && last.close > (prev2.open + prev2.close) / 2) {
             score += 45
             reasons.add("الگوی Morning Star — برگشت صعودی")
         }
 
-        // Evening Star
         if (prev2.isBullish && prev.body < prev2.body * 0.5 &&
             last.isBearish && last.close < (prev2.open + prev2.close) / 2) {
             score -= 45
             reasons.add("⚠️ الگوی Evening Star — برگشت نزولی")
         }
 
-        // Doji
         if (last.body < last.range * 0.1) {
             warnings.add("کندل Doji — بلاتکلیفی بازار")
         }
@@ -332,11 +356,9 @@ object SignalEngine {
         return score
     }
 
-    // ============ وزن‌دهی بر اساس تایم‌فریم ============
     private fun getTimeframeWeights(timeframe: String): Map<String, Double> {
         return when (timeframe) {
             "1m", "5m", "15m", "30m" -> mapOf(
-                // اسکالپ: مومنتوم و Stochastic مهم‌تر
                 "ساختار بازار" to 0.8,
                 "RSI" to 1.0,
                 "واگرایی" to 0.8,
@@ -345,10 +367,10 @@ object SignalEngine {
                 "ADX" to 0.8,
                 "Stochastic" to 1.5,
                 "بولینگر" to 1.2,
-                "Price Action" to 1.5
+                "Price Action" to 1.5,
+                "الگوهای کلاسیک" to 1.0
             )
             "1H", "4H" -> mapOf(
-                // سوئینگ: تعادل
                 "ساختار بازار" to 1.5,
                 "RSI" to 1.2,
                 "واگرایی" to 1.3,
@@ -357,10 +379,10 @@ object SignalEngine {
                 "ADX" to 1.0,
                 "Stochastic" to 0.8,
                 "بولینگر" to 0.8,
-                "Price Action" to 1.0
+                "Price Action" to 1.0,
+                "الگوهای کلاسیک" to 1.5
             )
             else -> mapOf(
-                // پوزیشن: ساختار و روند مهم‌تر
                 "ساختار بازار" to 2.0,
                 "RSI" to 1.0,
                 "واگرایی" to 1.5,
@@ -369,7 +391,8 @@ object SignalEngine {
                 "ADX" to 1.5,
                 "Stochastic" to 0.5,
                 "بولینگر" to 0.5,
-                "Price Action" to 0.8
+                "Price Action" to 0.8,
+                "الگوهای کلاسیک" to 1.8
             )
         }
     }
