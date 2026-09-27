@@ -1,5 +1,6 @@
 package com.chartyar.app.ui
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -7,11 +8,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,6 +23,7 @@ import com.chartyar.app.analysis.DetectedPattern
 import com.chartyar.app.analysis.SignalType
 import com.chartyar.app.analysis.TrendType
 import com.chartyar.app.ui.theme.*
+import com.chartyar.app.util.ShareHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +32,7 @@ fun ResultScreen(
     onBack: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -47,8 +52,21 @@ fun ResultScreen(
                 "نتیجه تحلیل",
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
             )
+            IconButton(
+                onClick = {
+                    val text = ShareHelper.buildShareText(result)
+                    ShareHelper.shareText(context, text)
+                }
+            ) {
+                Icon(
+                    Icons.Filled.Share,
+                    contentDescription = "اشتراک‌گذاری",
+                    tint = AccentBlue
+                )
+            }
         }
 
         SignalCard(result)
@@ -57,7 +75,6 @@ fun ResultScreen(
 
         PriceLevelsCard(result)
 
-        // الگوهای کلاسیک
         if (result.patterns.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
             PatternsCard(result.patterns)
@@ -79,6 +96,30 @@ fun ResultScreen(
         Spacer(Modifier.height(12.dp))
 
         ScoresCard(result)
+
+        Spacer(Modifier.height(16.dp))
+
+        // دکمه اشتراک‌گذاری بزرگ
+        Button(
+            onClick = {
+                val text = ShareHelper.buildShareText(result)
+                ShareHelper.shareText(context, text)
+            },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = AccentBlue,
+                contentColor = TextPrimary
+            )
+        ) {
+            Icon(Icons.Filled.Share, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "اشتراک‌گذاری تحلیل",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
 
         Spacer(Modifier.height(24.dp))
 
