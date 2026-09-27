@@ -10,7 +10,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -109,10 +113,8 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
-                                        modifier = Modifier.fillMaxSize().background(DarkBg)
-                                            .padding(32.dp)
+                                        modifier = Modifier.padding(32.dp)
                                     ) {
-                                        Spacer(Modifier.height(120.dp))
                                         CircularProgressIndicator(color = AccentBlue)
                                         Spacer(Modifier.height(24.dp))
                                         Text(
@@ -130,7 +132,8 @@ class MainActivity : ComponentActivity() {
                             }
 
                             "result" -> {
-                                analysisResult?.let { result ->
+                                val result = analysisResult
+                                if (result != null) {
                                     ResultScreen(
                                         result = result,
                                         onBack = {
@@ -138,7 +141,7 @@ class MainActivity : ComponentActivity() {
                                             currentScreen = "home"
                                         }
                                     )
-                                } ?: run {
+                                } else {
                                     currentScreen = "home"
                                 }
                             }
@@ -155,18 +158,18 @@ class MainActivity : ComponentActivity() {
                                         Text(
                                             "خطا در تحلیل تصویر",
                                             color = TextPrimary,
-                                            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium
+                                            style = MaterialTheme.typography.headlineMedium
                                         )
                                         Spacer(Modifier.height(16.dp))
                                         Text(
-                                            "نتیجه‌ای برای نمایش نیست. لطفاً تصویر واضح‌تری از چارت انتخاب کنید.",
+                                            "لطفاً تصویر واضح‌تری از چارت انتخاب کنید.",
                                             color = TextSecondary,
                                             textAlign = TextAlign.Center
                                         )
                                         Spacer(Modifier.height(24.dp))
-                                        androidx.compose.material3.Button(
+                                        Button(
                                             onClick = { currentScreen = "home" },
-                                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                            colors = ButtonDefaults.buttonColors(
                                                 containerColor = AccentBlue,
                                                 contentColor = TextPrimary
                                             )
@@ -183,32 +186,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * تحلیل تصویر چارت
-     * ۱. بارگذاری Bitmap
-     * ۲. استخراج کندل‌ها با پردازش تصویر
-     * ۳. خوندن قیمت‌ها با OCR
-     * ۴. تبدیل پیکسل به قیمت
-     * ۵. اجرای موتور تحلیل
-     */
     private suspend fun analyzeImage(uri: Uri, timeframe: String): AnalysisResult? {
         return withContext(Dispatchers.Default) {
             try {
-                // ۱. بارگذاری تصویر
-                val bitmap = ImageProcessor.loadBitmap(applicationContext, uri) ?: return@withContext null
+                val bitmap = ImageProcessor.loadBitmap(applicationContext, uri)
+                    ?: return@withContext fallbackToSample(timeframe)
 
-                // ۲. استخراج کندل‌ها
                 val candlePixels = ImageProcessor.extractCandles(bitmap)
                     ?: return@withContext fallbackToSample(timeframe)
 
-                // ۳. خوندن قیمت‌ها از محور
                 val pricePoints = OcrHelper.extractPriceAxis(bitmap)
                 val priceRange = OcrHelper.calculatePriceRange(pricePoints)
                     ?: return@withContext fallbackToSample(timeframe)
 
                 val (high, low) = priceRange
 
-                // ۴. تبدیل پیکسل به کندل قیمتی
                 val bounds = ImageProcessor.findChartBoundsPublic(bitmap)
                 val candles = ImageProcessor.pixelsToCandles(
                     candlePixels,
@@ -220,18 +212,14 @@ class MainActivity : ComponentActivity() {
 
                 if (candles.size < 20) return@withContext fallbackToSample(timeframe)
 
-                // ۵. تحلیل
                 SignalEngine.analyze(candles, timeframe)
             } catch (e: Exception) {
                 e.printStackTrace()
-                null
+                fallbackToSample(timeframe)
             }
         }
     }
 
-    /**
-     * اگه پردازش تصویر شکست خورد، از داده تستی استفاده کن
-     */
     private fun fallbackToSample(timeframe: String): AnalysisResult? {
         val sampleCandles = SampleData.generateBullishCandles(100)
         return SignalEngine.analyze(sampleCandles, timeframe)
