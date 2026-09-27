@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -39,7 +38,9 @@ import com.chartyar.app.ui.CalibrationScreen
 import com.chartyar.app.ui.DisclaimerScreen
 import com.chartyar.app.ui.HistoryScreen
 import com.chartyar.app.ui.HomeScreen
+import com.chartyar.app.ui.ProgressScreen
 import com.chartyar.app.ui.ResultScreen
+import com.chartyar.app.ui.SplashScreen
 import com.chartyar.app.ui.UploadScreen
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.ChartYarTheme
@@ -47,6 +48,7 @@ import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.ui.theme.TextSecondary
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -74,6 +76,7 @@ class MainActivity : ComponentActivity() {
                 var selectedTimeframe by remember { mutableStateOf("4H") }
                 var analysisResult by remember { mutableStateOf<AnalysisResult?>(null) }
                 var statusMessage by remember { mutableStateOf("در حال پردازش تصویر...") }
+                var analyzeProgress by remember { mutableStateOf(0f) }
                 var detectedHigh by remember { mutableStateOf<Double?>(null) }
                 var detectedLow by remember { mutableStateOf<Double?>(null) }
                 var historyItems by remember { mutableStateOf<List<AnalysisHistory>>(emptyList()) }
@@ -86,18 +89,19 @@ class MainActivity : ComponentActivity() {
                 }
 
                 LaunchedEffect(Unit) {
+                    // نمایش Splash حداقل ۱.۵ ثانیه
+                    val startTime = System.currentTimeMillis()
                     disclaimerAccepted = prefs.isDisclaimerAccepted.first()
+                    val elapsed = System.currentTimeMillis() - startTime
+                    if (elapsed < 1500) {
+                        delay(1500 - elapsed)
+                    }
                     isLoading = false
                 }
 
                 when {
                     isLoading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize().background(DarkBg),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("در حال بارگذاری...", color = TextPrimary)
-                        }
+                        SplashScreen()
                     }
                     !disclaimerAccepted -> {
                         DisclaimerScreen(
@@ -121,11 +125,32 @@ class MainActivity : ComponentActivity() {
                                 onBack = { currentScreen = "home" },
                                 onAnalyze = { uri, tf ->
                                     selectedTimeframe = tf
+                                    analyzeProgress = 0f
                                     statusMessage = "در حال پردازش تصویر..."
                                     currentScreen = "analyzing"
 
                                     lifecycleScope.launch {
+                                        analyzeProgress = 0.1f
+                                        statusMessage = "بارگذاری تصویر..."
+                                        delay(300)
+
+                                        analyzeProgress = 0.25f
+                                        statusMessage = "تشخیص کندل‌ها..."
+                                        delay(200)
+
                                         val result = prepareAnalysis(uri)
+
+                                        analyzeProgress = 0.6f
+                                        statusMessage = "خوندن قیمت‌ها از محور..."
+                                        delay(400)
+
+                                        analyzeProgress = 0.85f
+                                        statusMessage = "آماده‌سازی تحلیل..."
+                                        delay(300)
+
+                                        analyzeProgress = 1f
+                                        delay(200)
+
                                         if (result.first) {
                                             detectedHigh = result.second
                                             detectedLow = result.third
@@ -138,28 +163,11 @@ class MainActivity : ComponentActivity() {
                             )
 
                             "analyzing" -> {
-                                Box(
-                                    modifier = Modifier.fillMaxSize().background(DarkBg),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        modifier = Modifier.padding(32.dp)
-                                    ) {
-                                        CircularProgressIndicator(color = AccentBlue)
-                                        Spacer(Modifier.height(24.dp))
-                                        Text(
-                                            statusMessage,
-                                            color = TextPrimary,
-                                            textAlign = TextAlign.Center
-                                        )
-                                        Spacer(Modifier.height(8.dp))
-                                        Text(
-                                            "تایم‌فریم: $selectedTimeframe",
-                                            color = TextSecondary
-                                        )
-                                    }
-                                }
+                                ProgressScreen(
+                                    progress = analyzeProgress,
+                                    statusMessage = statusMessage,
+                                    timeframe = selectedTimeframe
+                                )
                             }
 
                             "calibration" -> {
@@ -173,12 +181,26 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onConfirm = { high, low ->
                                         currentScreen = "analyzing"
-                                        statusMessage = "در حال تحلیل..."
+                                        statusMessage = "در حال اجرای تحلیل..."
+                                        analyzeProgress = 0.4f
+
                                         lifecycleScope.launch {
+                                            delay(300)
+                                            analyzeProgress = 0.6f
+                                            statusMessage = "اجرای اندیکاتورها..."
+                                            delay(400)
+
+                                            analyzeProgress = 0.85f
+                                            statusMessage = "تشخیص الگوها..."
+                                            delay(300)
+
                                             val result = runAnalysis(high, low, selectedTimeframe)
+
+                                            analyzeProgress = 1f
+                                            delay(200)
+
                                             analysisResult = result
                                             if (result != null) {
-                                                // ذخیره در تاریخچه
                                                 saveToHistory(result, selectedTimeframe)
                                                 currentScreen = "result"
                                             } else {
