@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chartyar.app.analysis.AnalysisResult
+import com.chartyar.app.analysis.DetectedPattern
 import com.chartyar.app.analysis.SignalType
 import com.chartyar.app.analysis.TrendType
 import com.chartyar.app.ui.theme.*
@@ -35,7 +36,6 @@ fun ResultScreen(
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // هدر
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
@@ -51,17 +51,20 @@ fun ResultScreen(
             )
         }
 
-        // کارت سیگنال
         SignalCard(result)
 
         Spacer(Modifier.height(12.dp))
 
-        // کارت قیمت‌ها
         PriceLevelsCard(result)
+
+        // الگوهای کلاسیک
+        if (result.patterns.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            PatternsCard(result.patterns)
+        }
 
         Spacer(Modifier.height(12.dp))
 
-        // کارت دلایل
         ReasonsCard(result.reasons, "دلایل تحلیل", AccentGreen)
 
         if (result.warnings.isNotEmpty()) {
@@ -71,17 +74,14 @@ fun ResultScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // سطوح حمایت و مقاومت
         LevelsCard(result)
 
         Spacer(Modifier.height(12.dp))
 
-        // امتیاز اندیکاتورها
         ScoresCard(result)
 
         Spacer(Modifier.height(24.dp))
 
-        // یادآوری
         Text(
             text = "⚠️ این تحلیل صرفاً جنبه آموزشی دارد و توصیه سرمایه‌گذاری نیست.",
             color = TextSecondary,
@@ -188,6 +188,83 @@ private fun PriceLevelsCard(result: AnalysisResult) {
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyLarge
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatternsCard(patterns: List<DetectedPattern>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
+            Text(
+                "🔍 الگوهای شناسایی‌شده",
+                color = TextPrimary,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(12.dp))
+
+            patterns.forEach { pattern ->
+                val (dirText, dirColor) = when (pattern.direction) {
+                    1 -> "صعودی 🟢" to AccentGreen
+                    -1 -> "نزولی 🔴" to AccentRed
+                    else -> "خنثی 🟡" to AccentYellow
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            pattern.name,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            dirText,
+                            color = dirColor,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "اطمینان: ${pattern.confidence}%",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        pattern.description,
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        lineHeight = 20.sp
+                    )
+                    pattern.targetPrice?.let { target ->
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "🎯 هدف الگو: ${"%.2f".format(target)}",
+                            color = dirColor,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Divider(color = Divider)
+                }
             }
         }
     }
