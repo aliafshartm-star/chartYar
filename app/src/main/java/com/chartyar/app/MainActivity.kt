@@ -24,9 +24,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.chartyar.app.analysis.AnalysisResult
-import com.chartyar.app.analysis.CandlePixel
 import com.chartyar.app.analysis.Candle
 import com.chartyar.app.analysis.ImageProcessor
+import com.chartyar.app.analysis.ImageProcessor.CandlePixel
 import com.chartyar.app.analysis.OcrHelper
 import com.chartyar.app.analysis.SampleData
 import com.chartyar.app.analysis.SignalEngine
@@ -50,7 +50,6 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var prefs: PrefsManager
 
-    // ذخیره موقت پردازش
     private var pendingBitmap: Bitmap? = null
     private var pendingCandlePixels: List<CandlePixel>? = null
     private var pendingChartTop: Int = 0
@@ -111,10 +110,10 @@ class MainActivity : ComponentActivity() {
                                     currentScreen = "analyzing"
 
                                     lifecycleScope.launch {
-                                        val (success, high, low) = prepareAnalysis(uri)
-                                        if (success) {
-                                            detectedHigh = high
-                                            detectedLow = low
+                                        val result = prepareAnalysis(uri)
+                                        if (result.first) {
+                                            detectedHigh = result.second
+                                            detectedLow = result.third
                                             currentScreen = "calibration"
                                         } else {
                                             currentScreen = "error"
@@ -240,10 +239,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * مرحله ۱: آماده‌سازی - بارگذاری تصویر، استخراج کندل و OCR
-     * @return Triple(موفقیت, priceHigh, priceLow)
-     */
     private suspend fun prepareAnalysis(uri: Uri): Triple<Boolean, Double?, Double?> {
         return withContext(Dispatchers.Default) {
             try {
@@ -271,9 +266,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * مرحله ۲: اجرای تحلیل با قیمت‌های تأییدشده
-     */
     private suspend fun runAnalysis(
         priceHigh: Double,
         priceLow: Double,
