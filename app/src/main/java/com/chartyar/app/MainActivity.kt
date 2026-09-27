@@ -1,5 +1,6 @@
 package com.chartyar.app
 
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -23,11 +24,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.chartyar.app.analysis.AnalysisResult
+import com.chartyar.app.analysis.CandlePixel
+import com.chartyar.app.analysis.Candle
 import com.chartyar.app.analysis.ImageProcessor
 import com.chartyar.app.analysis.OcrHelper
 import com.chartyar.app.analysis.SampleData
 import com.chartyar.app.analysis.SignalEngine
 import com.chartyar.app.data.PrefsManager
+import com.chartyar.app.ui.CalibrationScreen
 import com.chartyar.app.ui.DisclaimerScreen
 import com.chartyar.app.ui.HomeScreen
 import com.chartyar.app.ui.ResultScreen
@@ -46,6 +50,12 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var prefs: PrefsManager
 
+    // ذخیره موقت پردازش
+    private var pendingBitmap: Bitmap? = null
+    private var pendingCandlePixels: List<CandlePixel>? = null
+    private var pendingChartTop: Int = 0
+    private var pendingChartBottom: Int = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = PrefsManager(applicationContext)
@@ -57,7 +67,9 @@ class MainActivity : ComponentActivity() {
                 var currentScreen by remember { mutableStateOf("home") }
                 var selectedTimeframe by remember { mutableStateOf("4H") }
                 var analysisResult by remember { mutableStateOf<AnalysisResult?>(null) }
-                var statusMessage by remember { mutableStateOf("در حال تحلیل چارت...") }
+                var statusMessage by remember { mutableStateOf("در حال پردازش تصویر...") }
+                var detectedHigh by remember { mutableStateOf<Double?>(null) }
+                var detectedLow by remember { mutableStateOf<Double?>(null) }
 
                 LaunchedEffect(Unit) {
                     disclaimerAccepted = prefs.isDisclaimerAccepted.first()
@@ -99,9 +111,14 @@ class MainActivity : ComponentActivity() {
                                     currentScreen = "analyzing"
 
                                     lifecycleScope.launch {
-                                        val result = analyzeImage(uri, tf)
-                                        analysisResult = result
-                                        currentScreen = if (result != null) "result" else "error"
+                                        val (success, high, low) = prepareAnalysis(uri)
+                                        if (success) {
+                                            detectedHigh = high
+                                            detectedLow = low
+                                            currentScreen = "calibration"
+                                        } else {
+                                            currentScreen = "error"
+                                        }
                                     }
                                 }
                             )
@@ -131,6 +148,27 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
+                            "calibration" -> {
+                                CalibrationScreen(
+                                    detectedHigh = detectedHigh,
+                                    detectedLow = detectedLow,
+                                    onBack = {
+                                        pendingBitmap = null
+                                        pendingCandlePixels = null
+                                        currentScreen = "upload"
+                                    },
+                                    onConfirm = { high, low ->
+                                        currentScreen = "analyzing"
+                                        statusMessage = "در حال تحلیل..."
+                                        lifecycleScope.launch {
+                                            val result = runAnalysis(high, low, selectedTimeframe)
+                                            analysisResult = result
+                                            currentScreen = if (result != null) "result" else "error"
+                                        }
+                                    }
+                                )
+                            }
+
                             "result" -> {
                                 val result = analysisResult
                                 if (result != null) {
@@ -138,6 +176,8 @@ class MainActivity : ComponentActivity() {
                                         result = result,
                                         onBack = {
                                             analysisResult = null
+                                            pendingBitmap = null
+                                            pendingCandlePixels = null
                                             currentScreen = "home"
                                         }
                                     )
@@ -156,22 +196,36 @@ class MainActivity : ComponentActivity() {
                                         modifier = Modifier.padding(32.dp)
                                     ) {
                                         Text(
-                                            "خطا در تحلیل تصویر",
+                                            "خطا در پردازش تصویر",
                                             color = TextPrimary,
                                             style = MaterialTheme.typography.headlineMedium
                                         )
                                         Spacer(Modifier.height(16.dp))
                                         Text(
-                                            "لطفاً تصویر واضح‌تری از چارت انتخاب کنید.",
+                                            "لطفاً تصویر واضح‌تری از چارت انتخاب کنید. تصویر باید کندل‌های سبز و قرمز واضح داشته باشد.",
                                             color = TextSecondary,
                                             textAlign = TextAlign.Center
                                         )
                                         Spacer(Modifier.height(24.dp))
                                         Button(
-                                            onClick = { currentScreen = "home" },
+                                            onClick = {
+                                                pendingBitmap = null
+                                                pendingCandlePixels = null
+                                                currentScreen = "upload"
+                                            },
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = AccentBlue,
                                                 contentColor = TextPrimary
+                                            )
+                                        ) {
+                                            Text("تلاش مجدد")
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                        Button(
+                                            onClick = { currentScreen = "home" },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = DarkBg,
+                                                contentColor = TextSecondary
                                             )
                                         ) {
                                             Text("بازگشت به خانه")
@@ -186,28 +240,55 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun analyzeImage(uri: Uri, timeframe: String): AnalysisResult? {
+    /**
+     * مرحله ۱: آماده‌سازی - بارگذاری تصویر، استخراج کندل و OCR
+     * @return Triple(موفقیت, priceHigh, priceLow)
+     */
+    private suspend fun prepareAnalysis(uri: Uri): Triple<Boolean, Double?, Double?> {
         return withContext(Dispatchers.Default) {
             try {
                 val bitmap = ImageProcessor.loadBitmap(applicationContext, uri)
-                    ?: return@withContext fallbackToSample(timeframe)
+                    ?: return@withContext Triple(false, null, null)
 
                 val candlePixels = ImageProcessor.extractCandles(bitmap)
-                    ?: return@withContext fallbackToSample(timeframe)
+                    ?: return@withContext Triple(false, null, null)
 
                 val pricePoints = OcrHelper.extractPriceAxis(bitmap)
                 val priceRange = OcrHelper.calculatePriceRange(pricePoints)
-                    ?: return@withContext fallbackToSample(timeframe)
-
-                val (high, low) = priceRange
 
                 val bounds = ImageProcessor.findChartBoundsPublic(bitmap)
-                val candles = ImageProcessor.pixelsToCandles(
-                    candlePixels,
-                    bounds.chartTop,
-                    bounds.chartBottom,
-                    high,
-                    low
+
+                pendingBitmap = bitmap
+                pendingCandlePixels = candlePixels
+                pendingChartTop = bounds.chartTop
+                pendingChartBottom = bounds.chartBottom
+
+                Triple(true, priceRange?.first, priceRange?.second)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Triple(false, null, null)
+            }
+        }
+    }
+
+    /**
+     * مرحله ۲: اجرای تحلیل با قیمت‌های تأییدشده
+     */
+    private suspend fun runAnalysis(
+        priceHigh: Double,
+        priceLow: Double,
+        timeframe: String
+    ): AnalysisResult? {
+        return withContext(Dispatchers.Default) {
+            try {
+                val pixels = pendingCandlePixels ?: return@withContext fallbackToSample(timeframe)
+
+                val candles: List<Candle> = ImageProcessor.pixelsToCandles(
+                    pixels,
+                    pendingChartTop,
+                    pendingChartBottom,
+                    priceHigh,
+                    priceLow
                 )
 
                 if (candles.size < 20) return@withContext fallbackToSample(timeframe)
