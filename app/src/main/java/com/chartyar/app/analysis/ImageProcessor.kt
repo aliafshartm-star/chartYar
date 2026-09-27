@@ -65,6 +65,10 @@ object ImageProcessor {
         return ChartBounds(top, bottom, left, right)
     }
 
+    fun findChartBoundsPublic(bitmap: Bitmap): ChartBounds {
+        return findChartBounds(bitmap)
+    }
+
     fun extractCandles(bitmap: Bitmap): List<CandlePixel>? {
         return try {
             val bounds = findChartBounds(bitmap)
