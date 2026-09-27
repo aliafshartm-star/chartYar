@@ -15,9 +15,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.chartyar.app.analysis.AnalysisResult
+import com.chartyar.app.analysis.ImageProcessor
+import com.chartyar.app.analysis.OcrHelper
 import com.chartyar.app.analysis.SampleData
 import com.chartyar.app.analysis.SignalEngine
 import com.chartyar.app.data.PrefsManager
@@ -29,6 +32,7 @@ import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.ChartYarTheme
 import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.TextPrimary
+import com.chartyar.app.ui.theme.TextSecondary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -47,10 +51,9 @@ class MainActivity : ComponentActivity() {
                 var isLoading by remember { mutableStateOf(true) }
                 var disclaimerAccepted by remember { mutableStateOf(false) }
                 var currentScreen by remember { mutableStateOf("home") }
-                var selectedUri by remember { mutableStateOf<Uri?>(null) }
                 var selectedTimeframe by remember { mutableStateOf("4H") }
                 var analysisResult by remember { mutableStateOf<AnalysisResult?>(null) }
-                var isAnalyzing by remember { mutableStateOf(false) }
+                var statusMessage by remember { mutableStateOf("در حال تحلیل چارت...") }
 
                 LaunchedEffect(Unit) {
                     disclaimerAccepted = prefs.isDisclaimerAccepted.first()
@@ -87,19 +90,14 @@ class MainActivity : ComponentActivity() {
                             "upload" -> UploadScreen(
                                 onBack = { currentScreen = "home" },
                                 onAnalyze = { uri, tf ->
-                                    selectedUri = uri
                                     selectedTimeframe = tf
-                                    isAnalyzing = true
+                                    statusMessage = "در حال پردازش تصویر..."
                                     currentScreen = "analyzing"
 
                                     lifecycleScope.launch {
-                                        val result = withContext(Dispatchers.Default) {
-                                            val sampleCandles = SampleData.generateBullishCandles(100)
-                                            SignalEngine.analyze(sampleCandles, tf)
-                                        }
+                                        val result = analyzeImage(uri, tf)
                                         analysisResult = result
-                                        isAnalyzing = false
-                                        currentScreen = "result"
+                                        currentScreen = if (result != null) "result" else "error"
                                     }
                                 }
                             )
@@ -109,17 +107,23 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.fillMaxSize().background(DarkBg),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier.fillMaxSize().background(DarkBg)
+                                            .padding(32.dp)
+                                    ) {
+                                        Spacer(Modifier.height(120.dp))
                                         CircularProgressIndicator(color = AccentBlue)
-                                        Spacer(Modifier.height(16.dp))
+                                        Spacer(Modifier.height(24.dp))
                                         Text(
-                                            "در حال تحلیل چارت...",
-                                            color = TextPrimary
+                                            statusMessage,
+                                            color = TextPrimary,
+                                            textAlign = TextAlign.Center
                                         )
                                         Spacer(Modifier.height(8.dp))
                                         Text(
                                             "تایم‌فریم: $selectedTimeframe",
-                                            color = TextPrimary
+                                            color = TextSecondary
                                         )
                                     }
                                 }
@@ -135,8 +139,41 @@ class MainActivity : ComponentActivity() {
                                         }
                                     )
                                 } ?: run {
-                                    // اگه نتیجه null بود، برگرد به خونه
                                     currentScreen = "home"
+                                }
+                            }
+
+                            "error" -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize().background(DarkBg),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier.padding(32.dp)
+                                    ) {
+                                        Text(
+                                            "خطا در تحلیل تصویر",
+                                            color = TextPrimary,
+                                            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium
+                                        )
+                                        Spacer(Modifier.height(16.dp))
+                                        Text(
+                                            "نتیجه‌ای برای نمایش نیست. لطفاً تصویر واضح‌تری از چارت انتخاب کنید.",
+                                            color = TextSecondary,
+                                            textAlign = TextAlign.Center
+                                        )
+                                        Spacer(Modifier.height(24.dp))
+                                        androidx.compose.material3.Button(
+                                            onClick = { currentScreen = "home" },
+                                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = AccentBlue,
+                                                contentColor = TextPrimary
+                                            )
+                                        ) {
+                                            Text("بازگشت به خانه")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -144,5 +181,59 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * تحلیل تصویر چارت
+     * ۱. بارگذاری Bitmap
+     * ۲. استخراج کندل‌ها با پردازش تصویر
+     * ۳. خوندن قیمت‌ها با OCR
+     * ۴. تبدیل پیکسل به قیمت
+     * ۵. اجرای موتور تحلیل
+     */
+    private suspend fun analyzeImage(uri: Uri, timeframe: String): AnalysisResult? {
+        return withContext(Dispatchers.Default) {
+            try {
+                // ۱. بارگذاری تصویر
+                val bitmap = ImageProcessor.loadBitmap(applicationContext, uri) ?: return@withContext null
+
+                // ۲. استخراج کندل‌ها
+                val candlePixels = ImageProcessor.extractCandles(bitmap)
+                    ?: return@withContext fallbackToSample(timeframe)
+
+                // ۳. خوندن قیمت‌ها از محور
+                val pricePoints = OcrHelper.extractPriceAxis(bitmap)
+                val priceRange = OcrHelper.calculatePriceRange(pricePoints)
+                    ?: return@withContext fallbackToSample(timeframe)
+
+                val (high, low) = priceRange
+
+                // ۴. تبدیل پیکسل به کندل قیمتی
+                val bounds = ImageProcessor.findChartBoundsPublic(bitmap)
+                val candles = ImageProcessor.pixelsToCandles(
+                    candlePixels,
+                    bounds.chartTop,
+                    bounds.chartBottom,
+                    high,
+                    low
+                )
+
+                if (candles.size < 20) return@withContext fallbackToSample(timeframe)
+
+                // ۵. تحلیل
+                SignalEngine.analyze(candles, timeframe)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
+    /**
+     * اگه پردازش تصویر شکست خورد، از داده تستی استفاده کن
+     */
+    private fun fallbackToSample(timeframe: String): AnalysisResult? {
+        val sampleCandles = SampleData.generateBullishCandles(100)
+        return SignalEngine.analyze(sampleCandles, timeframe)
     }
 }
