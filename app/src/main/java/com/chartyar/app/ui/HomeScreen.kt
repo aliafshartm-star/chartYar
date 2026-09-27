@@ -27,7 +27,6 @@ fun HomeScreen(
     onUploadClick: () -> Unit,
     onHistoryClick: () -> Unit
 ) {
-    // انیمیشن ورود
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         delay(100)
@@ -40,19 +39,12 @@ fun HomeScreen(
         label = "fadeIn"
     )
 
-    val slideUp by animateFloatAsState(
-        targetValue = if (visible) 0f else 40f,
-        animationSpec = tween(600),
-        label = "slideUp"
-    )
-
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBg)
             .padding(20.dp)
     ) {
-        // هدر
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -86,11 +78,9 @@ fun HomeScreen(
 
         Spacer(Modifier.height(40.dp))
 
-        // کارت اصلی با انیمیشن
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset(y = slideUp.dp)
                 .alpha(fadeIn)
         ) {
             MainUploadCard(onUploadClick = onUploadClick)
@@ -98,21 +88,16 @@ fun HomeScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // دکمه تاریخچه
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset(y = (slideUp * 1.3f).dp)
                 .alpha(fadeIn)
         ) {
             OutlinedButton(
                 onClick = onHistoryClick,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                border = ButtonDefaults.outlinedButtonBorder.copy(
-                    brush = androidx.compose.ui.graphics.SolidColor(Divider)
-                )
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
             ) {
                 Icon(
                     Icons.Filled.Refresh,
@@ -127,12 +112,10 @@ fun HomeScreen(
 
         Spacer(Modifier.weight(1f))
 
-        // آمار سریع
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset(y = slideUp.dp)
-                .alpha(fadeIn * 0.8f)
+                .alpha(fadeIn)
         ) {
             QuickStatsRow()
         }
@@ -163,7 +146,6 @@ private fun MainUploadCard(onUploadClick: () -> Unit) {
                 .padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // آیکون با پالس
             val infiniteTransition = rememberInfiniteTransition(label = "pulse")
             val pulseScale by infiniteTransition.animateFloat(
                 initialValue = 1f,
@@ -234,9 +216,19 @@ private fun QuickStatsRow() {
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         QuickStat("⚡", "۱۰+", "اندیکاتور")
-        VerticalDivider()
+        Box(
+            modifier = Modifier
+                .height(40.dp)
+                .width(1.dp)
+                .background(Divider)
+        )
         QuickStat("🔍", "۱۱", "الگو")
-        VerticalDivider()
+        Box(
+            modifier = Modifier
+                .height(40.dp)
+                .width(1.dp)
+                .background(Divider)
+        )
         QuickStat("🎯", "۴", "استایل")
     }
 }
@@ -258,14 +250,4 @@ private fun QuickStat(emoji: String, value: String, label: String) {
             fontSize = 12.sp
         )
     }
-}
-
-@Composable
-private fun VerticalDivider() {
-    Box(
-        modifier = Modifier
-            .height(40.dp)
-            .width(1.dp)
-            .background(Divider)
-    )
 }
