@@ -60,9 +60,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/**
- * نتیجه پردازش تصویر
- */
 data class PreparationResult(
     val success: Boolean,
     val high: Double? = null,
@@ -97,7 +94,6 @@ class MainActivity : ComponentActivity() {
                 var disclaimerAccepted by remember { mutableStateOf(false) }
                 var currentScreen by remember { mutableStateOf("home") }
                 var selectedTimeframe by remember { mutableStateOf("4H") }
-                var selectedSymbol by remember { mutableStateOf<String?>(null) }
                 var analysisResult by remember { mutableStateOf<AnalysisResult?>(null) }
                 var statusMessage by remember { mutableStateOf("در حال پردازش...") }
                 var analyzeProgress by remember { mutableStateOf(0f) }
@@ -170,13 +166,11 @@ class MainActivity : ComponentActivity() {
                             "symbol" -> SymbolSelectorScreen(
                                 onBack = { currentScreen = "upload" },
                                 onSymbolSelected = { symbol ->
-                                    selectedSymbol = symbol
                                     analyzeProgress = 0f
                                     statusMessage = "در حال دریافت داده از Binance..."
                                     currentScreen = "analyzing"
 
                                     lifecycleScope.launch {
-                                        // مرحله ۱: تلاش برای دریافت از Binance
                                         analyzeProgress = 0.2f
                                         statusMessage = "اتصال به Binance..."
                                         delay(300)
@@ -187,7 +181,7 @@ class MainActivity : ComponentActivity() {
                                             statusMessage = "دریافت کندل‌های $symbol..."
                                             delay(200)
 
-                                            val candles = BinanceApi.fetchCandles(symbol, tf, 200)
+                                            val candles = BinanceApi.fetchCandles(symbol, selectedTimeframe, 200)
 
                                             analyzeProgress = 0.8f
                                             statusMessage = "اجرای تحلیل..."
@@ -195,7 +189,7 @@ class MainActivity : ComponentActivity() {
 
                                             if (candles != null && candles.size >= 20) {
                                                 val result = withContext(Dispatchers.Default) {
-                                                    SignalEngine.analyze(candles, tf)
+                                                    SignalEngine.analyze(candles, selectedTimeframe)
                                                 }
                                                 analyzeProgress = 1f
                                                 delay(200)
@@ -203,7 +197,7 @@ class MainActivity : ComponentActivity() {
                                                 analysisResult = result
                                                 if (result != null) {
                                                     if (autoSaveHistory) {
-                                                        saveToHistory(result, tf)
+                                                        saveToHistory(result, selectedTimeframe)
                                                     }
                                                     currentScreen = "result"
                                                 } else {
@@ -213,7 +207,6 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }
 
-                                        // مرحله ۲: Binance در دسترس نبود → به OCR برگرد
                                         statusMessage = "Binance در دسترس نیست. پردازش تصویر..."
                                         analyzeProgress = 0.3f
                                         delay(300)
