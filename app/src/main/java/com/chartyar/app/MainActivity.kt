@@ -342,7 +342,6 @@ class MainActivity : ComponentActivity() {
             val currentPrice = lastCandle?.let { OcrHelper.pixelToPrice(pricePoints, it.bottom) }
             PreparationResult(true, high, low, currentPrice, confidence, bitmap, candlePixels, bounds.chartTop, bounds.chartBottom)
         } catch (e: Exception) {
-            e.printStackTrace()
             PreparationResult(false)
         }
     }
@@ -350,18 +349,14 @@ class MainActivity : ComponentActivity() {
     private suspend fun runAnalysis(priceHigh: Double, priceLow: Double, timeframe: String): AnalysisResult? =
         withContext(Dispatchers.Default) {
             try {
-                val pixels = pendingCandlePixels ?: return@withContext fallbackToSample(timeframe)
+                val pixels = pendingCandlePixels ?: return@withContext null
                 val candles = ImageProcessor.pixelsToCandles(pixels, pendingChartTop, pendingChartBottom, priceHigh, priceLow)
-                if (candles.size < 20) return@withContext fallbackToSample(timeframe)
+                if (candles.size < 20) return@withContext null
                 SignalEngine.analyze(candles, timeframe)
             } catch (e: Exception) {
-                e.printStackTrace()
-                fallbackToSample(timeframe)
+                null
             }
         }
-
-    private fun fallbackToSample(timeframe: String): AnalysisResult? =
-        SignalEngine.analyze(SampleData.generateBullishCandles(100), timeframe)
 
     private suspend fun saveToHistory(result: AnalysisResult, timeframe: String) {
         try {
@@ -393,7 +388,7 @@ class MainActivity : ComponentActivity() {
                 )
             )
         } catch (e: Exception) {
-            e.printStackTrace()
+            // silent fail — no log in release
         }
     }
 }
