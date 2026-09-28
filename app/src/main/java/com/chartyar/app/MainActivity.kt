@@ -37,6 +37,7 @@ import com.chartyar.app.analysis.SignalType
 import com.chartyar.app.analysis.TrendType
 import com.chartyar.app.data.AnalysisHistory
 import com.chartyar.app.data.AppDatabase
+import com.chartyar.app.data.BinanceApi
 import com.chartyar.app.data.PrefsManager
 import com.chartyar.app.ui.CalibrationScreen
 import com.chartyar.app.ui.DisclaimerScreen
@@ -46,6 +47,7 @@ import com.chartyar.app.ui.ProgressScreen
 import com.chartyar.app.ui.ResultScreen
 import com.chartyar.app.ui.SettingsScreen
 import com.chartyar.app.ui.SplashScreen
+import com.chartyar.app.ui.SymbolSelectorScreen
 import com.chartyar.app.ui.UploadScreen
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.ChartYarTheme
@@ -69,7 +71,6 @@ data class PreparationResult(
     val confidence: Int = 0,
     val bitmap: Bitmap? = null,
     val candlePixels: List<CandlePixel>? = null,
-    val pricePoints: List<OcrHelper.PricePoint> = emptyList(),
     val chartTop: Int = 0,
     val chartBottom: Int = 0
 )
@@ -83,6 +84,7 @@ class MainActivity : ComponentActivity() {
     private var pendingCandlePixels: List<CandlePixel>? = null
     private var pendingChartTop: Int = 0
     private var pendingChartBottom: Int = 0
+    private var pendingUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,8 +97,9 @@ class MainActivity : ComponentActivity() {
                 var disclaimerAccepted by remember { mutableStateOf(false) }
                 var currentScreen by remember { mutableStateOf("home") }
                 var selectedTimeframe by remember { mutableStateOf("4H") }
+                var selectedSymbol by remember { mutableStateOf<String?>(null) }
                 var analysisResult by remember { mutableStateOf<AnalysisResult?>(null) }
-                var statusMessage by remember { mutableStateOf("در حال پردازش تصویر...") }
+                var statusMessage by remember { mutableStateOf("در حال پردازش...") }
                 var analyzeProgress by remember { mutableStateOf(0f) }
                 var detectedHigh by remember { mutableStateOf<Double?>(null) }
                 var detectedLow by remember { mutableStateOf<Double?>(null) }
@@ -154,38 +157,86 @@ class MainActivity : ComponentActivity() {
                                 onHistoryClick = { currentScreen = "history" },
                                 onSettingsClick = { currentScreen = "settings" }
                             )
+
                             "upload" -> UploadScreen(
                                 onBack = { currentScreen = "home" },
                                 onAnalyze = { uri, tf ->
+                                    pendingUri = uri
                                     selectedTimeframe = tf
+                                    currentScreen = "symbol"
+                                }
+                            )
+
+                            "symbol" -> SymbolSelectorScreen(
+                                onBack = { currentScreen = "upload" },
+                                onSymbolSelected = { symbol ->
+                                    selectedSymbol = symbol
                                     analyzeProgress = 0f
-                                    statusMessage = "در حال پردازش تصویر..."
+                                    statusMessage = "در حال دریافت داده از Binance..."
                                     currentScreen = "analyzing"
 
                                     lifecycleScope.launch {
-                                        analyzeProgress = 0.1f
-                                        statusMessage = "بارگذاری تصویر..."
+                                        // مرحله ۱: تلاش برای دریافت از Binance
+                                        analyzeProgress = 0.2f
+                                        statusMessage = "اتصال به Binance..."
                                         delay(300)
 
-                                        analyzeProgress = 0.25f
+                                        val online = BinanceApi.isOnline()
+                                        if (online) {
+                                            analyzeProgress = 0.5f
+                                            statusMessage = "دریافت کندل‌های $symbol..."
+                                            delay(200)
+
+                                            val candles = BinanceApi.fetchCandles(symbol, tf, 200)
+
+                                            analyzeProgress = 0.8f
+                                            statusMessage = "اجرای تحلیل..."
+                                            delay(200)
+
+                                            if (candles != null && candles.size >= 20) {
+                                                val result = withContext(Dispatchers.Default) {
+                                                    SignalEngine.analyze(candles, tf)
+                                                }
+                                                analyzeProgress = 1f
+                                                delay(200)
+
+                                                analysisResult = result
+                                                if (result != null) {
+                                                    if (autoSaveHistory) {
+                                                        saveToHistory(result, tf)
+                                                    }
+                                                    currentScreen = "result"
+                                                } else {
+                                                    currentScreen = "error"
+                                                }
+                                                return@launch
+                                            }
+                                        }
+
+                                        // مرحله ۲: Binance در دسترس نبود → به OCR برگرد
+                                        statusMessage = "Binance در دسترس نیست. پردازش تصویر..."
+                                        analyzeProgress = 0.3f
+                                        delay(300)
+
+                                        val uri2 = pendingUri
+                                        if (uri2 == null) {
+                                            currentScreen = "error"
+                                            return@launch
+                                        }
+
+                                        analyzeProgress = 0.5f
                                         statusMessage = "تشخیص کندل‌ها..."
                                         delay(200)
 
-                                        val prep = prepareAnalysis(uri)
-
-                                        analyzeProgress = 0.6f
-                                        statusMessage = "خوندن قیمت‌ها از محور..."
-                                        delay(400)
+                                        val prep = prepareAnalysis(uri2)
 
                                         analyzeProgress = 0.85f
-                                        statusMessage = "اعتبارسنجی قیمت‌ها..."
+                                        statusMessage = "آماده‌سازی..."
                                         delay(300)
-
                                         analyzeProgress = 1f
                                         delay(200)
 
                                         if (prep.success) {
-                                            // حالا اینجا متغیرهای Compose قابل دسترسن
                                             detectedHigh = prep.high
                                             detectedLow = prep.low
                                             detectedCurrentPrice = prep.currentPrice
@@ -201,6 +252,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             )
+
                             "analyzing" -> {
                                 ProgressScreen(
                                     progress = analyzeProgress,
@@ -208,6 +260,7 @@ class MainActivity : ComponentActivity() {
                                     timeframe = selectedTimeframe
                                 )
                             }
+
                             "calibration" -> {
                                 CalibrationScreen(
                                     detectedHigh = detectedHigh,
@@ -217,7 +270,7 @@ class MainActivity : ComponentActivity() {
                                     onBack = {
                                         pendingBitmap = null
                                         pendingCandlePixels = null
-                                        currentScreen = "upload"
+                                        currentScreen = "symbol"
                                     },
                                     onConfirm = { high, low ->
                                         currentScreen = "analyzing"
@@ -225,15 +278,12 @@ class MainActivity : ComponentActivity() {
                                         analyzeProgress = 0.4f
                                         lifecycleScope.launch {
                                             delay(300)
-                                            analyzeProgress = 0.6f
+                                            analyzeProgress = 0.7f
                                             statusMessage = "اجرای اندیکاتورها..."
-                                            delay(400)
-                                            analyzeProgress = 0.85f
-                                            statusMessage = "تشخیص الگوها..."
                                             delay(300)
-                                            val result = runAnalysis(high, low, selectedTimeframe)
                                             analyzeProgress = 1f
                                             delay(200)
+                                            val result = runAnalysis(high, low, selectedTimeframe)
                                             analysisResult = result
                                             if (result != null) {
                                                 if (autoSaveHistory) {
@@ -247,6 +297,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
+
                             "result" -> {
                                 val result = analysisResult
                                 if (result != null) {
@@ -263,6 +314,7 @@ class MainActivity : ComponentActivity() {
                                     currentScreen = "home"
                                 }
                             }
+
                             "history" -> {
                                 HistoryScreen(
                                     items = historyItems,
@@ -281,6 +333,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
+
                             "settings" -> {
                                 SettingsScreen(
                                     autoSaveHistory = autoSaveHistory,
@@ -319,6 +372,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
+
                             "error" -> {
                                 Box(
                                     modifier = Modifier.fillMaxSize().background(DarkBg),
@@ -329,13 +383,13 @@ class MainActivity : ComponentActivity() {
                                         modifier = Modifier.padding(32.dp)
                                     ) {
                                         Text(
-                                            "خطا در پردازش تصویر",
+                                            "خطا در پردازش",
                                             color = TextPrimary,
                                             style = MaterialTheme.typography.headlineMedium
                                         )
                                         Spacer(Modifier.height(16.dp))
                                         Text(
-                                            "لطفاً تصویر واضح‌تری از چارت انتخاب کنید.",
+                                            "لطفاً دوباره تلاش کنید یا از تصویر واضح‌تری استفاده کنید.",
                                             color = TextSecondary,
                                             textAlign = TextAlign.Center
                                         )
@@ -344,21 +398,11 @@ class MainActivity : ComponentActivity() {
                                             onClick = {
                                                 pendingBitmap = null
                                                 pendingCandlePixels = null
-                                                currentScreen = "upload"
+                                                currentScreen = "home"
                                             },
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = AccentBlue,
                                                 contentColor = TextPrimary
-                                            )
-                                        ) {
-                                            Text("تلاش مجدد")
-                                        }
-                                        Spacer(Modifier.height(8.dp))
-                                        Button(
-                                            onClick = { currentScreen = "home" },
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = DarkBg,
-                                                contentColor = TextSecondary
                                             )
                                         ) {
                                             Text("بازگشت به خانه")
@@ -373,9 +417,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * پردازش تصویر - فقط داده برمی‌گردونه، متغیر Compose ست نمی‌کنه
-     */
     private suspend fun prepareAnalysis(uri: Uri): PreparationResult {
         return withContext(Dispatchers.Default) {
             try {
@@ -418,7 +459,6 @@ class MainActivity : ComponentActivity() {
                     confidence = confidence,
                     bitmap = bitmap,
                     candlePixels = candlePixels,
-                    pricePoints = pricePoints,
                     chartTop = bounds.chartTop,
                     chartBottom = bounds.chartBottom
                 )
