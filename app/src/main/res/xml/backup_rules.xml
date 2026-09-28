@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- ذخیره تنظیمات کاربر -->
+    <include domain="sharedpref" path="chartyar_prefs.xml"/>
+    
+    <!-- ذخیره دیتابیس تاریخچه -->
+    <include domain="database" path="chartyar_db"/>
+    
+    <!-- حذف فایل‌های موقت -->
+    <exclude domain="cache" path="."/>
+    <exclude domain="file" path="tmp/"/>
+</full-backup-content>
