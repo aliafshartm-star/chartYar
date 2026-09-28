@@ -2,10 +2,14 @@ package com.chartyar.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.chartyar.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -21,6 +26,8 @@ import com.chartyar.app.ui.theme.*
 fun CalibrationScreen(
     detectedHigh: Double?,
     detectedLow: Double?,
+    detectedCurrentPrice: Double?,
+    confidence: Int,
     onBack: () -> Unit,
     onConfirm: (Double, Double) -> Unit
 ) {
@@ -36,10 +43,13 @@ fun CalibrationScreen(
     val lowValue = lowText.toDoubleOrNull()
     val isValid = highValue != null && lowValue != null && highValue > lowValue
 
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBg)
+            .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
         // هدر
@@ -58,7 +68,12 @@ fun CalibrationScreen(
             )
         }
 
-        // توضیح
+        // کارت اعتماد
+        ConfidenceCard(confidence = confidence, detectedCurrentPrice = detectedCurrentPrice)
+
+        Spacer(Modifier.height(16.dp))
+
+        // راهنما
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
@@ -75,7 +90,8 @@ fun CalibrationScreen(
                 Text(
                     "نرم‌افزار خودکار قیمت‌های محور چارت را خوانده، اما اگر خطا داشت، می‌توانید قیمت بالا و پایین محدوده چارت را دستی وارد کنید.",
                     color = TextSecondary,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    lineHeight = 22.sp
                 )
             }
         }
@@ -83,12 +99,7 @@ fun CalibrationScreen(
         Spacer(Modifier.height(20.dp))
 
         // فیلد قیمت بالا
-        Text(
-            "بالاترین قیمت (سقف چارت)",
-            color = TextPrimary,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.SemiBold
-        )
+        FieldLabel("بالاترین قیمت (سقف چارت)", AccentGreen)
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = highText,
@@ -96,7 +107,7 @@ fun CalibrationScreen(
                 highText = it
                 errorMessage = null
             },
-            placeholder = { Text("مثلاً 67000", color = TextSecondary) },
+            placeholder = { Text("مثلاً 130.00", color = TextSecondary) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -113,12 +124,7 @@ fun CalibrationScreen(
         Spacer(Modifier.height(16.dp))
 
         // فیلد قیمت پایین
-        Text(
-            "پایین‌ترین قیمت (کف چارت)",
-            color = TextPrimary,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.SemiBold
-        )
+        FieldLabel("پایین‌ترین قیمت (کف چارت)", AccentRed)
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = lowText,
@@ -126,7 +132,7 @@ fun CalibrationScreen(
                 lowText = it
                 errorMessage = null
             },
-            placeholder = { Text("مثلاً 63000", color = TextSecondary) },
+            placeholder = { Text("مثلاً 80.00", color = TextSecondary) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -142,16 +148,32 @@ fun CalibrationScreen(
 
         if (errorMessage != null) {
             Spacer(Modifier.height(12.dp))
-            Text(
-                errorMessage!!,
-                color = AccentRed,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(containerColor = AccentRed.copy(alpha = 0.15f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Warning,
+                        contentDescription = null,
+                        tint = AccentRed,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        errorMessage!!,
+                        color = AccentRed,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
         }
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(24.dp))
 
         // دکمه تأیید
         Button(
@@ -162,6 +184,10 @@ fun CalibrationScreen(
                 }
                 if (highValue <= lowValue) {
                     errorMessage = "قیمت بالا باید بیشتر از قیمت پایین باشد"
+                    return@Button
+                }
+                if (highValue / lowValue > 20.0) {
+                    errorMessage = "فاصله قیمت‌ها غیرمعمول است. لطفاً چک کنید."
                     return@Button
                 }
                 onConfirm(highValue, lowValue)
@@ -185,7 +211,6 @@ fun CalibrationScreen(
 
         Spacer(Modifier.height(8.dp))
 
-        // متن کمکی
         Text(
             text = "این اعداد را از محور سمت راست چارت خودتان بخوانید",
             color = TextSecondary,
@@ -196,4 +221,80 @@ fun CalibrationScreen(
 
         Spacer(Modifier.height(16.dp))
     }
+}
+
+@Composable
+private fun ConfidenceCard(confidence: Int, detectedCurrentPrice: Double?) {
+    val (color, icon, text) = when {
+        confidence >= 80 -> Triple(AccentGreen, Icons.Filled.CheckCircle, "تشخیص دقیق")
+        confidence >= 50 -> Triple(AccentYellow, Icons.Filled.Warning, "تشخیص متوسط")
+        else -> Triple(AccentRed, Icons.Filled.Warning, "تشخیص ضعیف")
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(28.dp))
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text,
+                        color = color,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        "اعتماد پردازش: $confidence%",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            if (detectedCurrentPrice != null) {
+                Spacer(Modifier.height(12.dp))
+                Divider(color = Divider)
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "قیمت فعلی تشخیص‌داده‌شده:",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        "%.2f".format(detectedCurrentPrice),
+                        color = AccentBlue,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+
+            if (confidence < 80) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "⚠️ دقت تشخیص پایین است. لطفاً اعداد بالا و پایین را چک کنید.",
+                    color = AccentYellow,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FieldLabel(text: String, color: androidx.compose.ui.graphics.Color) {
+    Text(
+        text,
+        color = color,
+        style = MaterialTheme.typography.bodyLarge,
+        fontWeight = FontWeight.SemiBold
+    )
 }
