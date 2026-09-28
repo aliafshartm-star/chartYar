@@ -1,19 +1,36 @@
 package com.chartyar.app.ui
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chartyar.app.ui.theme.*
+import com.chartyar.app.ui.theme.AccentBlue
+import com.chartyar.app.ui.theme.DarkBg
+import com.chartyar.app.ui.theme.TextPrimary
+import com.chartyar.app.ui.theme.TextSecondary
 
 @Composable
 fun SplashScreen() {
@@ -46,25 +63,53 @@ fun SplashScreen() {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "📊",
-                fontSize = 80.sp,
-                modifier = Modifier.scale(scale)
-            )
-            Spacer(Modifier.height(16.dp))
+            Box(
+                modifier = Modifier
+                    .size(140.dp)
+                    .scale(scale)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF1E3A8A),
+                                AccentBlue
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "📊",
+                    fontSize = 80.sp
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+
             Text(
                 text = "چارت‌یار",
                 color = AccentBlue,
-                fontSize = 36.sp,
+                fontSize = 38.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.alpha(alpha)
             )
+
             Spacer(Modifier.height(8.dp))
+
             Text(
                 text = "تحلیل حرفه‌ای چارت",
                 color = TextSecondary,
                 fontSize = 16.sp,
                 modifier = Modifier.alpha(alpha)
+            )
+
+            Spacer(Modifier.height(40.dp))
+
+            Text(
+                text = "v ۱.۰.۰",
+                color = TextPrimary,
+                fontSize = 12.sp,
+                modifier = Modifier.alpha(0.5f)
             )
         }
     }
