@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -89,7 +90,11 @@ class MainActivity : ComponentActivity() {
         db = AppDatabase.get(applicationContext)
 
         setContent {
-            ChartYarTheme {
+            val themeFlow = remember { prefs.theme }
+            val currentTheme by themeFlow.collectAsState(initial = "dark")
+            val isDark = currentTheme == "dark"
+
+            ChartYarTheme(isDark = isDark) {
                 var isLoading by remember { mutableStateOf(true) }
                 var disclaimerAccepted by remember { mutableStateOf(false) }
                 var currentScreen by remember { mutableStateOf("home") }
