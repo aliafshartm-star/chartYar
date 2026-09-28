@@ -1,12 +1,12 @@
 package com.chartyar.app.analysis
 
 import android.graphics.Bitmap
-import android.graphics.Rect
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.math.abs
+import kotlin.math.sqrt
 import kotlin.coroutines.resume
 
 object OcrHelper {
@@ -15,14 +15,12 @@ object OcrHelper {
         val y: Int,
         val x: Int,
         val price: Double,
-        val rawText: String
+        val rawText: String,
+        val isAxisLabel: Boolean
     )
 
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-    /**
-     * خوندن متن‌ها با موقعیت دقیق
-     */
     suspend fun recognizeTextWithBounds(bitmap: Bitmap): List<Triple<String, Int, Int>> {
         return suspendCancellableCoroutine { cont ->
             val image = InputImage.fromBitmap(bitmap, 0)
@@ -47,9 +45,29 @@ object OcrHelper {
     }
 
     /**
-     * استخراج قیمت‌ها فقط از محور سمت راست تصویر
-     * با فیلترهای دقیق‌تر
+     * تشخیص اعداد محور (رند .00) vs اعداد باکس (اعشاری)
      */
+    private fun isAxisLabelNumber(text: String): Boolean {
+        val cleaned = text.trim().replace(",", "")
+        // محور: "80.00", "90.00", "100.00", "130.00", "80", "90"
+        // باکس: "118.37", "118.36", "03:58:26"
+        if (cleaned.contains(":")) return false // زمان
+        val regex = Regex("^\\d+\\.?\\d*$")
+        if (!regex.matches(cleaned)) return false
+
+        val parts = cleaned.split(".")
+        if (parts.size == 2) {
+            val decimal = parts[1]
+            // محور: .00 یا .0 (رند)
+            // باکس: .37, .36 (غیر رند)
+            if (decimal.length >= 2) {
+                val decValue = decimal.toIntOrNull() ?: return false
+                return decValue == 0 // فقط .00 قبوله
+            }
+        }
+        return true // اعداد ساده مثل "80", "90"
+    }
+
     suspend fun extractPriceAxis(bitmap: Bitmap): List<PricePoint> {
         val allText = recognizeTextWithBounds(bitmap)
         if (allText.isEmpty()) return emptyList()
@@ -57,36 +75,41 @@ object OcrHelper {
         val width = bitmap.width
         val height = bitmap.height
 
-        // محدوده محور: ۸۲٪ تا ۱۰۰٪ عرض
-        val axisLeft = (width * 0.82).toInt()
-        val axisRight = width
-
-        // محدوده عمودی: ۵٪ تا ۹۵٪ ارتفاع
-        val axisTop = (height * 0.05).toInt()
-        val axisBottom = (height * 0.95).toInt()
+        // محور سمت راست: ۸۵٪ تا ۱۰۰٪ عرض
+        val axisLeft = (width * 0.85).toInt()
+        // محدوده عمودی: ۳٪ تا ۹۷٪
+        val axisTop = (height * 0.03).toInt()
+        val axisBottom = (height * 0.97).toInt()
 
         val candidates = mutableListOf<PricePoint>()
 
         for ((text, x, y) in allText) {
-            // فقط متن‌هایی که داخل محدوده محور راست هستن
-            if (x < axisLeft || x > axisRight) continue
+            if (x < axisLeft) continue
             if (y < axisTop || y > axisBottom) continue
 
             val price = parsePrice(text) ?: continue
-            candidates.add(PricePoint(y, x, price, text))
+            val isAxis = isAxisLabelNumber(text)
+
+            candidates.add(PricePoint(y, x, price, text, isAxis))
         }
 
         if (candidates.isEmpty()) return emptyList()
 
-        // حذف تکراری‌ها (y نزدیک به هم)
+        // فیلتر: فقط محور
+        val axisOnly = candidates.filter { it.isAxisLabel }
+
+        // اگه کمتر از ۳ نقطه محور داریم، از همه استفاده کن
+        val pointsToUse = if (axisOnly.size >= 3) axisOnly else candidates
+
+        // حذف تکراری‌های نزدیک
         val filtered = mutableListOf<PricePoint>()
-        for (c in candidates.sortedBy { it.y }) {
+        for (c in pointsToUse.sortedBy { it.y }) {
             val last = filtered.lastOrNull()
             if (last == null || abs(c.y - last.y) > 15) {
                 filtered.add(c)
             } else {
-                // اگه دو تا خیلی نزدیک بودن، اونی که متن تمیزتری داره نگه‌دار
-                if (c.rawText.length > last.rawText.length) {
+                // اگه دو تا نزدیک، اون که عدد رندتره رو نگه‌دار
+                if (c.isAxisLabel && !last.isAxisLabel) {
                     filtered[filtered.size - 1] = c
                 }
             }
@@ -95,15 +118,10 @@ object OcrHelper {
         return filtered.sortedBy { it.y }
     }
 
-    /**
-     * تبدیل متن به عدد قیمت با پشتیبانی از فرمت‌های مختلف
-     * مثال‌ها: "67000", "67,000", "67.5K", "67000.50", "67 000", "$67,000"
-     */
     private fun parsePrice(text: String): Double? {
         val original = text.trim()
         if (original.isEmpty()) return null
 
-        // حذف کاراکترهای اضافی
         var cleaned = original
             .replace(",", "")
             .replace(" ", "")
@@ -114,10 +132,9 @@ object OcrHelper {
             .replace("¥", "")
             .trim()
 
-        // اگه فقط حروف و علامت داره، رد کن
         if (cleaned.isEmpty()) return null
+        if (cleaned.contains(":")) return null // زمان
 
-        // تشخیص ضریب (K, M, B)
         val upper = cleaned.uppercase()
         val multiplier = when {
             upper.contains("K") -> 1000.0
@@ -126,22 +143,18 @@ object OcrHelper {
             else -> 1.0
         }
 
-        // حذف حروف، فقط اعداد و نقطه و منفی بمونن
         cleaned = cleaned.filter { it.isDigit() || it == '.' || it == '-' }
 
         if (cleaned.isEmpty() || cleaned == "-" || cleaned == ".") return null
 
-        // فقط یک نقطه مجاز
         val dotCount = cleaned.count { it == '.' }
         if (dotCount > 1) {
-            // اگه چند نقطه داره، احتمالاً جداکننده هزارگان بوده
             cleaned = cleaned.replace(".", "")
         }
 
         val number = cleaned.toDoubleOrNull() ?: return null
         val result = number * multiplier
 
-        // فیلتر معقول بودن
         if (result <= 0.0) return null
         if (result > 10_000_000_000.0) return null
 
@@ -149,54 +162,105 @@ object OcrHelper {
     }
 
     /**
-     * محاسبه بازه قیمتی (high/low) از نقاط محور
-     * با استفاده از رگرسیون خطی برای دقت بالاتر
+     * محاسبه بازه قیمتی با رگرسیون خطی (Line Fit)
+     * این روش دقیق‌تره چون از همه نقاط استفاده می‌کنه
      */
     fun calculatePriceRange(points: List<PricePoint>): Pair<Double, Double>? {
         if (points.size < 2) return null
 
+        // اگه فقط ۲ نقطه داریم، ساده
+        if (points.size == 2) {
+            val sorted = points.sortedBy { it.y }
+            val top = sorted.first()
+            val bottom = sorted.last()
+            return if (top.price > bottom.price) {
+                top.price to bottom.price
+            } else {
+                bottom.price to top.price
+            }
+        }
+
+        // رگرسیون خطی: price = a * y + b
+        // y = pixel position, price = actual price
+        val n = points.size.toDouble()
+        val sumY = points.sumOf { it.y.toDouble() }
+        val sumP = points.sumOf { it.price }
+        val sumYP = points.sumOf { it.y.toDouble() * it.price }
+        val sumYY = points.sumOf { it.y.toDouble() * it.y.toDouble() }
+
+        val denominator = n * sumYY - sumY * sumY
+        if (abs(denominator) < 0.0001) return null
+
+        val a = (n * sumYP - sumY * sumP) / denominator
+        val b = (sumP - a * sumY) / n
+
+        // محاسبه R² برای اعتبارسنجی
+        val meanP = sumP / n
+        var ssTotal = 0.0
+        var ssResidual = 0.0
+        for (p in points) {
+            val predicted = a * p.y + b
+            ssTotal += (p.price - meanP) * (p.price - meanP)
+            ssResidual += (p.price - predicted) * (p.price - predicted)
+        }
+        val rSquared = if (ssTotal > 0) 1.0 - (ssResidual / ssTotal) else 0.0
+
+        // اگه R² خیلی پایین بود، احتمالاً نقاط پرت داریم
+        // فیلتر مجدد: نقاطی که خیلی از خط فاصله دارن رو حذف کن
+        if (rSquared < 0.99) {
+            val filtered = points.filter { p ->
+                val predicted = a * p.y + b
+                val error = abs(p.price - predicted) / p.price
+                error < 0.02 // خطای کمتر از ۲٪
+            }
+            if (filtered.size >= 2 && filtered.size < points.size) {
+                return calculatePriceRange(filtered)
+            }
+        }
+
+        // بازه: بالاترین و پایین‌ترین نقطه از خط
+        val minY = points.minOf { it.y }
+        val maxY = points.maxOf { it.y }
+        val priceAtMinY = a * minY + b
+        val priceAtMaxY = a * maxY + b
+
+        return if (priceAtMinY > priceAtMaxY) {
+            priceAtMinY to priceAtMaxY
+        } else {
+            priceAtMaxY to priceAtMinY
+        }
+    }
+
+    /**
+     * تبدیل Y پیکسل به قیمت با استفاده از همه نقاط
+     */
+    fun pixelToPrice(points: List<PricePoint>, targetY: Int): Double? {
+        if (points.size < 2) return null
+
+        val n = points.size.toDouble()
+        val sumY = points.sumOf { it.y.toDouble() }
+        val sumP = points.sumOf { it.price }
+        val sumYP = points.sumOf { it.y.toDouble() * it.price }
+        val sumYY = points.sumOf { it.y.toDouble() * it.y.toDouble() }
+
+        val denominator = n * sumYY - sumY * sumY
+        if (abs(denominator) < 0.0001) return null
+
+        val a = (n * sumYP - sumY * sumP) / denominator
+        val b = (sumP - a * sumY) / n
+
+        return a * targetY + b
+    }
+
+    fun calculatePriceRangeSimple(points: List<PricePoint>): Pair<Double, Double>? {
+        if (points.size < 2) return null
         val sorted = points.sortedBy { it.y }
         val top = sorted.first()
         val bottom = sorted.last()
-
         return if (top.price > bottom.price) {
             top.price to bottom.price
         } else {
             bottom.price to top.price
         }
-    }
-
-    /**
-     * محاسبه دقیق‌تر قیمت با درون‌یابی خطی
-     * اگه محور بیش از ۳ نقطه داشت، از همه استفاده کن
-     */
-    fun interpolatePrice(points: List<PricePoint>, targetY: Int): Double? {
-        if (points.size < 2) return null
-
-        val sorted = points.sortedBy { it.y }
-
-        // پیدا کردن دو نقطه‌ای که targetY بینشونه
-        var upper: PricePoint? = null
-        var lower: PricePoint? = null
-
-        for (p in sorted) {
-            if (p.y <= targetY) upper = p
-            if (p.y >= targetY) {
-                lower = p
-                break
-            }
-        }
-
-        if (upper == null || lower == null) {
-            // targetY خارج از محدوده‌ست، از دو نزدیک‌ترین استفاده کن
-            return if (targetY < sorted.first().y) sorted.first().price
-            else sorted.last().price
-        }
-
-        if (upper.y == lower.y) return upper.price
-
-        // درون‌یابی خطی
-        val ratio = (targetY - upper.y).toDouble() / (lower.y - upper.y).toDouble()
-        return upper.price + ratio * (lower.price - upper.price)
     }
 }
