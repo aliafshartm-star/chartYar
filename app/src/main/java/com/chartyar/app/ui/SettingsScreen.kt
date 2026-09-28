@@ -26,6 +26,8 @@ fun SettingsScreen(
     theme: String,
     onBack: () -> Unit,
     onShowTutorial: () -> Unit,
+    onShowPrivacy: () -> Unit,
+    onShowTerms: () -> Unit,
     onAutoSaveChange: (Boolean) -> Unit,
     onShowWarningsChange: (Boolean) -> Unit,
     onDefaultTimeframeChange: (String) -> Unit,
@@ -96,6 +98,26 @@ fun SettingsScreen(
             subtitle = "آموزش ۴ مرحله‌ای چطور از اپ استفاده کنی",
             color = AccentBlue,
             onClick = onShowTutorial
+        )
+
+        Spacer(Modifier.height(20.dp))
+
+        SectionTitle("📄 قوانین")
+
+        DangerButton(
+            title = "حریم خصوصی",
+            subtitle = "سیاست حفظ حریم خصوصی کاربران",
+            color = AccentBlue,
+            onClick = onShowPrivacy
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        DangerButton(
+            title = "شرایط استفاده",
+            subtitle = "قوانین و شرایط استفاده از اپ",
+            color = AccentBlue,
+            onClick = onShowTerms
         )
 
         Spacer(Modifier.height(20.dp))
