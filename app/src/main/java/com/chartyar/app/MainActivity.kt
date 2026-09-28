@@ -58,6 +58,22 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/**
+ * نتیجه پردازش تصویر
+ */
+data class PreparationResult(
+    val success: Boolean,
+    val high: Double? = null,
+    val low: Double? = null,
+    val currentPrice: Double? = null,
+    val confidence: Int = 0,
+    val bitmap: Bitmap? = null,
+    val candlePixels: List<CandlePixel>? = null,
+    val pricePoints: List<OcrHelper.PricePoint> = emptyList(),
+    val chartTop: Int = 0,
+    val chartBottom: Int = 0
+)
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var prefs: PrefsManager
@@ -67,7 +83,6 @@ class MainActivity : ComponentActivity() {
     private var pendingCandlePixels: List<CandlePixel>? = null
     private var pendingChartTop: Int = 0
     private var pendingChartBottom: Int = 0
-    private var pendingPricePoints: List<OcrHelper.PricePoint> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -146,23 +161,39 @@ class MainActivity : ComponentActivity() {
                                     analyzeProgress = 0f
                                     statusMessage = "در حال پردازش تصویر..."
                                     currentScreen = "analyzing"
+
                                     lifecycleScope.launch {
                                         analyzeProgress = 0.1f
                                         statusMessage = "بارگذاری تصویر..."
                                         delay(300)
+
                                         analyzeProgress = 0.25f
                                         statusMessage = "تشخیص کندل‌ها..."
                                         delay(200)
-                                        val result = prepareAnalysis(uri)
+
+                                        val prep = prepareAnalysis(uri)
+
                                         analyzeProgress = 0.6f
                                         statusMessage = "خوندن قیمت‌ها از محور..."
                                         delay(400)
+
                                         analyzeProgress = 0.85f
                                         statusMessage = "اعتبارسنجی قیمت‌ها..."
                                         delay(300)
+
                                         analyzeProgress = 1f
                                         delay(200)
-                                        if (result) {
+
+                                        if (prep.success) {
+                                            // حالا اینجا متغیرهای Compose قابل دسترسن
+                                            detectedHigh = prep.high
+                                            detectedLow = prep.low
+                                            detectedCurrentPrice = prep.currentPrice
+                                            detectedConfidence = prep.confidence
+                                            pendingBitmap = prep.bitmap
+                                            pendingCandlePixels = prep.candlePixels
+                                            pendingChartTop = prep.chartTop
+                                            pendingChartBottom = prep.chartBottom
                                             currentScreen = "calibration"
                                         } else {
                                             currentScreen = "error"
@@ -186,7 +217,6 @@ class MainActivity : ComponentActivity() {
                                     onBack = {
                                         pendingBitmap = null
                                         pendingCandlePixels = null
-                                        pendingPricePoints = emptyList()
                                         currentScreen = "upload"
                                     },
                                     onConfirm = { high, low ->
@@ -226,7 +256,6 @@ class MainActivity : ComponentActivity() {
                                             analysisResult = null
                                             pendingBitmap = null
                                             pendingCandlePixels = null
-                                            pendingPricePoints = emptyList()
                                             currentScreen = "home"
                                         }
                                     )
@@ -315,7 +344,6 @@ class MainActivity : ComponentActivity() {
                                             onClick = {
                                                 pendingBitmap = null
                                                 pendingCandlePixels = null
-                                                pendingPricePoints = emptyList()
                                                 currentScreen = "upload"
                                             },
                                             colors = ButtonDefaults.buttonColors(
@@ -346,31 +374,28 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * مرحله پردازش: بارگذاری تصویر، استخراج کندل، OCR، محاسبه اعتماد
-     * @return true اگه موفق بود
+     * پردازش تصویر - فقط داده برمی‌گردونه، متغیر Compose ست نمی‌کنه
      */
-    private suspend fun prepareAnalysis(uri: Uri): Boolean {
+    private suspend fun prepareAnalysis(uri: Uri): PreparationResult {
         return withContext(Dispatchers.Default) {
             try {
                 val bitmap = ImageProcessor.loadBitmap(applicationContext, uri)
-                    ?: return@withContext false
+                    ?: return@withContext PreparationResult(success = false)
 
                 val candlePixels = ImageProcessor.extractCandles(bitmap)
-                    ?: return@withContext false
+                    ?: return@withContext PreparationResult(success = false)
 
                 val pricePoints = OcrHelper.extractPriceAxis(bitmap)
-                if (pricePoints.size < 2) return@withContext false
+                if (pricePoints.size < 2) return@withContext PreparationResult(success = false)
 
                 val priceRange = OcrHelper.calculatePriceRange(pricePoints)
-                if (priceRange == null) return@withContext false
+                    ?: return@withContext PreparationResult(success = false)
 
                 val (high, low) = priceRange
 
-                // اعتبارسنجی: قیمت بالا و پایین معقول باشن
-                if (high <= low) return@withContext false
-                if (high / low > 50.0) return@withContext false
+                if (high <= low) return@withContext PreparationResult(success = false)
+                if (high / low > 50.0) return@withContext PreparationResult(success = false)
 
-                // محاسبه اعتماد بر اساس تعداد نقاط محور
                 val confidence = when {
                     pricePoints.size >= 5 -> 90
                     pricePoints.size >= 4 -> 80
@@ -379,28 +404,27 @@ class MainActivity : ComponentActivity() {
                     else -> 30
                 }
 
-                // قیمت فعلی از آخرین کندل
                 val bounds = ImageProcessor.findChartBoundsPublic(bitmap)
                 val lastCandle = candlePixels.lastOrNull()
                 val currentPrice = lastCandle?.let {
                     OcrHelper.pixelToPrice(pricePoints, it.bottom)
                 }
 
-                pendingBitmap = bitmap
-                pendingCandlePixels = candlePixels
-                pendingPricePoints = pricePoints
-                pendingChartTop = bounds.chartTop
-                pendingChartBottom = bounds.chartBottom
-
-                detectedHigh = high
-                detectedLow = low
-                detectedCurrentPrice = currentPrice
-                detectedConfidence = confidence
-
-                true
+                PreparationResult(
+                    success = true,
+                    high = high,
+                    low = low,
+                    currentPrice = currentPrice,
+                    confidence = confidence,
+                    bitmap = bitmap,
+                    candlePixels = candlePixels,
+                    pricePoints = pricePoints,
+                    chartTop = bounds.chartTop,
+                    chartBottom = bounds.chartBottom
+                )
             } catch (e: Exception) {
                 e.printStackTrace()
-                false
+                PreparationResult(success = false)
             }
         }
     }
