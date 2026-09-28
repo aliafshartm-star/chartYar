@@ -1,7 +1,6 @@
 package com.chartyar.app.data
 
 import android.content.Context
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -20,6 +19,7 @@ class PrefsManager(private val context: Context) {
         private val KEY_DEFAULT_TIMEFRAME = stringPreferencesKey("default_timeframe")
         private val KEY_LANGUAGE = stringPreferencesKey("language")
         private val KEY_THEME = stringPreferencesKey("theme")
+        private val KEY_TUTORIAL_SEEN = booleanPreferencesKey("tutorial_seen")
     }
 
     val isDisclaimerAccepted: Flow<Boolean> = context.dataStore.data
@@ -39,6 +39,9 @@ class PrefsManager(private val context: Context) {
 
     val theme: Flow<String> = context.dataStore.data
         .map { prefs -> prefs[KEY_THEME] ?: "dark" }
+
+    val isTutorialSeen: Flow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[KEY_TUTORIAL_SEEN] ?: false }
 
     suspend fun acceptDisclaimer() {
         context.dataStore.edit { prefs ->
@@ -76,9 +79,21 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    suspend fun setTutorialSeen(value: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_TUTORIAL_SEEN] = value
+        }
+    }
+
     suspend fun resetDisclaimer() {
         context.dataStore.edit { prefs ->
             prefs[KEY_DISCLAIMER_ACCEPTED] = false
+        }
+    }
+
+    suspend fun resetTutorial() {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_TUTORIAL_SEEN] = false
         }
     }
 }
