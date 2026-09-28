@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- فقط HTTPS مجاز -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+
+    <!-- دامنه‌های خاص Binance -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">binance.com</domain>
+        <domain includeSubdomains="true">api.binance.com</domain>
+        <domain includeSubdomains="true">fapi.binance.com</domain>
+    </domain-config>
+</network-security-config>
