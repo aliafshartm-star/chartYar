@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
     private var pendingCandlePixels: List<CandlePixel>? = null
     private var pendingChartTop: Int = 0
     private var pendingChartBottom: Int = 0
+    private var pendingPricePoints: List<OcrHelper.PricePoint> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,6 +85,8 @@ class MainActivity : ComponentActivity() {
                 var analyzeProgress by remember { mutableStateOf(0f) }
                 var detectedHigh by remember { mutableStateOf<Double?>(null) }
                 var detectedLow by remember { mutableStateOf<Double?>(null) }
+                var detectedCurrentPrice by remember { mutableStateOf<Double?>(null) }
+                var detectedConfidence by remember { mutableStateOf(0) }
                 var historyItems by remember { mutableStateOf<List<AnalysisHistory>>(emptyList()) }
                 var autoSaveHistory by remember { mutableStateOf(true) }
                 var showWarnings by remember { mutableStateOf(true) }
@@ -155,13 +158,11 @@ class MainActivity : ComponentActivity() {
                                         statusMessage = "خوندن قیمت‌ها از محور..."
                                         delay(400)
                                         analyzeProgress = 0.85f
-                                        statusMessage = "آماده‌سازی تحلیل..."
+                                        statusMessage = "اعتبارسنجی قیمت‌ها..."
                                         delay(300)
                                         analyzeProgress = 1f
                                         delay(200)
-                                        if (result.first) {
-                                            detectedHigh = result.second
-                                            detectedLow = result.third
+                                        if (result) {
                                             currentScreen = "calibration"
                                         } else {
                                             currentScreen = "error"
@@ -180,9 +181,12 @@ class MainActivity : ComponentActivity() {
                                 CalibrationScreen(
                                     detectedHigh = detectedHigh,
                                     detectedLow = detectedLow,
+                                    detectedCurrentPrice = detectedCurrentPrice,
+                                    confidence = detectedConfidence,
                                     onBack = {
                                         pendingBitmap = null
                                         pendingCandlePixels = null
+                                        pendingPricePoints = emptyList()
                                         currentScreen = "upload"
                                     },
                                     onConfirm = { high, low ->
@@ -222,6 +226,7 @@ class MainActivity : ComponentActivity() {
                                             analysisResult = null
                                             pendingBitmap = null
                                             pendingCandlePixels = null
+                                            pendingPricePoints = emptyList()
                                             currentScreen = "home"
                                         }
                                     )
@@ -256,27 +261,19 @@ class MainActivity : ComponentActivity() {
                                     onBack = { currentScreen = "home" },
                                     onAutoSaveChange = { value ->
                                         autoSaveHistory = value
-                                        lifecycleScope.launch {
-                                            prefs.setAutoSaveHistory(value)
-                                        }
+                                        lifecycleScope.launch { prefs.setAutoSaveHistory(value) }
                                     },
                                     onShowWarningsChange = { value ->
                                         showWarnings = value
-                                        lifecycleScope.launch {
-                                            prefs.setShowWarnings(value)
-                                        }
+                                        lifecycleScope.launch { prefs.setShowWarnings(value) }
                                     },
                                     onDefaultTimeframeChange = { value ->
                                         defaultTimeframe = value
-                                        lifecycleScope.launch {
-                                            prefs.setDefaultTimeframe(value)
-                                        }
+                                        lifecycleScope.launch { prefs.setDefaultTimeframe(value) }
                                     },
                                     onThemeChange = { value ->
                                         themeSetting = value
-                                        lifecycleScope.launch {
-                                            prefs.setTheme(value)
-                                        }
+                                        lifecycleScope.launch { prefs.setTheme(value) }
                                     },
                                     onResetDisclaimer = {
                                         lifecycleScope.launch {
@@ -318,6 +315,7 @@ class MainActivity : ComponentActivity() {
                                             onClick = {
                                                 pendingBitmap = null
                                                 pendingCandlePixels = null
+                                                pendingPricePoints = emptyList()
                                                 currentScreen = "upload"
                                             },
                                             colors = ButtonDefaults.buttonColors(
@@ -347,24 +345,62 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun prepareAnalysis(uri: Uri): Triple<Boolean, Double?, Double?> {
+    /**
+     * مرحله پردازش: بارگذاری تصویر، استخراج کندل، OCR، محاسبه اعتماد
+     * @return true اگه موفق بود
+     */
+    private suspend fun prepareAnalysis(uri: Uri): Boolean {
         return withContext(Dispatchers.Default) {
             try {
                 val bitmap = ImageProcessor.loadBitmap(applicationContext, uri)
-                    ?: return@withContext Triple(false, null, null)
+                    ?: return@withContext false
+
                 val candlePixels = ImageProcessor.extractCandles(bitmap)
-                    ?: return@withContext Triple(false, null, null)
+                    ?: return@withContext false
+
                 val pricePoints = OcrHelper.extractPriceAxis(bitmap)
+                if (pricePoints.size < 2) return@withContext false
+
                 val priceRange = OcrHelper.calculatePriceRange(pricePoints)
+                if (priceRange == null) return@withContext false
+
+                val (high, low) = priceRange
+
+                // اعتبارسنجی: قیمت بالا و پایین معقول باشن
+                if (high <= low) return@withContext false
+                if (high / low > 50.0) return@withContext false
+
+                // محاسبه اعتماد بر اساس تعداد نقاط محور
+                val confidence = when {
+                    pricePoints.size >= 5 -> 90
+                    pricePoints.size >= 4 -> 80
+                    pricePoints.size >= 3 -> 65
+                    pricePoints.size >= 2 -> 50
+                    else -> 30
+                }
+
+                // قیمت فعلی از آخرین کندل
                 val bounds = ImageProcessor.findChartBoundsPublic(bitmap)
+                val lastCandle = candlePixels.lastOrNull()
+                val currentPrice = lastCandle?.let {
+                    OcrHelper.pixelToPrice(pricePoints, it.bottom)
+                }
+
                 pendingBitmap = bitmap
                 pendingCandlePixels = candlePixels
+                pendingPricePoints = pricePoints
                 pendingChartTop = bounds.chartTop
                 pendingChartBottom = bounds.chartBottom
-                Triple(true, priceRange?.first, priceRange?.second)
+
+                detectedHigh = high
+                detectedLow = low
+                detectedCurrentPrice = currentPrice
+                detectedConfidence = confidence
+
+                true
             } catch (e: Exception) {
                 e.printStackTrace()
-                Triple(false, null, null)
+                false
             }
         }
     }
