@@ -116,6 +116,12 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     )
+                    currentScreen == "privacy" -> PrivacyPolicyScreen(
+                        onBack = { currentScreen = "settings" }
+                    )
+                    currentScreen == "terms" -> TermsScreen(
+                        onBack = { currentScreen = "settings" }
+                    )
                     else -> when (currentScreen) {
                         "home" -> HomeScreen(
                             onUploadClick = { currentScreen = "upload" },
@@ -261,6 +267,8 @@ class MainActivity : ComponentActivity() {
                             theme = themeSetting,
                             onBack = { currentScreen = "home" },
                             onShowTutorial = { currentScreen = "tutorial" },
+                            onShowPrivacy = { currentScreen = "privacy" },
+                            onShowTerms = { currentScreen = "terms" },
                             onAutoSaveChange = { v -> autoSaveHistory = v; lifecycleScope.launch { prefs.setAutoSaveHistory(v) } },
                             onShowWarningsChange = { v -> showWarnings = v; lifecycleScope.launch { prefs.setShowWarnings(v) } },
                             onDefaultTimeframeChange = { v -> defaultTimeframe = v; lifecycleScope.launch { prefs.setDefaultTimeframe(v) } },
