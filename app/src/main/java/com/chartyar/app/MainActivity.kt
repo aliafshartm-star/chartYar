@@ -49,6 +49,7 @@ import com.chartyar.app.ui.ResultScreen
 import com.chartyar.app.ui.SettingsScreen
 import com.chartyar.app.ui.SplashScreen
 import com.chartyar.app.ui.SymbolSelectorScreen
+import com.chartyar.app.ui.TutorialScreen
 import com.chartyar.app.ui.UploadScreen
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.ChartYarTheme
@@ -111,12 +112,14 @@ class MainActivity : ComponentActivity() {
                 var showWarnings by remember { mutableStateOf(true) }
                 var defaultTimeframe by remember { mutableStateOf("4H") }
                 var themeSetting by remember { mutableStateOf("dark") }
+                var tutorialSeen by remember { mutableStateOf(true) }
 
                 LaunchedEffect(Unit) {
                     autoSaveHistory = prefs.autoSaveHistory.first()
                     showWarnings = prefs.showWarnings.first()
                     defaultTimeframe = prefs.defaultTimeframe.first()
                     themeSetting = prefs.theme.first()
+                    tutorialSeen = prefs.isTutorialSeen.first()
                     selectedTimeframe = defaultTimeframe
                 }
 
@@ -146,9 +149,24 @@ class MainActivity : ComponentActivity() {
                                 lifecycleScope.launch {
                                     prefs.acceptDisclaimer()
                                     disclaimerAccepted = true
+                                    if (!tutorialSeen) {
+                                        currentScreen = "tutorial"
+                                    }
                                 }
                             },
                             onDecline = { finish() }
+                        )
+                    }
+                    currentScreen == "tutorial" -> {
+                        TutorialScreen(
+                            isFirstTime = !tutorialSeen,
+                            onFinish = {
+                                lifecycleScope.launch {
+                                    prefs.setTutorialSeen(true)
+                                    tutorialSeen = true
+                                    currentScreen = "home"
+                                }
+                            }
                         )
                     }
                     else -> {
@@ -339,6 +357,7 @@ class MainActivity : ComponentActivity() {
                                     defaultTimeframe = defaultTimeframe,
                                     theme = themeSetting,
                                     onBack = { currentScreen = "home" },
+                                    onShowTutorial = { currentScreen = "tutorial" },
                                     onAutoSaveChange = { value ->
                                         autoSaveHistory = value
                                         lifecycleScope.launch { prefs.setAutoSaveHistory(value) }
@@ -366,6 +385,12 @@ class MainActivity : ComponentActivity() {
                                         lifecycleScope.launch {
                                             db.historyDao().clearAll()
                                             historyItems = emptyList()
+                                        }
+                                    },
+                                    onResetTutorial = {
+                                        lifecycleScope.launch {
+                                            prefs.resetTutorial()
+                                            tutorialSeen = false
                                         }
                                     }
                                 )
