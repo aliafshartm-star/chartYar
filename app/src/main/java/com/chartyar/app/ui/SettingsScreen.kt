@@ -25,12 +25,14 @@ fun SettingsScreen(
     defaultTimeframe: String,
     theme: String,
     onBack: () -> Unit,
+    onShowTutorial: () -> Unit,
     onAutoSaveChange: (Boolean) -> Unit,
     onShowWarningsChange: (Boolean) -> Unit,
     onDefaultTimeframeChange: (String) -> Unit,
     onThemeChange: (String) -> Unit,
     onResetDisclaimer: () -> Unit,
-    onClearHistory: () -> Unit
+    onClearHistory: () -> Unit,
+    onResetTutorial: () -> Unit
 ) {
     val scrollState = rememberScrollState()
 
@@ -56,7 +58,6 @@ fun SettingsScreen(
             )
         }
 
-        // بخش تحلیل
         SectionTitle("⚙️ تحلیل")
 
         SettingSwitch(
@@ -82,14 +83,23 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // بخش ظاهر
         SectionTitle("🎨 ظاهر")
 
         ThemeSelector(current = theme, onSelect = onThemeChange)
 
         Spacer(Modifier.height(20.dp))
 
-        // بخش داده‌ها
+        SectionTitle("📚 راهنما")
+
+        DangerButton(
+            title = "مشاهده راهنمای استفاده",
+            subtitle = "آموزش ۴ مرحله‌ای چطور از اپ استفاده کنی",
+            color = AccentBlue,
+            onClick = onShowTutorial
+        )
+
+        Spacer(Modifier.height(20.dp))
+
         SectionTitle("🗄️ داده‌ها")
 
         DangerButton(
@@ -108,9 +118,17 @@ fun SettingsScreen(
             onClick = onResetDisclaimer
         )
 
+        Spacer(Modifier.height(8.dp))
+
+        DangerButton(
+            title = "نمایش مجدد راهنما",
+            subtitle = "در اجرای بعدی صفحه راهنما نمایش داده می‌شود",
+            color = AccentYellow,
+            onClick = onResetTutorial
+        )
+
         Spacer(Modifier.height(20.dp))
 
-        // بخش درباره
         SectionTitle("ℹ️ درباره")
 
         InfoCard(
@@ -228,7 +246,10 @@ private fun TimeframeDropdown(current: String, onSelect: (String) -> Unit) {
 
 @Composable
 private fun ThemeSelector(current: String, onSelect: (String) -> Unit) {
-    val themes = listOf("dark" to "دارک (پیش‌فرض)", "light" to "روشن (به‌زودی)")
+    val themes = listOf(
+        "dark" to "دارک (پیش‌فرض)",
+        "light" to "روشن"
+    )
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -242,13 +263,13 @@ private fun ThemeSelector(current: String, onSelect: (String) -> Unit) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { if (key == "dark") onSelect(key) }
+                        .clickable { onSelect(key) }
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
                         selected = current == key,
-                        onClick = { if (key == "dark") onSelect(key) },
+                        onClick = { onSelect(key) },
                         colors = RadioButtonDefaults.colors(
                             selectedColor = AccentGreen,
                             unselectedColor = TextSecondary
@@ -256,7 +277,7 @@ private fun ThemeSelector(current: String, onSelect: (String) -> Unit) {
                     )
                     Text(
                         label,
-                        color = if (key == "dark") TextPrimary else TextSecondary,
+                        color = TextPrimary,
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
