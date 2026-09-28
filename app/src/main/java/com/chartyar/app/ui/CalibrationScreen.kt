@@ -52,7 +52,6 @@ fun CalibrationScreen(
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // هدر
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
@@ -68,12 +67,10 @@ fun CalibrationScreen(
             )
         }
 
-        // کارت اعتماد
         ConfidenceCard(confidence = confidence, detectedCurrentPrice = detectedCurrentPrice)
 
         Spacer(Modifier.height(16.dp))
 
-        // راهنما
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
@@ -98,8 +95,12 @@ fun CalibrationScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // فیلد قیمت بالا
-        FieldLabel("بالاترین قیمت (سقف چارت)", AccentGreen)
+        Text(
+            "بالاترین قیمت (سقف چارت)",
+            color = AccentGreen,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold
+        )
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = highText,
@@ -123,8 +124,12 @@ fun CalibrationScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // فیلد قیمت پایین
-        FieldLabel("پایین‌ترین قیمت (کف چارت)", AccentRed)
+        Text(
+            "پایین‌ترین قیمت (کف چارت)",
+            color = AccentRed,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold
+        )
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = lowText,
@@ -175,7 +180,6 @@ fun CalibrationScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // دکمه تأیید
         Button(
             onClick = {
                 if (highValue == null || lowValue == null) {
@@ -287,14 +291,4 @@ private fun ConfidenceCard(confidence: Int, detectedCurrentPrice: Double?) {
             }
         }
     }
-}
-
-@Composable
-private fun FieldLabel(text: String, color: androidx.compose.ui.graphics.Color) {
-    Text(
-        text,
-        color = color,
-        style = MaterialTheme.typography.bodyLarge,
-        fontWeight = FontWeight.SemiBold
-    )
 }
