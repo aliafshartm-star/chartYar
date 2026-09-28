@@ -351,4 +351,3 @@ private fun InfoCard(title: String, lines: List<String>) {
             }
         }
     }
-}
