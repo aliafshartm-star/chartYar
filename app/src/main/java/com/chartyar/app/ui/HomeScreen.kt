@@ -1,273 +1,261 @@
 package com.chartyar.app.ui
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.chartyar.app.ui.theme.*
-import kotlinx.coroutines.delay
+import com.chartyar.app.util.CameraHelper
 
+val timeframes = listOf("1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M")
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(
-    onUploadClick: () -> Unit,
-    onHistoryClick: () -> Unit,
-    onSettingsClick: () -> Unit,
-    onAlertsClick: () -> Unit
+fun UploadScreen(
+    onBack: () -> Unit,
+    onAnalyze: (Uri, String) -> Unit
 ) {
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay(100)
-        visible = true
+    val context = LocalContext.current
+    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedTimeframe by remember { mutableStateOf("4H") }
+    var dropdownExpanded by remember { mutableStateOf(false) }
+
+    // Uri برای عکس دوربین
+    var cameraUri by remember { mutableStateOf<Uri?>(null) }
+
+    // Launcher گالری
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) selectedUri = uri
     }
 
-    val fadeIn by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(600),
-        label = "fadeIn"
-    )
+    // Launcher دوربین
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && cameraUri != null) {
+            selectedUri = cameraUri
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBg)
-            .padding(20.dp)
+            .padding(16.dp)
     ) {
         // هدر
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .alpha(fadeIn),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
         ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Filled.ArrowBack, "بازگشت", tint = TextPrimary)
+            }
             Text(
-                text = "چارت‌یار",
-                style = MaterialTheme.typography.headlineLarge,
-                color = AccentBlue,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
+                "آپلود چارت",
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold
             )
-            IconButton(onClick = onAlertsClick) {
-                Icon(
-                    imageVector = Icons.Filled.Notifications,
-                    contentDescription = "هشدار قیمت",
-                    tint = AccentYellow
-                )
-            }
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = "تنظیمات",
-                    tint = TextSecondary
-                )
-            }
         }
 
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            text = "تحلیل حرفه‌ای چارت با یک کلیک",
-            style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondary,
-            modifier = Modifier.alpha(fadeIn)
-        )
-
-        Spacer(Modifier.height(40.dp))
-
-        // کارت اصلی
-        Box(
+        // کادر تصویر
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .alpha(fadeIn)
+                .height(280.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = DarkSurface)
         ) {
-            MainUploadCard(onUploadClick = onUploadClick)
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        // دکمه تاریخچه
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .alpha(fadeIn)
-        ) {
-            OutlinedButton(
-                onClick = onHistoryClick,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Refresh,
-                    contentDescription = null,
-                    tint = AccentBlue,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text("تاریخچه تحلیل‌ها", style = MaterialTheme.typography.bodyLarge)
+                if (selectedUri == null) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(20.dp)
+                    ) {
+                        Text("📊", fontSize = 56.sp)
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "اسکرین‌شات چارت خود را انتخاب کنید",
+                            color = TextPrimary,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "از گالری یا دوربین",
+                            color = TextSecondary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                } else {
+                    AsyncImage(
+                        model = selectedUri,
+                        contentDescription = "چارت",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))
+                    )
+                }
             }
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        // آمار سریع
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .alpha(fadeIn)
-        ) {
-            QuickStatsRow()
         }
 
         Spacer(Modifier.height(16.dp))
 
-        Text(
-            text = "این اپ توصیه مالی نیست | تحلیل صرفاً جهت کمک به تصمیم‌گیری",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-@Composable
-private fun MainUploadCard(onUploadClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        // دکمه‌های انتخاب تصویر
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-            val pulseScale by infiniteTransition.animateFloat(
-                initialValue = 1f,
-                targetValue = 1.15f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1500, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "pulseScale"
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(90.dp)
-                    .scale(pulseScale)
-                    .background(
-                        color = AccentBlue.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(50)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "📊", fontSize = 48.sp)
-            }
-
-            Spacer(Modifier.height(20.dp))
-            Text(
-                text = "شروع تحلیل",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "اسکرین‌شات چارت خود را از گالری انتخاب کنید",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(24.dp))
+            // دکمه گالری
             Button(
-                onClick = onUploadClick,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                onClick = {
+                    pickImageLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                },
+                modifier = Modifier.weight(1f).height(56.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AccentBlue,
                     contentColor = TextPrimary
                 )
             ) {
-                Icon(imageVector = Icons.Filled.Add, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
+                Icon(Icons.Filled.Image, contentDescription = null, modifier = Modifier.size(22.dp))
+                Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "انتخاب تصویر چارت",
+                    "گالری",
                     fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
+            // دکمه دوربین
+            Button(
+                onClick = {
+                    val uri = CameraHelper.createImageUri(context)
+                    if (uri != null) {
+                        cameraUri = uri
+                        takePictureLauncher.launch(uri)
+                    }
+                },
+                modifier = Modifier.weight(1f).height(56.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AccentGreen,
+                    contentColor = TextPrimary
+                )
+            ) {
+                Icon(Icons.Filled.CameraAlt, contentDescription = null, modifier = Modifier.size(22.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    "دوربین",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge
                 )
             }
         }
-    }
-}
 
-@Composable
-private fun QuickStatsRow() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(DarkSurface, RoundedCornerShape(14.dp))
-            .padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        QuickStat("⚡", "۱۰+", "اندیکاتور")
-        Box(
-            modifier = Modifier
-                .height(40.dp)
-                .width(1.dp)
-                .background(Divider)
-        )
-        QuickStat("🔍", "۱۱", "الگو")
-        Box(
-            modifier = Modifier
-                .height(40.dp)
-                .width(1.dp)
-                .background(Divider)
-        )
-        QuickStat("🎯", "۴", "استایل")
-    }
-}
+        Spacer(Modifier.height(20.dp))
 
-@Composable
-private fun QuickStat(emoji: String, value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(emoji, fontSize = 20.sp)
-        Spacer(Modifier.height(4.dp))
+        // انتخاب تایم‌فریم
         Text(
-            text = value,
-            color = AccentBlue,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp
+            "تایم‌فریم:",
+            color = TextPrimary,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
         )
-        Text(
-            text = label,
-            color = TextSecondary,
-            fontSize = 12.sp
-        )
+
+        Spacer(Modifier.height(8.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = dropdownExpanded,
+            onExpandedChange = { dropdownExpanded = !dropdownExpanded }
+        ) {
+            OutlinedTextField(
+                value = selectedTimeframe,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = {
+                    Icon(Icons.Filled.ArrowDropDown, null, tint = TextSecondary)
+                },
+                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    focusedBorderColor = AccentBlue,
+                    unfocusedBorderColor = Divider,
+                    focusedContainerColor = DarkSurface,
+                    unfocusedContainerColor = DarkSurface
+                )
+            )
+            ExposedDropdownMenu(
+                expanded = dropdownExpanded,
+                onDismissRequest = { dropdownExpanded = false },
+                containerColor = DarkSurface
+            ) {
+                timeframes.forEach { tf ->
+                    DropdownMenuItem(
+                        text = { Text(tf, color = TextPrimary) },
+                        onClick = {
+                            selectedTimeframe = tf
+                            dropdownExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        // دکمه تحلیل
+        Button(
+            onClick = {
+                selectedUri?.let { onAnalyze(it, selectedTimeframe) }
+            },
+            enabled = selectedUri != null,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = AccentBlue,
+                contentColor = TextPrimary,
+                disabledContainerColor = DarkCard,
+                disabledContentColor = TextSecondary
+            )
+        ) {
+            Text(
+                "تحلیل کن",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
     }
 }
