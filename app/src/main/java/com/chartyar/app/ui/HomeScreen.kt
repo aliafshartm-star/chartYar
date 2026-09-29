@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -33,7 +34,8 @@ fun HomeScreen(
     onUploadClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onAlertsClick: () -> Unit
+    onAlertsClick: () -> Unit,
+    onNewsClick: () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -66,6 +68,13 @@ fun HomeScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
+            IconButton(onClick = onNewsClick) {
+                Icon(
+                    imageVector = Icons.Filled.Article,
+                    contentDescription = "اخبار",
+                    tint = AccentGreen
+                )
+            }
             IconButton(onClick = onAlertsClick) {
                 Icon(
                     imageVector = Icons.Filled.Notifications,
