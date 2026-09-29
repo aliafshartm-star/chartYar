@@ -24,6 +24,7 @@ fun SettingsScreen(
     showWarnings: Boolean,
     defaultTimeframe: String,
     theme: String,
+    language: String,
     onBack: () -> Unit,
     onShowTutorial: () -> Unit,
     onShowPrivacy: () -> Unit,
@@ -32,11 +33,13 @@ fun SettingsScreen(
     onShowWarningsChange: (Boolean) -> Unit,
     onDefaultTimeframeChange: (String) -> Unit,
     onThemeChange: (String) -> Unit,
+    onLanguageChange: (String) -> Unit,
     onResetDisclaimer: () -> Unit,
     onClearHistory: () -> Unit,
     onResetTutorial: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -58,74 +61,104 @@ fun SettingsScreen(
                 fontWeight = FontWeight.Bold
             )
         }
+
         SectionTitle("⚙️ تحلیل")
+
         SettingSwitch(
             title = "ذخیره خودکار در تاریخچه",
             subtitle = "هر تحلیل به‌طور خودکار ذخیره شود",
             checked = autoSaveHistory,
             onCheckedChange = onAutoSaveChange
         )
+
         SettingSwitch(
             title = "نمایش هشدارها",
             subtitle = "هشدارهای تحلیلی نمایش داده شود",
             checked = showWarnings,
             onCheckedChange = onShowWarningsChange
         )
+
         Spacer(Modifier.height(12.dp))
+
         TimeframeDropdown(
             current = defaultTimeframe,
             onSelect = onDefaultTimeframeChange
         )
+
         Spacer(Modifier.height(20.dp))
+
         SectionTitle("🎨 ظاهر")
+
         ThemeSelector(current = theme, onSelect = onThemeChange)
+
+        Spacer(Modifier.height(12.dp))
+
+        LanguageSelector(current = language, onSelect = onLanguageChange)
+
         Spacer(Modifier.height(20.dp))
+
         SectionTitle("📚 راهنما")
+
         DangerButton(
             title = "مشاهده راهنمای استفاده",
             subtitle = "آموزش ۴ مرحله‌ای چطور از اپ استفاده کنی",
             color = AccentBlue,
             onClick = onShowTutorial
         )
+
         Spacer(Modifier.height(20.dp))
+
         SectionTitle("📄 قوانین")
+
         DangerButton(
             title = "حریم خصوصی",
             subtitle = "سیاست حفظ حریم خصوصی کاربران",
             color = AccentBlue,
             onClick = onShowPrivacy
         )
+
         Spacer(Modifier.height(8.dp))
+
         DangerButton(
             title = "شرایط استفاده",
             subtitle = "قوانین و شرایط استفاده از اپ",
             color = AccentBlue,
             onClick = onShowTerms
         )
+
         Spacer(Modifier.height(20.dp))
+
         SectionTitle("🗄️ داده‌ها")
+
         DangerButton(
             title = "پاک کردن تاریخچه",
             subtitle = "همه تحلیل‌های ذخیره‌شده حذف می‌شوند",
             color = AccentYellow,
             onClick = onClearHistory
         )
+
         Spacer(Modifier.height(8.dp))
+
         DangerButton(
             title = "نمایش مجدد سلب مسئولیت",
             subtitle = "در اجرای بعدی صفحه شرایط نمایش داده می‌شود",
             color = AccentYellow,
             onClick = onResetDisclaimer
         )
+
         Spacer(Modifier.height(8.dp))
+
         DangerButton(
             title = "نمایش مجدد راهنما",
             subtitle = "در اجرای بعدی صفحه راهنما نمایش داده می‌شود",
             color = AccentYellow,
             onClick = onResetTutorial
         )
+
         Spacer(Modifier.height(20.dp))
+
         SectionTitle("ℹ️ درباره")
+
         InfoCard(
             title = "چارت‌یار",
             lines = listOf(
@@ -135,6 +168,7 @@ fun SettingsScreen(
                 "بدون توصیه مالی — فقط کمک به تصمیم‌گیری"
             )
         )
+
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -190,6 +224,7 @@ private fun SettingSwitch(
 private fun TimeframeDropdown(current: String, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val timeframes = listOf("1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M")
+
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
@@ -239,7 +274,11 @@ private fun TimeframeDropdown(current: String, onSelect: (String) -> Unit) {
 
 @Composable
 private fun ThemeSelector(current: String, onSelect: (String) -> Unit) {
-    val themes = listOf("dark" to "دارک (پیش‌فرض)", "light" to "روشن")
+    val themes = listOf(
+        "dark" to "دارک (پیش‌فرض)",
+        "light" to "روشن"
+    )
+
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
@@ -264,7 +303,53 @@ private fun ThemeSelector(current: String, onSelect: (String) -> Unit) {
                             unselectedColor = TextSecondary
                         )
                     )
-                    Text(label, color = TextPrimary, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        label,
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LanguageSelector(current: String, onSelect: (String) -> Unit) {
+    val languages = listOf(
+        "fa" to "فارسی",
+        "en" to "English"
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Text("زبان برنامه", color = TextPrimary, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            languages.forEach { (key, label) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelect(key) }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = current == key,
+                        onClick = { onSelect(key) },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = AccentGreen,
+                            unselectedColor = TextSecondary
+                        )
+                    )
+                    Text(
+                        label,
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
             }
         }
