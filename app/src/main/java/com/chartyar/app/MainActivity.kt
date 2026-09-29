@@ -91,6 +91,7 @@ class MainActivity : ComponentActivity() {
                 var themeSetting by remember { mutableStateOf("dark") }
                 var languageSetting by remember { mutableStateOf("fa") }
                 var tutorialSeen by remember { mutableStateOf(true) }
+                var isOnline by remember { mutableStateOf(true) }
 
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission()
@@ -110,7 +111,13 @@ class MainActivity : ComponentActivity() {
                     languageSetting = prefs.language.first()
                     tutorialSeen = prefs.isTutorialSeen.first()
                     selectedTimeframe = defaultTimeframe
-                    AlertChecker.checkAllAlerts(applicationContext, db, cache)
+
+                    // چک آنلاین بودن
+                    isOnline = ConnectivityChecker.isOnline(applicationContext)
+
+                    if (isOnline) {
+                        AlertChecker.checkAllAlerts(applicationContext, db, cache)
+                    }
                 }
 
                 LaunchedEffect(currentScreen) {
@@ -177,45 +184,57 @@ class MainActivity : ComponentActivity() {
                             onBack = { currentScreen = "upload" },
                             onSymbolSelected = { symbol ->
                                 analyzeProgress = 0f
-                                statusMessage = "در حال دریافت داده..."
+                                statusMessage = "در حال پردازش..."
                                 errorMessage = ""
                                 currentScreen = "analyzing"
 
                                 lifecycleScope.launch {
-                                    analyzeProgress = 0.3f
-                                    statusMessage = "بررسی منابع داده..."
+                                    // چک آنلاین بودن
+                                    val online = ConnectivityChecker.isOnline(applicationContext)
+                                    isOnline = online
 
-                                    val dataResult = MarketDataService.getCandles(
-                                        symbol = symbol,
-                                        timeframe = selectedTimeframe,
-                                        cache = cache
-                                    )
-
-                                    val sourceName = MarketDataService.sourceLabel(dataResult.source)
-
-                                    if (dataResult.candles != null && dataResult.candles.size >= 20) {
-                                        analyzeProgress = 0.7f
-                                        statusMessage = "داده از $sourceName"
-                                        delay(300)
-                                        analyzeProgress = 0.9f
-                                        statusMessage = "اجرای تحلیل..."
-                                        val result = withContext(Dispatchers.Default) {
-                                            SignalEngine.analyze(dataResult.candles, selectedTimeframe)
-                                        }
-                                        analyzeProgress = 1f
+                                    if (online) {
+                                        analyzeProgress = 0.3f
+                                        statusMessage = "بررسی منابع داده..."
                                         delay(200)
-                                        analysisResult = result
-                                        if (result != null) {
-                                            if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
-                                            currentScreen = "result"
-                                        } else {
-                                            errorMessage = NetworkError.DATA_EMPTY.message
-                                            currentScreen = "error"
+
+                                        val dataResult = MarketDataService.getCandles(
+                                            symbol = symbol,
+                                            timeframe = selectedTimeframe,
+                                            cache = cache
+                                        )
+
+                                        val sourceName = MarketDataService.sourceLabel(dataResult.source)
+
+                                        if (dataResult.candles != null && dataResult.candles.size >= 20) {
+                                            analyzeProgress = 0.7f
+                                            statusMessage = "داده از $sourceName"
+                                            delay(300)
+                                            analyzeProgress = 0.9f
+                                            statusMessage = "اجرای تحلیل..."
+                                            val result = withContext(Dispatchers.Default) {
+                                                SignalEngine.analyze(dataResult.candles, selectedTimeframe)
+                                            }
+                                            analyzeProgress = 1f
+                                            delay(200)
+                                            analysisResult = result
+                                            if (result != null) {
+                                                if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                                currentScreen = "result"
+                                            } else {
+                                                errorMessage = NetworkError.DATA_EMPTY.message
+                                                currentScreen = "error"
+                                            }
+                                            return@launch
                                         }
-                                        return@launch
                                     }
 
-                                    statusMessage = "پردازش تصویر..."
+                                    // Fallback: پردازش تصویر (آفلاین)
+                                    statusMessage = if (!online) {
+                                        "حالت آفلاین — پردازش تصویر..."
+                                    } else {
+                                        "منابع داده در دسترس نیستن. پردازش تصویر..."
+                                    }
                                     analyzeProgress = 0.3f
                                     delay(300)
                                     val uri2 = pendingUri
@@ -400,16 +419,25 @@ class MainActivity : ComponentActivity() {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier.padding(32.dp)
                             ) {
-                                Text("⚠️", style = MaterialTheme.typography.headlineLarge)
+                                Text(
+                                    if (!isOnline) "📶" else "⚠️",
+                                    style = MaterialTheme.typography.headlineLarge
+                                )
                                 Spacer(Modifier.height(16.dp))
                                 Text(
-                                    "خطا",
+                                    if (!isOnline) "حالت آفلاین" else "خطا",
                                     color = TextPrimary,
                                     style = MaterialTheme.typography.headlineMedium
                                 )
                                 Spacer(Modifier.height(16.dp))
                                 Text(
-                                    errorMessage.ifEmpty { "لطفاً دوباره تلاش کنید." },
+                                    errorMessage.ifEmpty {
+                                        if (!isOnline) {
+                                            "اتصال اینترنت برقرار نیست. برای تحلیل دقیق، اینترنت را روشن کنید."
+                                        } else {
+                                            "لطفاً دوباره تلاش کنید."
+                                        }
+                                    },
                                     color = TextSecondary,
                                     textAlign = TextAlign.Center
                                 )
@@ -434,19 +462,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * اعمال زبان روی اپ
-     */
     private fun applyLanguage(langCode: String) {
         val locale = Locale(langCode)
         Locale.setDefault(locale)
-
         val config = Configuration(resources.configuration)
         config.setLocale(locale)
-
         resources.updateConfiguration(config, resources.displayMetrics)
-
-        // Recreate activity to apply changes
         recreate()
     }
 
