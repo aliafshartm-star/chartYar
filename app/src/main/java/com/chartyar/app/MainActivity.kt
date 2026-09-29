@@ -66,8 +66,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeFlow = remember { prefs.theme }
             val currentTheme by themeFlow.collectAsState(initial = "dark")
-            val languageFlow = remember { prefs.language }
-            val currentLanguage by languageFlow.collectAsState(initial = "fa")
             val isDark = currentTheme == "dark"
 
             ChartYarTheme(isDark = isDark) {
@@ -112,7 +110,6 @@ class MainActivity : ComponentActivity() {
                     tutorialSeen = prefs.isTutorialSeen.first()
                     selectedTimeframe = defaultTimeframe
 
-                    // چک آنلاین بودن
                     isOnline = ConnectivityChecker.isOnline(applicationContext)
 
                     if (isOnline) {
@@ -165,6 +162,9 @@ class MainActivity : ComponentActivity() {
                     currentScreen == "terms" -> TermsScreen(
                         onBack = { currentScreen = "settings" }
                     )
+                    currentScreen == "glossary" -> GlossaryScreen(
+                        onBack = { currentScreen = "settings" }
+                    )
                     else -> when (currentScreen) {
                         "home" -> HomeScreen(
                             onUploadClick = { currentScreen = "upload" },
@@ -189,7 +189,6 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "analyzing"
 
                                 lifecycleScope.launch {
-                                    // چک آنلاین بودن
                                     val online = ConnectivityChecker.isOnline(applicationContext)
                                     isOnline = online
 
@@ -229,7 +228,6 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
 
-                                    // Fallback: پردازش تصویر (آفلاین)
                                     statusMessage = if (!online) {
                                         "حالت آفلاین — پردازش تصویر..."
                                     } else {
@@ -378,6 +376,7 @@ class MainActivity : ComponentActivity() {
                             language = languageSetting,
                             onBack = { currentScreen = "home" },
                             onShowTutorial = { currentScreen = "tutorial" },
+                            onShowGlossary = { currentScreen = "glossary" },
                             onShowPrivacy = { currentScreen = "privacy" },
                             onShowTerms = { currentScreen = "terms" },
                             onAutoSaveChange = { v -> autoSaveHistory = v; lifecycleScope.launch { prefs.setAutoSaveHistory(v) } },
