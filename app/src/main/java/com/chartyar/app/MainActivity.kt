@@ -17,8 +17,10 @@ import androidx.lifecycle.lifecycleScope
 import com.chartyar.app.analysis.*
 import com.chartyar.app.analysis.ImageProcessor.CandlePixel
 import com.chartyar.app.data.AnalysisHistory
+import com.chartyar.app.data.AnalyticsEvents
 import com.chartyar.app.data.AppDatabase
 import com.chartyar.app.data.CacheManager
+import com.chartyar.app.data.LocalAnalytics
 import com.chartyar.app.data.MarketDataService
 import com.chartyar.app.data.NetworkError
 import com.chartyar.app.data.PrefsManager
@@ -57,6 +59,10 @@ class MainActivity : ComponentActivity() {
         prefs = PrefsManager(applicationContext)
         db = AppDatabase.get(applicationContext)
         cache = CacheManager(applicationContext)
+
+        // ثبت رویداد باز شدن اپ
+        LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.APP_OPEN)
+
         setContent {
             val themeFlow = remember { prefs.theme }
             val currentTheme by themeFlow.collectAsState(initial = "dark")
@@ -89,7 +95,13 @@ class MainActivity : ComponentActivity() {
                     selectedTimeframe = defaultTimeframe
                 }
                 LaunchedEffect(currentScreen) {
-                    if (currentScreen == "history") historyItems = db.historyDao().getAll().first()
+                    if (currentScreen == "history") {
+                        historyItems = db.historyDao().getAll().first()
+                        LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.HISTORY_VIEWED)
+                    }
+                    if (currentScreen == "settings") {
+                        LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.SETTINGS_OPENED)
+                    }
                 }
                 LaunchedEffect(Unit) {
                     val startTime = System.currentTimeMillis()
@@ -117,6 +129,7 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch {
                                 prefs.setTutorialSeen(true)
                                 tutorialSeen = true
+                                LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.TUTORIAL_COMPLETED)
                                 currentScreen = "home"
                             }
                         }
@@ -138,6 +151,11 @@ class MainActivity : ComponentActivity() {
                             onAnalyze = { uri, tf ->
                                 pendingUri = uri
                                 selectedTimeframe = tf
+                                LocalAnalytics.logEvent(
+                                    applicationContext,
+                                    AnalyticsEvents.TIMEFRAME_SELECTED,
+                                    mapOf("timeframe" to tf)
+                                )
                                 currentScreen = "symbol"
                             }
                         )
@@ -148,6 +166,13 @@ class MainActivity : ComponentActivity() {
                                 statusMessage = "در حال دریافت داده..."
                                 errorMessage = ""
                                 currentScreen = "analyzing"
+
+                                LocalAnalytics.logEvent(
+                                    applicationContext,
+                                    AnalyticsEvents.ANALYSIS_STARTED,
+                                    mapOf("symbol" to symbol, "timeframe" to selectedTimeframe)
+                                )
+
                                 lifecycleScope.launch {
                                     analyzeProgress = 0.3f
                                     statusMessage = "بررسی منابع داده..."
@@ -174,6 +199,11 @@ class MainActivity : ComponentActivity() {
                                         analysisResult = result
                                         if (result != null) {
                                             if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                            LocalAnalytics.logEvent(
+                                                applicationContext,
+                                                AnalyticsEvents.ANALYSIS_COMPLETED,
+                                                mapOf("symbol" to symbol, "source" to sourceName)
+                                            )
                                             currentScreen = "result"
                                         } else {
                                             errorMessage = NetworkError.DATA_EMPTY.message
@@ -182,7 +212,6 @@ class MainActivity : ComponentActivity() {
                                         return@launch
                                     }
 
-                                    // Fallback: پردازش تصویر
                                     statusMessage = "منابع داده در دسترس نیستن. پردازش تصویر..."
                                     analyzeProgress = 0.3f
                                     delay(300)
@@ -248,9 +277,18 @@ class MainActivity : ComponentActivity() {
                                     analysisResult = result
                                     if (result != null) {
                                         if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                        LocalAnalytics.logEvent(
+                                            applicationContext,
+                                            AnalyticsEvents.ANALYSIS_COMPLETED,
+                                            mapOf("source" to "OCR")
+                                        )
                                         currentScreen = "result"
                                     } else {
                                         errorMessage = "تحلیل با خطا مواجه شد. لطفاً دوباره تلاش کنید."
+                                        LocalAnalytics.logEvent(
+                                            applicationContext,
+                                            AnalyticsEvents.ANALYSIS_FAILED
+                                        )
                                         currentScreen = "error"
                                     }
                                 }
@@ -296,7 +334,15 @@ class MainActivity : ComponentActivity() {
                             onAutoSaveChange = { v -> autoSaveHistory = v; lifecycleScope.launch { prefs.setAutoSaveHistory(v) } },
                             onShowWarningsChange = { v -> showWarnings = v; lifecycleScope.launch { prefs.setShowWarnings(v) } },
                             onDefaultTimeframeChange = { v -> defaultTimeframe = v; lifecycleScope.launch { prefs.setDefaultTimeframe(v) } },
-                            onThemeChange = { v -> themeSetting = v; lifecycleScope.launch { prefs.setTheme(v) } },
+                            onThemeChange = { v ->
+                                themeSetting = v
+                                lifecycleScope.launch { prefs.setTheme(v) }
+                                LocalAnalytics.logEvent(
+                                    applicationContext,
+                                    AnalyticsEvents.THEME_CHANGED,
+                                    mapOf("theme" to v)
+                                )
+                            },
                             onResetDisclaimer = {
                                 lifecycleScope.launch {
                                     prefs.resetDisclaimer()
