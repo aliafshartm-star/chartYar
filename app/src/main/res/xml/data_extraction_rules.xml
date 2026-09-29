@@ -3,8 +3,6 @@
     <cloud-backup>
         <include domain="sharedpref" path="chartyar_prefs.xml"/>
         <include domain="database" path="chartyar_db"/>
-        <exclude domain="cache" path="."/>
-        <exclude domain="file" path="tmp/"/>
     </cloud-backup>
     <device-transfer>
         <include domain="sharedpref" path="chartyar_prefs.xml"/>
