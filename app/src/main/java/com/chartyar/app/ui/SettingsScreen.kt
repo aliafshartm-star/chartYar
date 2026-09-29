@@ -27,6 +27,7 @@ fun SettingsScreen(
     language: String,
     onBack: () -> Unit,
     onShowTutorial: () -> Unit,
+    onShowGlossary: () -> Unit,
     onShowPrivacy: () -> Unit,
     onShowTerms: () -> Unit,
     onAutoSaveChange: (Boolean) -> Unit,
@@ -97,13 +98,22 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        SectionTitle("📚 راهنما")
+        SectionTitle("📚 راهنما و آموزش")
 
         DangerButton(
-            title = "مشاهده راهنمای استفاده",
+            title = "راهنمای استفاده",
             subtitle = "آموزش ۴ مرحله‌ای چطور از اپ استفاده کنی",
             color = AccentBlue,
             onClick = onShowTutorial
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        DangerButton(
+            title = "دیکشنری اصطلاحات",
+            subtitle = "توضیح اصطلاحات تریدینگ (RSI, MACD, الگوها, ...)",
+            color = AccentGreen,
+            onClick = onShowGlossary
         )
 
         Spacer(Modifier.height(20.dp))
@@ -303,11 +313,7 @@ private fun ThemeSelector(current: String, onSelect: (String) -> Unit) {
                             unselectedColor = TextSecondary
                         )
                     )
-                    Text(
-                        label,
-                        color = TextPrimary,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Text(label, color = TextPrimary, style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
@@ -345,11 +351,7 @@ private fun LanguageSelector(current: String, onSelect: (String) -> Unit) {
                             unselectedColor = TextSecondary
                         )
                     )
-                    Text(
-                        label,
-                        color = TextPrimary,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Text(label, color = TextPrimary, style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
