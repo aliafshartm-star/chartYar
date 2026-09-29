@@ -28,6 +28,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onShowTutorial: () -> Unit,
     onShowGlossary: () -> Unit,
+    onShowEducation: () -> Unit,
     onShowPrivacy: () -> Unit,
     onShowTerms: () -> Unit,
     onAutoSaveChange: (Boolean) -> Unit,
@@ -114,6 +115,15 @@ fun SettingsScreen(
             subtitle = "توضیح اصطلاحات تریدینگ (RSI, MACD, الگوها, ...)",
             color = AccentGreen,
             onClick = onShowGlossary
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        DangerButton(
+            title = "آموزش تحلیل",
+            subtitle = "۷ درس کوتاه برای یادگیری تحلیل تکنیکال",
+            color = AccentYellow,
+            onClick = onShowEducation
         )
 
         Spacer(Modifier.height(20.dp))
