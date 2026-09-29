@@ -165,6 +165,9 @@ class MainActivity : ComponentActivity() {
                     currentScreen == "glossary" -> GlossaryScreen(
                         onBack = { currentScreen = "settings" }
                     )
+                    currentScreen == "education" -> EducationScreen(
+                        onBack = { currentScreen = "settings" }
+                    )
                     else -> when (currentScreen) {
                         "home" -> HomeScreen(
                             onUploadClick = { currentScreen = "upload" },
@@ -377,6 +380,7 @@ class MainActivity : ComponentActivity() {
                             onBack = { currentScreen = "home" },
                             onShowTutorial = { currentScreen = "tutorial" },
                             onShowGlossary = { currentScreen = "glossary" },
+                            onShowEducation = { currentScreen = "education" },
                             onShowPrivacy = { currentScreen = "privacy" },
                             onShowTerms = { currentScreen = "terms" },
                             onAutoSaveChange = { v -> autoSaveHistory = v; lifecycleScope.launch { prefs.setAutoSaveHistory(v) } },
