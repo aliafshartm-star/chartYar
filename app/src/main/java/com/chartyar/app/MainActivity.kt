@@ -1,6 +1,7 @@
 package com.chartyar.app
 
 import android.Manifest
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
@@ -29,6 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 data class PreparationResult(
     val success: Boolean,
@@ -58,16 +60,17 @@ class MainActivity : ComponentActivity() {
         db = AppDatabase.get(applicationContext)
         cache = CacheManager(applicationContext)
 
-        // ساخت Notification Channel
         NotificationHelper.createChannel(applicationContext)
-
-        // ثبت رویداد باز شدن اپ
         LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.APP_OPEN)
 
         setContent {
             val themeFlow = remember { prefs.theme }
             val currentTheme by themeFlow.collectAsState(initial = "dark")
-            ChartYarTheme(isDark = currentTheme == "dark") {
+            val languageFlow = remember { prefs.language }
+            val currentLanguage by languageFlow.collectAsState(initial = "fa")
+            val isDark = currentTheme == "dark"
+
+            ChartYarTheme(isDark = isDark) {
                 var isLoading by remember { mutableStateOf(true) }
                 var disclaimerAccepted by remember { mutableStateOf(false) }
                 var currentScreen by remember { mutableStateOf("home") }
@@ -86,12 +89,12 @@ class MainActivity : ComponentActivity() {
                 var showWarnings by remember { mutableStateOf(true) }
                 var defaultTimeframe by remember { mutableStateOf("4H") }
                 var themeSetting by remember { mutableStateOf("dark") }
+                var languageSetting by remember { mutableStateOf("fa") }
                 var tutorialSeen by remember { mutableStateOf(true) }
 
-                // درخواست مجوز نوتیفیکیشن (Android 13+)
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission()
-                ) { /* نتیجه مهم نیست */ }
+                ) { }
 
                 LaunchedEffect(Unit) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -104,23 +107,18 @@ class MainActivity : ComponentActivity() {
                     showWarnings = prefs.showWarnings.first()
                     defaultTimeframe = prefs.defaultTimeframe.first()
                     themeSetting = prefs.theme.first()
+                    languageSetting = prefs.language.first()
                     tutorialSeen = prefs.isTutorialSeen.first()
                     selectedTimeframe = defaultTimeframe
-
-                    // چک هشدارها هنگام باز شدن اپ
                     AlertChecker.checkAllAlerts(applicationContext, db, cache)
                 }
 
                 LaunchedEffect(currentScreen) {
                     if (currentScreen == "history") {
                         historyItems = db.historyDao().getAll().first()
-                        LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.HISTORY_VIEWED)
                     }
                     if (currentScreen == "alerts") {
                         alertItems = db.alertDao().getAll().first()
-                    }
-                    if (currentScreen == "settings") {
-                        LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.SETTINGS_OPENED)
                     }
                 }
 
@@ -150,7 +148,6 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch {
                                 prefs.setTutorialSeen(true)
                                 tutorialSeen = true
-                                LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.TUTORIAL_COMPLETED)
                                 currentScreen = "home"
                             }
                         }
@@ -173,11 +170,6 @@ class MainActivity : ComponentActivity() {
                             onAnalyze = { uri, tf ->
                                 pendingUri = uri
                                 selectedTimeframe = tf
-                                LocalAnalytics.logEvent(
-                                    applicationContext,
-                                    AnalyticsEvents.TIMEFRAME_SELECTED,
-                                    mapOf("timeframe" to tf)
-                                )
                                 currentScreen = "symbol"
                             }
                         )
@@ -188,12 +180,6 @@ class MainActivity : ComponentActivity() {
                                 statusMessage = "در حال دریافت داده..."
                                 errorMessage = ""
                                 currentScreen = "analyzing"
-
-                                LocalAnalytics.logEvent(
-                                    applicationContext,
-                                    AnalyticsEvents.ANALYSIS_STARTED,
-                                    mapOf("symbol" to symbol, "timeframe" to selectedTimeframe)
-                                )
 
                                 lifecycleScope.launch {
                                     analyzeProgress = 0.3f
@@ -209,7 +195,7 @@ class MainActivity : ComponentActivity() {
 
                                     if (dataResult.candles != null && dataResult.candles.size >= 20) {
                                         analyzeProgress = 0.7f
-                                        statusMessage = "داده از $sourceName دریافت شد"
+                                        statusMessage = "داده از $sourceName"
                                         delay(300)
                                         analyzeProgress = 0.9f
                                         statusMessage = "اجرای تحلیل..."
@@ -221,11 +207,6 @@ class MainActivity : ComponentActivity() {
                                         analysisResult = result
                                         if (result != null) {
                                             if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
-                                            LocalAnalytics.logEvent(
-                                                applicationContext,
-                                                AnalyticsEvents.ANALYSIS_COMPLETED,
-                                                mapOf("symbol" to symbol, "source" to sourceName)
-                                            )
                                             currentScreen = "result"
                                         } else {
                                             errorMessage = NetworkError.DATA_EMPTY.message
@@ -234,7 +215,7 @@ class MainActivity : ComponentActivity() {
                                         return@launch
                                     }
 
-                                    statusMessage = "منابع داده در دسترس نیستن. پردازش تصویر..."
+                                    statusMessage = "پردازش تصویر..."
                                     analyzeProgress = 0.3f
                                     delay(300)
                                     val uri2 = pendingUri
@@ -263,7 +244,7 @@ class MainActivity : ComponentActivity() {
                                         pendingChartBottom = prep.chartBottom
                                         currentScreen = "calibration"
                                     } else {
-                                        errorMessage = "نتوانستیم چارت را تشخیص دهیم. لطفاً تصویر واضح‌تری انتخاب کنید."
+                                        errorMessage = "نتوانستیم چارت را تشخیص دهیم."
                                         currentScreen = "error"
                                     }
                                 }
@@ -299,15 +280,9 @@ class MainActivity : ComponentActivity() {
                                     analysisResult = result
                                     if (result != null) {
                                         if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
-                                        LocalAnalytics.logEvent(
-                                            applicationContext,
-                                            AnalyticsEvents.ANALYSIS_COMPLETED,
-                                            mapOf("source" to "OCR")
-                                        )
                                         currentScreen = "result"
                                     } else {
-                                        errorMessage = "تحلیل با خطا مواجه شد. لطفاً دوباره تلاش کنید."
-                                        LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.ANALYSIS_FAILED)
+                                        errorMessage = "تحلیل با خطا مواجه شد."
                                         currentScreen = "error"
                                     }
                                 }
@@ -381,6 +356,7 @@ class MainActivity : ComponentActivity() {
                             showWarnings = showWarnings,
                             defaultTimeframe = defaultTimeframe,
                             theme = themeSetting,
+                            language = languageSetting,
                             onBack = { currentScreen = "home" },
                             onShowTutorial = { currentScreen = "tutorial" },
                             onShowPrivacy = { currentScreen = "privacy" },
@@ -388,14 +364,13 @@ class MainActivity : ComponentActivity() {
                             onAutoSaveChange = { v -> autoSaveHistory = v; lifecycleScope.launch { prefs.setAutoSaveHistory(v) } },
                             onShowWarningsChange = { v -> showWarnings = v; lifecycleScope.launch { prefs.setShowWarnings(v) } },
                             onDefaultTimeframeChange = { v -> defaultTimeframe = v; lifecycleScope.launch { prefs.setDefaultTimeframe(v) } },
-                            onThemeChange = { v ->
-                                themeSetting = v
-                                lifecycleScope.launch { prefs.setTheme(v) }
-                                LocalAnalytics.logEvent(
-                                    applicationContext,
-                                    AnalyticsEvents.THEME_CHANGED,
-                                    mapOf("theme" to v)
-                                )
+                            onThemeChange = { v -> themeSetting = v; lifecycleScope.launch { prefs.setTheme(v) } },
+                            onLanguageChange = { v ->
+                                languageSetting = v
+                                lifecycleScope.launch {
+                                    prefs.setLanguage(v)
+                                    applyLanguage(v)
+                                }
                             },
                             onResetDisclaimer = {
                                 lifecycleScope.launch {
@@ -457,6 +432,22 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * اعمال زبان روی اپ
+     */
+    private fun applyLanguage(langCode: String) {
+        val locale = Locale(langCode)
+        Locale.setDefault(locale)
+
+        val config = Configuration(resources.configuration)
+        config.setLocale(locale)
+
+        resources.updateConfiguration(config, resources.displayMetrics)
+
+        // Recreate activity to apply changes
+        recreate()
     }
 
     private suspend fun prepareAnalysis(uri: Uri): PreparationResult = withContext(Dispatchers.Default) {
@@ -526,7 +517,7 @@ class MainActivity : ComponentActivity() {
                 )
             )
         } catch (e: Exception) {
-            // silent fail
+            // silent
         }
     }
 }
