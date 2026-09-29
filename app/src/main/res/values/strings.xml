@@ -1,70 +1,46 @@
 <resources>
     <string name="app_name">چارت‌یار</string>
     <string name="app_tagline">تحلیل حرفه‌ای چارت</string>
-
-    <!-- Splash -->
     <string name="loading">در حال بارگذاری...</string>
-
-    <!-- Disclaimer -->
     <string name="disclaimer_title">سلب مسئولیت</string>
     <string name="disclaimer_checkbox">شرایط را خوانده و می‌پذیرم</string>
     <string name="disclaimer_decline">رد و خروج</string>
     <string name="disclaimer_accept">قبول و ورود</string>
-
-    <!-- Home -->
     <string name="home_start_analysis">شروع تحلیل</string>
     <string name="home_select_chart">اسکرین‌شات چارت خود را از گالری انتخاب کنید</string>
     <string name="home_choose_image">انتخاب تصویر چارت</string>
     <string name="home_history">تاریخچه تحلیل‌ها</string>
     <string name="home_footer">این اپ توصیه مالی نیست | تحلیل صرفاً جهت کمک به تصمیم‌گیری</string>
-
-    <!-- Upload -->
     <string name="upload_title">آپلود چارت</string>
     <string name="upload_from_gallery">گالری</string>
     <string name="upload_from_camera">دوربین</string>
     <string name="upload_timeframe">تایم‌فریم:</string>
     <string name="upload_analyze">تحلیل کن</string>
-
-    <!-- Symbol Selector -->
     <string name="symbol_title">انتخاب ارز</string>
-    <string name="symbol_hint">ارز چارت خود را انتخاب کنید. داده واقعی از Binance گرفته می‌شود.</string>
+    <string name="symbol_hint">ارز چارت خود را انتخاب کنید.</string>
     <string name="symbol_search">جستجو...</string>
     <string name="symbol_not_found">ارزی پیدا نشد</string>
-
-    <!-- Progress -->
     <string name="progress_title">در حال تحلیل چارت</string>
-
-    <!-- Calibration -->
     <string name="calibration_title">کالیبراسیون دستی</string>
     <string name="calibration_highest">بالاترین قیمت (سقف چارت)</string>
     <string name="calibration_lowest">پایین‌ترین قیمت (کف چارت)</string>
     <string name="calibration_confirm">تأیید و تحلیل</string>
-
-    <!-- Result -->
     <string name="result_title">نتیجه تحلیل</string>
     <string name="result_signal">سیگنال</string>
     <string name="result_confidence">اطمینان</string>
     <string name="result_trend">روند کلی</string>
     <string name="result_timeframe">تایم‌فریم</string>
     <string name="result_share">اشتراک‌گذاری تحلیل</string>
-
-    <!-- Signals -->
     <string name="signal_strong_buy">خرید قوی</string>
     <string name="signal_buy">خرید</string>
     <string name="signal_neutral">خنثی / انتظار</string>
     <string name="signal_sell">فروش</string>
     <string name="signal_strong_sell">فروش قوی</string>
-
-    <!-- Trends -->
     <string name="trend_uptrend">صعودی</string>
     <string name="trend_downtrend">نزولی</string>
     <string name="trend_range">رنج</string>
-
-    <!-- History -->
     <string name="history_title">تاریخچه تحلیل‌ها</string>
     <string name="history_empty">هنوز تحلیلی ذخیره نشده</string>
-
-    <!-- Alerts -->
     <string name="alerts_title">هشدار قیمت</string>
     <string name="alerts_add">افزودن هشدار</string>
     <string name="alerts_empty">هنوز هشداری نساختی</string>
@@ -77,8 +53,6 @@
     <string name="alerts_note">یادداشت (اختیاری)</string>
     <string name="alerts_create">ساخت</string>
     <string name="alerts_cancel">لغو</string>
-
-    <!-- Settings -->
     <string name="settings_title">تنظیمات</string>
     <string name="settings_analysis">⚙️ تحلیل</string>
     <string name="settings_appearance">🎨 ظاهر</string>
@@ -101,8 +75,6 @@
     <string name="settings_clear_history">پاک کردن تاریخچه</string>
     <string name="settings_reset_disclaimer">نمایش مجدد سلب مسئولیت</string>
     <string name="settings_reset_tutorial">نمایش مجدد راهنما</string>
-
-    <!-- Tutorial -->
     <string name="tutorial_title">راهنمای استفاده</string>
     <string name="tutorial_welcome">خوش آمدی 👋</string>
     <string name="tutorial_subtitle">بذار توی ۴ قدم سریع، با چارت‌یار آشنا بشی</string>
@@ -110,26 +82,16 @@
     <string name="tutorial_prev">قبلی</string>
     <string name="tutorial_start">شروع کن!</string>
     <string name="tutorial_skip">رد کردن</string>
-
-    <!-- Privacy -->
     <string name="privacy_title">حریم خصوصی</string>
-
-    <!-- Terms -->
     <string name="terms_title">شرایط استفاده</string>
-
-    <!-- Error -->
     <string name="error_title">خطا</string>
     <string name="error_back_home">بازگشت به خانه</string>
     <string name="error_try_again">تلاش مجدد</string>
-
-    <!-- Buttons -->
     <string name="btn_back">بازگشت</string>
     <string name="btn_share">اشتراک‌گذاری</string>
     <string name="btn_save">ذخیره</string>
     <string name="btn_delete">حذف</string>
     <string name="btn_cancel">لغو</string>
-
-    <!-- Shortcuts -->
     <string name="shortcut_new_analysis">تحلیل جدید</string>
     <string name="shortcut_new_analysis_long">شروع یه تحلیل جدید</string>
     <string name="shortcut_alerts">هشدار قیمت</string>
