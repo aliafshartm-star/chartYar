@@ -19,6 +19,7 @@ import com.chartyar.app.analysis.ImageProcessor.CandlePixel
 import com.chartyar.app.data.AnalysisHistory
 import com.chartyar.app.data.AppDatabase
 import com.chartyar.app.data.BinanceApi
+import com.chartyar.app.data.CacheManager
 import com.chartyar.app.data.PrefsManager
 import com.chartyar.app.ui.*
 import com.chartyar.app.ui.theme.*
@@ -43,6 +44,7 @@ data class PreparationResult(
 class MainActivity : ComponentActivity() {
     private lateinit var prefs: PrefsManager
     private lateinit var db: AppDatabase
+    private lateinit var cache: CacheManager
     private var pendingBitmap: Bitmap? = null
     private var pendingCandlePixels: List<CandlePixel>? = null
     private var pendingChartTop: Int = 0
@@ -53,6 +55,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         prefs = PrefsManager(applicationContext)
         db = AppDatabase.get(applicationContext)
+        cache = CacheManager(applicationContext)
         setContent {
             val themeFlow = remember { prefs.theme }
             val currentTheme by themeFlow.collectAsState(initial = "dark")
@@ -140,36 +143,66 @@ class MainActivity : ComponentActivity() {
                             onBack = { currentScreen = "upload" },
                             onSymbolSelected = { symbol ->
                                 analyzeProgress = 0f
-                                statusMessage = "در حال دریافت داده از Binance..."
+                                statusMessage = "در حال دریافت داده..."
                                 currentScreen = "analyzing"
                                 lifecycleScope.launch {
-                                    analyzeProgress = 0.2f
-                                    statusMessage = "اتصال به Binance..."
-                                    delay(300)
-                                    val online = BinanceApi.isOnline()
-                                    if (online) {
-                                        analyzeProgress = 0.5f
-                                        statusMessage = "دریافت کندل‌های $symbol..."
-                                        delay(200)
-                                        val candles = BinanceApi.fetchCandles(symbol, selectedTimeframe, 200)
+                                    // مرحله ۱: چک Cache
+                                    analyzeProgress = 0.15f
+                                    statusMessage = "بررسی Cache..."
+                                    delay(200)
+
+                                    val cachedCandles = cache.loadCandles(symbol, selectedTimeframe)
+
+                                    val candles: List<Candle>? = if (cachedCandles != null) {
+                                        analyzeProgress = 0.7f
+                                        statusMessage = "استفاده از داده‌های Cache..."
+                                        delay(300)
+                                        cachedCandles
+                                    } else {
+                                        // مرحله ۲: دریافت از Binance
+                                        analyzeProgress = 0.3f
+                                        statusMessage = "اتصال به Binance..."
+                                        delay(300)
+
+                                        val online = BinanceApi.isOnline()
+                                        if (online) {
+                                            analyzeProgress = 0.5f
+                                            statusMessage = "دریافت کندل‌های $symbol..."
+                                            delay(200)
+
+                                            val fetched = BinanceApi.fetchCandles(symbol, selectedTimeframe, 200)
+
+                                            if (fetched != null) {
+                                                // ذخیره توی Cache
+                                                cache.saveCandles(symbol, selectedTimeframe, fetched)
+                                            }
+                                            fetched
+                                        } else {
+                                            null
+                                        }
+                                    }
+
+                                    // مرحله ۳: تحلیل
+                                    if (candles != null && candles.size >= 20) {
                                         analyzeProgress = 0.8f
                                         statusMessage = "اجرای تحلیل..."
                                         delay(200)
-                                        if (candles != null && candles.size >= 20) {
-                                            val result = withContext(Dispatchers.Default) {
-                                                SignalEngine.analyze(candles, selectedTimeframe)
-                                            }
-                                            analyzeProgress = 1f
-                                            delay(200)
-                                            analysisResult = result
-                                            if (result != null) {
-                                                if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
-                                                currentScreen = "result"
-                                            } else currentScreen = "error"
-                                            return@launch
+
+                                        val result = withContext(Dispatchers.Default) {
+                                            SignalEngine.analyze(candles, selectedTimeframe)
                                         }
+                                        analyzeProgress = 1f
+                                        delay(200)
+                                        analysisResult = result
+                                        if (result != null) {
+                                            if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                            currentScreen = "result"
+                                        } else currentScreen = "error"
+                                        return@launch
                                     }
-                                    statusMessage = "Binance در دسترس نیست. پردازش تصویر..."
+
+                                    // مرحله ۴: Fallback به OCR
+                                    statusMessage = "پردازش تصویر..."
                                     analyzeProgress = 0.3f
                                     delay(300)
                                     val uri2 = pendingUri
@@ -388,7 +421,7 @@ class MainActivity : ComponentActivity() {
                 )
             )
         } catch (e: Exception) {
-            // silent fail — no log in release
+            // silent fail
         }
     }
 }
