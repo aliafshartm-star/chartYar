@@ -1,0 +1,131 @@
+<resources>
+    <string name="app_name">ChartYar</string>
+    <string name="app_tagline">Professional Chart Analysis</string>
+
+    <!-- Splash -->
+    <string name="loading">Loading...</string>
+
+    <!-- Disclaimer -->
+    <string name="disclaimer_title">Disclaimer</string>
+    <string name="disclaimer_checkbox">I have read and accept the terms</string>
+    <string name="disclaimer_decline">Decline &amp; Exit</string>
+    <string name="disclaimer_accept">Accept &amp; Enter</string>
+
+    <!-- Home -->
+    <string name="home_start_analysis">Start Analysis</string>
+    <string name="home_select_chart">Select your chart screenshot from gallery</string>
+    <string name="home_choose_image">Choose Chart Image</string>
+    <string name="home_history">Analysis History</string>
+    <string name="home_footer">This app is not financial advice | For decision support only</string>
+
+    <!-- Upload -->
+    <string name="upload_title">Upload Chart</string>
+    <string name="upload_from_gallery">Gallery</string>
+    <string name="upload_from_camera">Camera</string>
+    <string name="upload_timeframe">Timeframe:</string>
+    <string name="upload_analyze">Analyze</string>
+
+    <!-- Symbol Selector -->
+    <string name="symbol_title">Select Symbol</string>
+    <string name="symbol_hint">Choose your chart symbol. Real data from Binance.</string>
+    <string name="symbol_search">Search...</string>
+    <string name="symbol_not_found">No symbol found</string>
+
+    <!-- Progress -->
+    <string name="progress_title">Analyzing chart</string>
+
+    <!-- Calibration -->
+    <string name="calibration_title">Manual Calibration</string>
+    <string name="calibration_highest">Highest Price (Chart Top)</string>
+    <string name="calibration_lowest">Lowest Price (Chart Bottom)</string>
+    <string name="calibration_confirm">Confirm &amp; Analyze</string>
+
+    <!-- Result -->
+    <string name="result_title">Analysis Result</string>
+    <string name="result_signal">Signal</string>
+    <string name="result_confidence">Confidence</string>
+    <string name="result_trend">Overall Trend</string>
+    <string name="result_timeframe">Timeframe</string>
+    <string name="result_share">Share Analysis</string>
+
+    <!-- Signals -->
+    <string name="signal_strong_buy">Strong Buy</string>
+    <string name="signal_buy">Buy</string>
+    <string name="signal_neutral">Neutral / Wait</string>
+    <string name="signal_sell">Sell</string>
+    <string name="signal_strong_sell">Strong Sell</string>
+
+    <!-- Trends -->
+    <string name="trend_uptrend">Uptrend</string>
+    <string name="trend_downtrend">Downtrend</string>
+    <string name="trend_range">Range</string>
+
+    <!-- History -->
+    <string name="history_title">Analysis History</string>
+    <string name="history_empty">No analysis saved yet</string>
+
+    <!-- Alerts -->
+    <string name="alerts_title">Price Alert</string>
+    <string name="alerts_add">Add Alert</string>
+    <string name="alerts_empty">No alerts yet</string>
+    <string name="alerts_new">New Alert</string>
+    <string name="alerts_symbol">Symbol</string>
+    <string name="alerts_condition">Condition</string>
+    <string name="alerts_above">Above</string>
+    <string name="alerts_below">Below</string>
+    <string name="alerts_target_price">Target Price</string>
+    <string name="alerts_note">Note (optional)</string>
+    <string name="alerts_create">Create</string>
+    <string name="alerts_cancel">Cancel</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_analysis">⚙️ Analysis</string>
+    <string name="settings_appearance">🎨 Appearance</string>
+    <string name="settings_guide">📚 Guide</string>
+    <string name="settings_legal">📄 Legal</string>
+    <string name="settings_data">🗄️ Data</string>
+    <string name="settings_about">ℹ️ About</string>
+    <string name="settings_auto_save">Auto-save to history</string>
+    <string name="settings_show_warnings">Show warnings</string>
+    <string name="settings_default_timeframe">Default timeframe</string>
+    <string name="settings_theme">App Theme</string>
+    <string name="settings_theme_dark">Dark (Default)</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_language">App Language</string>
+    <string name="settings_language_fa">فارسی</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_show_tutorial">View Tutorial</string>
+    <string name="settings_privacy">Privacy Policy</string>
+    <string name="settings_terms">Terms of Use</string>
+    <string name="settings_clear_history">Clear History</string>
+    <string name="settings_reset_disclaimer">Show Disclaimer Again</string>
+    <string name="settings_reset_tutorial">Show Tutorial Again</string>
+
+    <!-- Tutorial -->
+    <string name="tutorial_title">Tutorial</string>
+    <string name="tutorial_welcome">Welcome 👋</string>
+    <string name="tutorial_subtitle">Let\'s get you started in 4 quick steps</string>
+    <string name="tutorial_next">Next</string>
+    <string name="tutorial_prev">Previous</string>
+    <string name="tutorial_start">Get Started!</string>
+    <string name="tutorial_skip">Skip</string>
+
+    <!-- Privacy -->
+    <string name="privacy_title">Privacy Policy</string>
+
+    <!-- Terms -->
+    <string name="terms_title">Terms of Use</string>
+
+    <!-- Error -->
+    <string name="error_title">Error</string>
+    <string name="error_back_home">Back to Home</string>
+    <string name="error_try_again">Try Again</string>
+
+    <!-- Buttons -->
+    <string name="btn_back">Back</string>
+    <string name="btn_share">Share</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_delete">Delete</string>
+    <string name="btn_cancel">Cancel</string>
+</resources>
