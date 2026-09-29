@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="new_analysis"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_new_analysis"
+        android:shortcutLongLabel="@string/shortcut_new_analysis_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.chartyar.app"
+            android:targetClass="com.chartyar.app.MainActivity">
+            <extra
+                android:name="shortcut_action"
+                android:value="new_analysis" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="alerts"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_alerts"
+        android:shortcutLongLabel="@string/shortcut_alerts_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.chartyar.app"
+            android:targetClass="com.chartyar.app.MainActivity">
+            <extra
+                android:name="shortcut_action"
+                android:value="alerts" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="glossary"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_glossary"
+        android:shortcutLongLabel="@string/shortcut_glossary_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.chartyar.app"
+            android:targetClass="com.chartyar.app.MainActivity">
+            <extra
+                android:name="shortcut_action"
+                android:value="glossary" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+</shortcuts>
