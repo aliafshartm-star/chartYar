@@ -6,12 +6,18 @@ import kotlinx.coroutines.withContext
 
 /**
  * سرویس دریافت داده از چند منبع
- * اگه Binance کار نکرد، خودکار می‌ره سراغ CoinGecko
- * با Retry Logic برای تلاش مجدد خودکار
+ * زنجیره Fallback: Cache → Binance → CoinGecko → CoinPaprika → CryptoCompare
  */
 object MarketDataService {
 
-    enum class Source { BINANCE, COINGECKO, CACHE, NONE }
+    enum class Source {
+        BINANCE,
+        COINGECKO,
+        COINPAPRIKA,
+        CRYPTOCOMPARE,
+        CACHE,
+        NONE
+    }
 
     data class MarketDataResult(
         val candles: List<Candle>?,
@@ -19,10 +25,7 @@ object MarketDataService {
     )
 
     /**
-     * دریافت کندل‌ها با Fallback زنجیره‌ای + Retry
-     * ۱. Cache
-     * ۲. Binance (با ۲ بار Retry)
-     * ۳. CoinGecko (با ۲ بار Retry)
+     * دریافت کندل‌ها با Fallback زنجیره‌ای
      */
     suspend fun getCandles(
         symbol: String,
@@ -36,30 +39,56 @@ object MarketDataService {
             return@withContext MarketDataResult(cachedCandles, Source.CACHE)
         }
 
-        // مرحله ۲: تلاش برای Binance با Retry
+        // مرحله ۲: تلاش برای Binance
         try {
             val binanceOnline = BinanceApi.isOnline()
             if (binanceOnline) {
-                val binanceCandles = RetryHelper.withRetry(maxAttempts = 2) {
+                val candles = RetryHelper.withRetry(maxAttempts = 2) {
                     BinanceApi.fetchCandles(symbol, timeframe, 200)
                 }
-                if (binanceCandles != null && binanceCandles.size >= 20) {
-                    cache.saveCandles(symbol, timeframe, binanceCandles)
-                    return@withContext MarketDataResult(binanceCandles, Source.BINANCE)
+                if (candles != null && candles.size >= 20) {
+                    cache.saveCandles(symbol, timeframe, candles)
+                    return@withContext MarketDataResult(candles, Source.BINANCE)
                 }
             }
         } catch (e: Exception) {
-            // ادامه بده به منبع بعدی
+            // ادامه بده
         }
 
-        // مرحله ۳: تلاش برای CoinGecko با Retry
+        // مرحله ۳: تلاش برای CoinGecko
         try {
-            val geckoCandles = RetryHelper.withRetry(maxAttempts = 2) {
+            val candles = RetryHelper.withRetry(maxAttempts = 1) {
                 CoinGeckoApi.fetchCandles(symbol, timeframe)
             }
-            if (geckoCandles != null && geckoCandles.size >= 20) {
-                cache.saveCandles(symbol, timeframe, geckoCandles)
-                return@withContext MarketDataResult(geckoCandles, Source.COINGECKO)
+            if (candles != null && candles.size >= 20) {
+                cache.saveCandles(symbol, timeframe, candles)
+                return@withContext MarketDataResult(candles, Source.COINGECKO)
+            }
+        } catch (e: Exception) {
+            // ادامه بده
+        }
+
+        // مرحله ۴: تلاش برای CoinPaprika
+        try {
+            val candles = RetryHelper.withRetry(maxAttempts = 1) {
+                CoinPaprikaApi.fetchCandles(symbol, timeframe)
+            }
+            if (candles != null && candles.size >= 5) {
+                cache.saveCandles(symbol, timeframe, candles)
+                return@withContext MarketDataResult(candles, Source.COINPAPRIKA)
+            }
+        } catch (e: Exception) {
+            // ادامه بده
+        }
+
+        // مرحله ۵: تلاش برای CryptoCompare
+        try {
+            val candles = RetryHelper.withRetry(maxAttempts = 1) {
+                CryptoCompareApi.fetchCandles(symbol, timeframe)
+            }
+            if (candles != null && candles.size >= 20) {
+                cache.saveCandles(symbol, timeframe, candles)
+                return@withContext MarketDataResult(candles, Source.CRYPTOCOMPARE)
             }
         } catch (e: Exception) {
             // ادامه بده
@@ -76,6 +105,8 @@ object MarketDataService {
         return when (source) {
             Source.BINANCE -> "Binance"
             Source.COINGECKO -> "CoinGecko"
+            Source.COINPAPRIKA -> "CoinPaprika"
+            Source.CRYPTOCOMPARE -> "CryptoCompare"
             Source.CACHE -> "Cache محلی"
             Source.NONE -> "نامشخص"
         }
