@@ -20,6 +20,7 @@ import com.chartyar.app.data.AnalysisHistory
 import com.chartyar.app.data.AppDatabase
 import com.chartyar.app.data.CacheManager
 import com.chartyar.app.data.MarketDataService
+import com.chartyar.app.data.NetworkError
 import com.chartyar.app.data.PrefsManager
 import com.chartyar.app.ui.*
 import com.chartyar.app.ui.theme.*
@@ -67,6 +68,7 @@ class MainActivity : ComponentActivity() {
                 var analysisResult by remember { mutableStateOf<AnalysisResult?>(null) }
                 var statusMessage by remember { mutableStateOf("در حال پردازش...") }
                 var analyzeProgress by remember { mutableStateOf(0f) }
+                var errorMessage by remember { mutableStateOf("") }
                 var detectedHigh by remember { mutableStateOf<Double?>(null) }
                 var detectedLow by remember { mutableStateOf<Double?>(null) }
                 var detectedCurrentPrice by remember { mutableStateOf<Double?>(null) }
@@ -144,12 +146,12 @@ class MainActivity : ComponentActivity() {
                             onSymbolSelected = { symbol ->
                                 analyzeProgress = 0f
                                 statusMessage = "در حال دریافت داده..."
+                                errorMessage = ""
                                 currentScreen = "analyzing"
                                 lifecycleScope.launch {
                                     analyzeProgress = 0.3f
                                     statusMessage = "بررسی منابع داده..."
 
-                                    // استفاده از MarketDataService با Fallback
                                     val dataResult = MarketDataService.getCandles(
                                         symbol = symbol,
                                         timeframe = selectedTimeframe,
@@ -162,10 +164,8 @@ class MainActivity : ComponentActivity() {
                                         analyzeProgress = 0.7f
                                         statusMessage = "داده از $sourceName دریافت شد"
                                         delay(300)
-
                                         analyzeProgress = 0.9f
                                         statusMessage = "اجرای تحلیل..."
-
                                         val result = withContext(Dispatchers.Default) {
                                             SignalEngine.analyze(dataResult.candles, selectedTimeframe)
                                         }
@@ -175,7 +175,10 @@ class MainActivity : ComponentActivity() {
                                         if (result != null) {
                                             if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
                                             currentScreen = "result"
-                                        } else currentScreen = "error"
+                                        } else {
+                                            errorMessage = NetworkError.DATA_EMPTY.message
+                                            currentScreen = "error"
+                                        }
                                         return@launch
                                     }
 
@@ -184,7 +187,11 @@ class MainActivity : ComponentActivity() {
                                     analyzeProgress = 0.3f
                                     delay(300)
                                     val uri2 = pendingUri
-                                    if (uri2 == null) { currentScreen = "error"; return@launch }
+                                    if (uri2 == null) {
+                                        errorMessage = NetworkError.NO_INTERNET.message
+                                        currentScreen = "error"
+                                        return@launch
+                                    }
                                     analyzeProgress = 0.5f
                                     statusMessage = "تشخیص کندل‌ها..."
                                     delay(200)
@@ -204,7 +211,10 @@ class MainActivity : ComponentActivity() {
                                         pendingChartTop = prep.chartTop
                                         pendingChartBottom = prep.chartBottom
                                         currentScreen = "calibration"
-                                    } else currentScreen = "error"
+                                    } else {
+                                        errorMessage = "نتوانستیم چارت را تشخیص دهیم. لطفاً تصویر واضح‌تری انتخاب کنید."
+                                        currentScreen = "error"
+                                    }
                                 }
                             }
                         )
@@ -239,7 +249,10 @@ class MainActivity : ComponentActivity() {
                                     if (result != null) {
                                         if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
                                         currentScreen = "result"
-                                    } else currentScreen = "error"
+                                    } else {
+                                        errorMessage = "تحلیل با خطا مواجه شد. لطفاً دوباره تلاش کنید."
+                                        currentScreen = "error"
+                                    }
                                 }
                             }
                         )
@@ -312,17 +325,31 @@ class MainActivity : ComponentActivity() {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier.padding(32.dp)
                             ) {
-                                Text("خطا در پردازش", color = TextPrimary, style = MaterialTheme.typography.headlineMedium)
+                                Text("⚠️", style = MaterialTheme.typography.headlineLarge)
                                 Spacer(Modifier.height(16.dp))
-                                Text("لطفاً دوباره تلاش کنید.", color = TextSecondary, textAlign = TextAlign.Center)
+                                Text(
+                                    "خطا",
+                                    color = TextPrimary,
+                                    style = MaterialTheme.typography.headlineMedium
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                Text(
+                                    errorMessage.ifEmpty { "لطفاً دوباره تلاش کنید." },
+                                    color = TextSecondary,
+                                    textAlign = TextAlign.Center
+                                )
                                 Spacer(Modifier.height(24.dp))
                                 Button(
                                     onClick = {
                                         pendingBitmap = null
                                         pendingCandlePixels = null
+                                        errorMessage = ""
                                         currentScreen = "home"
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = TextPrimary)
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = AccentBlue,
+                                        contentColor = TextPrimary
+                                    )
                                 ) { Text("بازگشت به خانه") }
                             }
                         }
