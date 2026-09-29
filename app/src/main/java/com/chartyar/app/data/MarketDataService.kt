@@ -7,12 +7,10 @@ import kotlinx.coroutines.withContext
 /**
  * سرویس دریافت داده از چند منبع
  * اگه Binance کار نکرد، خودکار می‌ره سراغ CoinGecko
+ * با Retry Logic برای تلاش مجدد خودکار
  */
 object MarketDataService {
 
-    /**
-     * منبع داده نهایی
-     */
     enum class Source { BINANCE, COINGECKO, CACHE, NONE }
 
     data class MarketDataResult(
@@ -21,10 +19,10 @@ object MarketDataService {
     )
 
     /**
-     * دریافت کندل‌ها با Fallback زنجیره‌ای
+     * دریافت کندل‌ها با Fallback زنجیره‌ای + Retry
      * ۱. Cache
-     * ۲. Binance
-     * ۳. CoinGecko
+     * ۲. Binance (با ۲ بار Retry)
+     * ۳. CoinGecko (با ۲ بار Retry)
      */
     suspend fun getCandles(
         symbol: String,
@@ -38,13 +36,14 @@ object MarketDataService {
             return@withContext MarketDataResult(cachedCandles, Source.CACHE)
         }
 
-        // مرحله ۲: تلاش برای Binance
+        // مرحله ۲: تلاش برای Binance با Retry
         try {
             val binanceOnline = BinanceApi.isOnline()
             if (binanceOnline) {
-                val binanceCandles = BinanceApi.fetchCandles(symbol, timeframe, 200)
+                val binanceCandles = RetryHelper.withRetry(maxAttempts = 2) {
+                    BinanceApi.fetchCandles(symbol, timeframe, 200)
+                }
                 if (binanceCandles != null && binanceCandles.size >= 20) {
-                    // ذخیره توی Cache
                     cache.saveCandles(symbol, timeframe, binanceCandles)
                     return@withContext MarketDataResult(binanceCandles, Source.BINANCE)
                 }
@@ -53,11 +52,12 @@ object MarketDataService {
             // ادامه بده به منبع بعدی
         }
 
-        // مرحله ۳: تلاش برای CoinGecko
+        // مرحله ۳: تلاش برای CoinGecko با Retry
         try {
-            val geckoCandles = CoinGeckoApi.fetchCandles(symbol, timeframe)
+            val geckoCandles = RetryHelper.withRetry(maxAttempts = 2) {
+                CoinGeckoApi.fetchCandles(symbol, timeframe)
+            }
             if (geckoCandles != null && geckoCandles.size >= 20) {
-                // ذخیره توی Cache
                 cache.saveCandles(symbol, timeframe, geckoCandles)
                 return@withContext MarketDataResult(geckoCandles, Source.COINGECKO)
             }
@@ -76,7 +76,7 @@ object MarketDataService {
         return when (source) {
             Source.BINANCE -> "Binance"
             Source.COINGECKO -> "CoinGecko"
-            Source.CACHE -> "Cache"
+            Source.CACHE -> "Cache محلی"
             Source.NONE -> "نامشخص"
         }
     }
