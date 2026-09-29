@@ -18,8 +18,8 @@ import com.chartyar.app.analysis.*
 import com.chartyar.app.analysis.ImageProcessor.CandlePixel
 import com.chartyar.app.data.AnalysisHistory
 import com.chartyar.app.data.AppDatabase
-import com.chartyar.app.data.BinanceApi
 import com.chartyar.app.data.CacheManager
+import com.chartyar.app.data.MarketDataService
 import com.chartyar.app.data.PrefsManager
 import com.chartyar.app.ui.*
 import com.chartyar.app.ui.theme.*
@@ -146,50 +146,28 @@ class MainActivity : ComponentActivity() {
                                 statusMessage = "در حال دریافت داده..."
                                 currentScreen = "analyzing"
                                 lifecycleScope.launch {
-                                    // مرحله ۱: چک Cache
-                                    analyzeProgress = 0.15f
-                                    statusMessage = "بررسی Cache..."
-                                    delay(200)
+                                    analyzeProgress = 0.3f
+                                    statusMessage = "بررسی منابع داده..."
 
-                                    val cachedCandles = cache.loadCandles(symbol, selectedTimeframe)
+                                    // استفاده از MarketDataService با Fallback
+                                    val dataResult = MarketDataService.getCandles(
+                                        symbol = symbol,
+                                        timeframe = selectedTimeframe,
+                                        cache = cache
+                                    )
 
-                                    val candles: List<Candle>? = if (cachedCandles != null) {
+                                    val sourceName = MarketDataService.sourceLabel(dataResult.source)
+
+                                    if (dataResult.candles != null && dataResult.candles.size >= 20) {
                                         analyzeProgress = 0.7f
-                                        statusMessage = "استفاده از داده‌های Cache..."
-                                        delay(300)
-                                        cachedCandles
-                                    } else {
-                                        // مرحله ۲: دریافت از Binance
-                                        analyzeProgress = 0.3f
-                                        statusMessage = "اتصال به Binance..."
+                                        statusMessage = "داده از $sourceName دریافت شد"
                                         delay(300)
 
-                                        val online = BinanceApi.isOnline()
-                                        if (online) {
-                                            analyzeProgress = 0.5f
-                                            statusMessage = "دریافت کندل‌های $symbol..."
-                                            delay(200)
-
-                                            val fetched = BinanceApi.fetchCandles(symbol, selectedTimeframe, 200)
-
-                                            if (fetched != null) {
-                                                // ذخیره توی Cache
-                                                cache.saveCandles(symbol, selectedTimeframe, fetched)
-                                            }
-                                            fetched
-                                        } else {
-                                            null
-                                        }
-                                    }
-
-                                    // مرحله ۳: تحلیل
-                                    if (candles != null && candles.size >= 20) {
-                                        analyzeProgress = 0.8f
+                                        analyzeProgress = 0.9f
                                         statusMessage = "اجرای تحلیل..."
-                                        delay(200)
 
                                         val result = withContext(Dispatchers.Default) {
-                                            SignalEngine.analyze(candles, selectedTimeframe)
+                                            SignalEngine.analyze(dataResult.candles, selectedTimeframe)
                                         }
                                         analyzeProgress = 1f
                                         delay(200)
@@ -201,8 +179,8 @@ class MainActivity : ComponentActivity() {
                                         return@launch
                                     }
 
-                                    // مرحله ۴: Fallback به OCR
-                                    statusMessage = "پردازش تصویر..."
+                                    // Fallback: پردازش تصویر
+                                    statusMessage = "منابع داده در دسترس نیستن. پردازش تصویر..."
                                     analyzeProgress = 0.3f
                                     delay(300)
                                     val uri2 = pendingUri
