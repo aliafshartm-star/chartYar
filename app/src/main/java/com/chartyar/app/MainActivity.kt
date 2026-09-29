@@ -1,10 +1,14 @@
 package com.chartyar.app
 
+import android.Manifest
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -16,16 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.chartyar.app.analysis.*
 import com.chartyar.app.analysis.ImageProcessor.CandlePixel
-import com.chartyar.app.data.AnalysisHistory
-import com.chartyar.app.data.AnalyticsEvents
-import com.chartyar.app.data.AppDatabase
-import com.chartyar.app.data.CacheManager
-import com.chartyar.app.data.LocalAnalytics
-import com.chartyar.app.data.MarketDataService
-import com.chartyar.app.data.NetworkError
-import com.chartyar.app.data.PrefsManager
+import com.chartyar.app.data.*
 import com.chartyar.app.ui.*
 import com.chartyar.app.ui.theme.*
+import com.chartyar.app.util.NotificationHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -60,6 +58,9 @@ class MainActivity : ComponentActivity() {
         db = AppDatabase.get(applicationContext)
         cache = CacheManager(applicationContext)
 
+        // ساخت Notification Channel
+        NotificationHelper.createChannel(applicationContext)
+
         // ثبت رویداد باز شدن اپ
         LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.APP_OPEN)
 
@@ -80,11 +81,23 @@ class MainActivity : ComponentActivity() {
                 var detectedCurrentPrice by remember { mutableStateOf<Double?>(null) }
                 var detectedConfidence by remember { mutableStateOf(0) }
                 var historyItems by remember { mutableStateOf<List<AnalysisHistory>>(emptyList()) }
+                var alertItems by remember { mutableStateOf<List<PriceAlert>>(emptyList()) }
                 var autoSaveHistory by remember { mutableStateOf(true) }
                 var showWarnings by remember { mutableStateOf(true) }
                 var defaultTimeframe by remember { mutableStateOf("4H") }
                 var themeSetting by remember { mutableStateOf("dark") }
                 var tutorialSeen by remember { mutableStateOf(true) }
+
+                // درخواست مجوز نوتیفیکیشن (Android 13+)
+                val permissionLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestPermission()
+                ) { /* نتیجه مهم نیست */ }
+
+                LaunchedEffect(Unit) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
 
                 LaunchedEffect(Unit) {
                     autoSaveHistory = prefs.autoSaveHistory.first()
@@ -93,16 +106,24 @@ class MainActivity : ComponentActivity() {
                     themeSetting = prefs.theme.first()
                     tutorialSeen = prefs.isTutorialSeen.first()
                     selectedTimeframe = defaultTimeframe
+
+                    // چک هشدارها هنگام باز شدن اپ
+                    AlertChecker.checkAllAlerts(applicationContext, db, cache)
                 }
+
                 LaunchedEffect(currentScreen) {
                     if (currentScreen == "history") {
                         historyItems = db.historyDao().getAll().first()
                         LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.HISTORY_VIEWED)
                     }
+                    if (currentScreen == "alerts") {
+                        alertItems = db.alertDao().getAll().first()
+                    }
                     if (currentScreen == "settings") {
                         LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.SETTINGS_OPENED)
                     }
                 }
+
                 LaunchedEffect(Unit) {
                     val startTime = System.currentTimeMillis()
                     disclaimerAccepted = prefs.isDisclaimerAccepted.first()
@@ -144,7 +165,8 @@ class MainActivity : ComponentActivity() {
                         "home" -> HomeScreen(
                             onUploadClick = { currentScreen = "upload" },
                             onHistoryClick = { currentScreen = "history" },
-                            onSettingsClick = { currentScreen = "settings" }
+                            onSettingsClick = { currentScreen = "settings" },
+                            onAlertsClick = { currentScreen = "alerts" }
                         )
                         "upload" -> UploadScreen(
                             onBack = { currentScreen = "home" },
@@ -285,10 +307,7 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = "result"
                                     } else {
                                         errorMessage = "تحلیل با خطا مواجه شد. لطفاً دوباره تلاش کنید."
-                                        LocalAnalytics.logEvent(
-                                            applicationContext,
-                                            AnalyticsEvents.ANALYSIS_FAILED
-                                        )
+                                        LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.ANALYSIS_FAILED)
                                         currentScreen = "error"
                                     }
                                 }
@@ -319,6 +338,41 @@ class MainActivity : ComponentActivity() {
                                 lifecycleScope.launch {
                                     db.historyDao().clearAll()
                                     historyItems = emptyList()
+                                }
+                            }
+                        )
+                        "alerts" -> AlertScreen(
+                            alerts = alertItems,
+                            onBack = { currentScreen = "home" },
+                            onCreateAlert = { symbol, price, condition, note ->
+                                lifecycleScope.launch {
+                                    db.alertDao().insert(
+                                        AlertHelper.createAlert(symbol, price, condition, note)
+                                    )
+                                    alertItems = db.alertDao().getAll().first()
+                                }
+                            },
+                            onDeleteAlert = { id ->
+                                lifecycleScope.launch {
+                                    db.alertDao().deleteById(id)
+                                    alertItems = db.alertDao().getAll().first()
+                                }
+                            },
+                            onToggleActive = { id, active ->
+                                lifecycleScope.launch {
+                                    db.alertDao().setActive(id, active)
+                                    alertItems = db.alertDao().getAll().first()
+                                }
+                            },
+                            onResetAlert = { id ->
+                                lifecycleScope.launch {
+                                    val alert = db.alertDao().getById(id)
+                                    if (alert != null) {
+                                        db.alertDao().update(
+                                            alert.copy(isTriggered = false, triggeredAt = 0L)
+                                        )
+                                        alertItems = db.alertDao().getAll().first()
+                                    }
                                 }
                             }
                         )
