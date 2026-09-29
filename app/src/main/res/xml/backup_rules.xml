@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<full-backup-content>
-    <include domain="sharedpref" path="chartyar_prefs.xml"/>
-    <include domain="database" path="chartyar_db"/>
-</full-backup-content>
