@@ -44,9 +44,14 @@ interface AnalysisHistoryDao {
     suspend fun clearAll()
 }
 
-@Database(entities = [AnalysisHistory::class], version = 1, exportSchema = false)
+@Database(
+    entities = [AnalysisHistory::class, PriceAlert::class],
+    version = 2,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun historyDao(): AnalysisHistoryDao
+    abstract fun alertDao(): PriceAlertDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
