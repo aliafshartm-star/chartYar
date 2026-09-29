@@ -2,6 +2,7 @@ package com.chartyar.app.data
 
 import com.chartyar.app.analysis.Candle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.net.HttpURLConnection
@@ -10,10 +11,8 @@ import java.net.URL
 object BinanceApi {
 
     private const val BASE_URL = "https://api.binance.com/api/v3/klines"
+    private const val PING_URL = "https://api.binance.com/api/v3/ping"
 
-    /**
-     * لیست ارزهای محبوب
-     */
     val popularSymbols = listOf(
         "BTCUSDT" to "بیت‌کوین (BTC)",
         "ETHUSDT" to "اتریوم (ETH)",
@@ -47,11 +46,6 @@ object BinanceApi {
         "FETUSDT" to "فچ (FET)"
     )
 
-    /**
-     * تبدیل تایم‌فریم اپ به فرمت بایننس
-     * 1m→1m, 5m→5m, 15m→15m, 30m→30m
-     * 1H→1h, 4H→4h, 1D→1d, 1W→1w, 1M→1M
-     */
     private fun mapInterval(timeframe: String): String {
         return when (timeframe) {
             "1m" -> "1m"
@@ -68,11 +62,7 @@ object BinanceApi {
     }
 
     /**
-     * دریافت کندل‌ها از بایننس
-     * @param symbol جفت ارز مثل SOLUSDT
-     * @param timeframe تایم‌فریم مثل 4H
-     * @param limit تعداد کندل (حداکثر ۱۰۰۰)
-     * @return لیست Candle یا null اگه خطا بود
+     * دریافت کندل‌ها با Rate Limiting
      */
     suspend fun fetchCandles(
         symbol: String,
@@ -80,6 +70,15 @@ object BinanceApi {
         limit: Int = 200
     ): List<Candle>? = withContext(Dispatchers.IO) {
         try {
+            // چک Rate Limiter
+            if (!RateLimiter.canMakeRequest()) {
+                val waitTime = RateLimiter.getWaitTime()
+                delay(waitTime)
+            }
+
+            // ثبت درخواست
+            RateLimiter.recordRequest()
+
             val interval = mapInterval(timeframe)
             val urlString = "$BASE_URL?symbol=$symbol&interval=$interval&limit=$limit"
             val url = URL(urlString)
@@ -89,6 +88,7 @@ object BinanceApi {
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
             connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
 
             val responseCode = connection.responseCode
             if (responseCode != 200) {
@@ -101,25 +101,10 @@ object BinanceApi {
 
             parseKlines(response)
         } catch (e: Exception) {
-            e.printStackTrace()
             null
         }
     }
 
-    /**
-     * تبدیل JSON بایننس به لیست Candle
-     * فرمت هر کندل:
-     * [
-     *   openTime,
-     *   open,
-     *   high,
-     *   low,
-     *   close,
-     *   volume,
-     *   closeTime,
-     *   ...
-     * ]
-     */
     private fun parseKlines(json: String): List<Candle>? {
         return try {
             val array = JSONArray(json)
@@ -148,17 +133,16 @@ object BinanceApi {
 
             if (candles.size >= 20) candles else null
         } catch (e: Exception) {
-            e.printStackTrace()
             null
         }
     }
 
     /**
-     * چک کردن وجود اینترنت
+     * چک کردن آنلاین بودن Binance
      */
     suspend fun isOnline(): Boolean = withContext(Dispatchers.IO) {
         try {
-            val url = URL("https://api.binance.com/api/v3/ping")
+            val url = URL(PING_URL)
             val connection = url.openConnection() as HttpURLConnection
             connection.connectTimeout = 3000
             connection.readTimeout = 3000
