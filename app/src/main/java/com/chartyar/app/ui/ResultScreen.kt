@@ -1,6 +1,5 @@
 package com.chartyar.app.ui
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -24,6 +24,7 @@ import com.chartyar.app.analysis.SignalType
 import com.chartyar.app.analysis.TrendType
 import com.chartyar.app.ui.theme.*
 import com.chartyar.app.util.ShareHelper
+import com.chartyar.app.util.ShareImageHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +64,7 @@ fun ResultScreen(
             ) {
                 Icon(
                     Icons.Filled.Share,
-                    contentDescription = "اشتراک‌گذاری",
+                    contentDescription = "اشتراک‌گذاری متن",
                     tint = AccentBlue
                 )
             }
@@ -99,7 +100,7 @@ fun ResultScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // دکمه اشتراک‌گذاری بزرگ
+        // دکمه اشتراک‌گذاری متنی
         Button(
             onClick = {
                 val text = ShareHelper.buildShareText(result)
@@ -115,7 +116,30 @@ fun ResultScreen(
             Icon(Icons.Filled.Share, contentDescription = null)
             Spacer(Modifier.width(8.dp))
             Text(
-                "اشتراک‌گذاری تحلیل",
+                "اشتراک‌گذاری متنی",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // دکمه اشتراک‌گذاری تصویری
+        Button(
+            onClick = {
+                ShareImageHelper.shareImage(context, result)
+            },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = AccentGreen,
+                contentColor = TextPrimary
+            )
+        ) {
+            Icon(Icons.Filled.Image, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "اشتراک‌گذاری تصویری",
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleLarge
             )
