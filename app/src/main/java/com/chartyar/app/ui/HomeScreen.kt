@@ -8,37 +8,15 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -47,19 +25,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chartyar.app.ui.theme.AccentBlue
-import com.chartyar.app.ui.theme.DarkBg
-import com.chartyar.app.ui.theme.DarkSurface
-import com.chartyar.app.ui.theme.Divider
-import com.chartyar.app.ui.theme.TextPrimary
-import com.chartyar.app.ui.theme.TextSecondary
+import com.chartyar.app.ui.theme.*
 import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(
     onUploadClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onAlertsClick: () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -79,6 +53,7 @@ fun HomeScreen(
             .background(DarkBg)
             .padding(20.dp)
     ) {
+        // هدر
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -92,6 +67,13 @@ fun HomeScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
+            IconButton(onClick = onAlertsClick) {
+                Icon(
+                    imageVector = Icons.Filled.Notifications,
+                    contentDescription = "هشدار قیمت",
+                    tint = AccentYellow
+                )
+            }
             IconButton(onClick = onSettingsClick) {
                 Icon(
                     imageVector = Icons.Filled.Settings,
@@ -112,6 +94,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(40.dp))
 
+        // کارت اصلی
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -122,6 +105,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(20.dp))
 
+        // دکمه تاریخچه
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -146,6 +130,7 @@ fun HomeScreen(
 
         Spacer(Modifier.weight(1f))
 
+        // آمار سریع
         Box(
             modifier = Modifier
                 .fillMaxWidth()
