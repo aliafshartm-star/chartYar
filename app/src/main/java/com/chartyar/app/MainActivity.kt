@@ -83,6 +83,8 @@ class MainActivity : ComponentActivity() {
                 var detectedConfidence by remember { mutableStateOf(0) }
                 var historyItems by remember { mutableStateOf<List<AnalysisHistory>>(emptyList()) }
                 var alertItems by remember { mutableStateOf<List<PriceAlert>>(emptyList()) }
+                var newsItems by remember { mutableStateOf<List<NewsItem>>(emptyList()) }
+                var isNewsLoading by remember { mutableStateOf(false) }
                 var autoSaveHistory by remember { mutableStateOf(true) }
                 var showWarnings by remember { mutableStateOf(true) }
                 var defaultTimeframe by remember { mutableStateOf("4H") }
@@ -123,6 +125,12 @@ class MainActivity : ComponentActivity() {
                     }
                     if (currentScreen == "alerts") {
                         alertItems = db.alertDao().getAll().first()
+                    }
+                    if (currentScreen == "news" && newsItems.isEmpty()) {
+                        isNewsLoading = true
+                        val fetched = withContext(Dispatchers.IO) { NewsApi.fetchNews(30) }
+                        if (fetched != null) newsItems = fetched
+                        isNewsLoading = false
                     }
                 }
 
@@ -173,7 +181,8 @@ class MainActivity : ComponentActivity() {
                             onUploadClick = { currentScreen = "upload" },
                             onHistoryClick = { currentScreen = "history" },
                             onSettingsClick = { currentScreen = "settings" },
-                            onAlertsClick = { currentScreen = "alerts" }
+                            onAlertsClick = { currentScreen = "alerts" },
+                            onNewsClick = { currentScreen = "news" }
                         )
                         "upload" -> UploadScreen(
                             onBack = { currentScreen = "home" },
@@ -368,6 +377,20 @@ class MainActivity : ComponentActivity() {
                                         )
                                         alertItems = db.alertDao().getAll().first()
                                     }
+                                }
+                            }
+                        )
+                        "news" -> NewsScreen(
+                            news = newsItems,
+                            isLoading = isNewsLoading,
+                            isOnline = isOnline,
+                            onBack = { currentScreen = "home" },
+                            onRefresh = {
+                                lifecycleScope.launch {
+                                    isNewsLoading = true
+                                    val fetched = withContext(Dispatchers.IO) { NewsApi.fetchNews(30) }
+                                    if (fetched != null) newsItems = fetched
+                                    isNewsLoading = false
                                 }
                             }
                         )
