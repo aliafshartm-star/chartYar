@@ -9,14 +9,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chartyar.app.data.AnalysisHistory
+import com.chartyar.app.data.NoteManager
 import com.chartyar.app.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -30,6 +33,12 @@ fun HistoryScreen(
     onDelete: (Long) -> Unit,
     onClearAll: () -> Unit
 ) {
+    val context = LocalContext.current
+    val noteManager = remember { NoteManager(context) }
+
+    var editingItem by remember { mutableStateOf<AnalysisHistory?>(null) }
+    var noteText by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -77,15 +86,90 @@ fun HistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(items, key = { it.id }) { item ->
-                    HistoryCard(item = item, onDelete = { onDelete(item.id) })
+                    val note = remember(item.timestamp) { noteManager.getNote(item.timestamp) }
+                    HistoryCard(
+                        item = item,
+                        note = note,
+                        onDelete = { onDelete(item.id) },
+                        onEditNote = {
+                            editingItem = item
+                            noteText = note
+                        }
+                    )
                 }
             }
         }
     }
+
+    // دیالوگ ویرایش یادداشت
+    if (editingItem != null) {
+        AlertDialog(
+            onDismissRequest = { editingItem = null },
+            containerColor = DarkSurface,
+            titleContentColor = TextPrimary,
+            title = {
+                Text("یادداشت تحلیل", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column {
+                    Text(
+                        editingItem?.symbol() ?: "",
+                        color = AccentBlue,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = noteText,
+                        onValueChange = { noteText = it },
+                        placeholder = {
+                            Text(
+                                "مثلاً: ورود زدم در ۶۷,۵۰۰ | حد ضرر ۶۶,۰۰۰",
+                                color = TextSecondary
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth().height(120.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = AccentBlue,
+                            unfocusedBorderColor = Divider
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        editingItem?.let {
+                            noteManager.saveNote(it.timestamp, noteText)
+                        }
+                        editingItem = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AccentGreen,
+                        contentColor = TextPrimary
+                    )
+                ) {
+                    Text("ذخیره", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingItem = null }) {
+                    Text("لغو", color = TextSecondary)
+                }
+            }
+        )
+    }
 }
 
 @Composable
-private fun HistoryCard(item: AnalysisHistory, onDelete: () -> Unit) {
+private fun HistoryCard(
+    item: AnalysisHistory,
+    note: String,
+    onDelete: () -> Unit,
+    onEditNote: () -> Unit
+) {
     val signalColor = when {
         item.signalText.contains("خرید") -> AccentGreen
         item.signalText.contains("فروش") -> AccentRed
@@ -116,6 +200,9 @@ private fun HistoryCard(item: AnalysisHistory, onDelete: () -> Unit) {
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
+                IconButton(onClick = onEditNote) {
+                    Icon(Icons.Filled.Edit, "یادداشت", tint = AccentYellow)
+                }
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Filled.Delete, "حذف", tint = AccentRed)
                 }
@@ -134,12 +221,29 @@ private fun HistoryCard(item: AnalysisHistory, onDelete: () -> Unit) {
                 SmallStat("هدف ۱", item.target1, AccentGreen)
             }
 
+            // یادداشت (اگه وجود داره)
+            if (note.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = DarkCard)
+                ) {
+                    Text(
+                        "📝 $note",
+                        color = AccentYellow,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+            }
+
             Spacer(Modifier.height(8.dp))
 
             Text(
                 formatDate(item.timestamp),
                 color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodySmall
             )
         }
     }
@@ -156,6 +260,10 @@ private fun SmallStat(label: String, value: Double, color: androidx.compose.ui.g
             style = MaterialTheme.typography.bodyMedium
         )
     }
+}
+
+private fun AnalysisHistory.symbol(): String {
+    return "تحلیل $timeframe — $signalText"
 }
 
 private fun formatDate(timestamp: Long): String {
