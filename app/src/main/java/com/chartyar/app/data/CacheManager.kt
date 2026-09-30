@@ -6,10 +6,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
-/**
- * مدیریت Cache کندل‌ها
- * داده‌ها توی فایل‌های JSON ذخیره می‌شن
- */
 class CacheManager(private val context: Context) {
 
     private val cacheDir: File
@@ -17,14 +13,10 @@ class CacheManager(private val context: Context) {
             if (!exists()) mkdirs()
         }
 
-    /**
-     * مدت اعتبار Cache (۵ دقیقه)
-     */
     private val cacheValidityMs = 5 * 60 * 1000L
+    private val maxCacheSizeBytes = 10 * 1024 * 1024L
+    private val maxCacheAgeMs = 7 * 24 * 60 * 60 * 1000L
 
-    /**
-     * ذخیره کندل‌ها
-     */
     fun saveCandles(symbol: String, timeframe: String, candles: List<Candle>) {
         try {
             val file = getCacheFile(symbol, timeframe)
@@ -41,21 +33,18 @@ class CacheManager(private val context: Context) {
                 jsonArray.put(obj)
             }
             file.writeText(jsonArray.toString())
+
+            enforceMaxSize()
         } catch (e: Exception) {
-            // silent fail
+            // silent
         }
     }
 
-    /**
-     * خواندن کندل‌ها از Cache
-     * @return null اگه Cache نبود یا منقضی شده بود
-     */
     fun loadCandles(symbol: String, timeframe: String): List<Candle>? {
         try {
             val file = getCacheFile(symbol, timeframe)
             if (!file.exists()) return null
 
-            // چک کردن اعتبار
             val age = System.currentTimeMillis() - file.lastModified()
             if (age > cacheValidityMs) {
                 file.delete()
@@ -86,31 +75,57 @@ class CacheManager(private val context: Context) {
         }
     }
 
-    /**
-     * پاک کردن Cache یه ارز خاص
-     */
     fun clearCache(symbol: String, timeframe: String) {
         try {
             getCacheFile(symbol, timeframe).delete()
         } catch (e: Exception) {
-            // silent fail
+            // silent
         }
     }
 
-    /**
-     * پاک کردن همه Cache
-     */
     fun clearAllCache() {
         try {
             cacheDir.listFiles()?.forEach { it.delete() }
         } catch (e: Exception) {
-            // silent fail
+            // silent
         }
     }
 
-    /**
-     * مسیر فایل Cache
-     */
+    fun clearOldCache() {
+        try {
+            val now = System.currentTimeMillis()
+            cacheDir.listFiles()?.forEach { file ->
+                val age = now - file.lastModified()
+                if (age > maxCacheAgeMs) {
+                    file.delete()
+                }
+            }
+        } catch (e: Exception) {
+            // silent
+        }
+    }
+
+    private fun enforceMaxSize() {
+        try {
+            val files = cacheDir.listFiles() ?: return
+            var totalSize = 0L
+            files.forEach { totalSize += it.length() }
+
+            if (totalSize > maxCacheSizeBytes) {
+                val sorted = files.sortedBy { it.lastModified() }
+                var sizeToFree = totalSize - maxCacheSizeBytes
+
+                for (file in sorted) {
+                    if (sizeToFree <= 0) break
+                    sizeToFree -= file.length()
+                    file.delete()
+                }
+            }
+        } catch (e: Exception) {
+            // silent
+        }
+    }
+
     private fun getCacheFile(symbol: String, timeframe: String): File {
         return File(cacheDir, "${symbol}_${timeframe}.json")
     }
