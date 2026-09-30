@@ -211,7 +211,7 @@ class MainActivity : ComponentActivity() {
                 BackHandler(enabled = !isLoading && disclaimerAccepted) {
                     when (currentScreen) {
                         "home" -> showExitDialog = true
-                        "privacy", "terms", "glossary", "education", "about", "settings" -> {
+                        "privacy", "terms", "glossary", "education", "about", "changelog", "settings" -> {
                             currentScreen = "home"
                         }
                         "history", "alerts", "news", "prices" -> {
@@ -320,6 +320,9 @@ class MainActivity : ComponentActivity() {
                         onBack = { currentScreen = "settings" }
                     )
                     currentScreen == "about" -> AboutScreen(
+                        onBack = { currentScreen = "settings" }
+                    )
+                    currentScreen == "changelog" -> ChangelogScreen(
                         onBack = { currentScreen = "settings" }
                     )
                     else -> when (currentScreen) {
@@ -569,6 +572,7 @@ class MainActivity : ComponentActivity() {
                             onShowGlossary = { currentScreen = "glossary" },
                             onShowEducation = { currentScreen = "education" },
                             onShowAbout = { currentScreen = "about" },
+                            onShowChangelog = { currentScreen = "changelog" },
                             onShowPrivacy = { currentScreen = "privacy" },
                             onShowTerms = { currentScreen = "terms" },
                             onAutoSaveChange = { v -> autoSaveHistory = v; lifecycleScope.launch { prefs.setAutoSaveHistory(v) } },
