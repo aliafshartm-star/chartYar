@@ -22,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import com.chartyar.app.analysis.*
 import com.chartyar.app.analysis.ImageProcessor.CandlePixel
 import com.chartyar.app.data.*
+import com.chartyar.app.security.RootDetector
 import com.chartyar.app.ui.*
 import com.chartyar.app.ui.theme.*
 import com.chartyar.app.util.CameraHelper
@@ -64,10 +65,7 @@ class MainActivity : ComponentActivity() {
         NotificationHelper.createChannel(applicationContext)
         LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.APP_OPEN)
 
-        // پاک کردن عکس‌های قدیمی دوربین
         CameraHelper.clearOldCameraFiles(applicationContext)
-
-        // پاک کردن Cacheهای قدیمی
         cache.clearOldCache()
 
         val shortcutAction = intent?.getStringExtra("shortcut_action")
@@ -103,6 +101,10 @@ class MainActivity : ComponentActivity() {
                 var languageSetting by remember { mutableStateOf("fa") }
                 var tutorialSeen by remember { mutableStateOf(true) }
                 var isOnline by remember { mutableStateOf(true) }
+                var rootWarningShown by remember { mutableStateOf(false) }
+                var isRooted by remember { mutableStateOf(false) }
+                var updateInfo by remember { mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
+                var updateDialogShown by remember { mutableStateOf(false) }
 
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission()
@@ -127,6 +129,21 @@ class MainActivity : ComponentActivity() {
 
                     if (isOnline) {
                         AlertChecker.checkAllAlerts(applicationContext, db, cache)
+                    }
+
+                    val rootStatus = withContext(Dispatchers.IO) {
+                        RootDetector.checkRoot(applicationContext)
+                    }
+                    isRooted = rootStatus.isRooted
+
+                    // چک آپدیت
+                    if (isOnline) {
+                        val info = withContext(Dispatchers.IO) {
+                            UpdateChecker.checkForUpdate()
+                        }
+                        if (info != null && info.hasUpdate) {
+                            updateInfo = info
+                        }
                     }
                 }
 
@@ -163,6 +180,40 @@ class MainActivity : ComponentActivity() {
                         "alerts" -> currentScreen = "alerts"
                         "glossary" -> currentScreen = "glossary"
                     }
+                }
+
+                // دیالوگ هشدار روت
+                if (isRooted && !rootWarningShown) {
+                    AlertDialog(
+                        onDismissRequest = { rootWarningShown = true },
+                        containerColor = DarkSurface,
+                        titleContentColor = TextPrimary,
+                        textContentColor = TextSecondary,
+                        title = {
+                            Text(
+                                "⚠️ هشدار امنیتی",
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                            )
+                        },
+                        text = {
+                            Text(
+                                "گوشی شما روت شده است. این ممکن است امنیت اپ و داده‌های شما را به خطر بیندازد. لطفاً با احتیاط استفاده کنید."
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { rootWarningShown = true }) {
+                                Text("متوجه شدم", color = AccentBlue)
+                            }
+                        }
+                    )
+                }
+
+                // دیالوگ آپدیت
+                if (updateInfo != null && !updateDialogShown) {
+                    UpdateDialog(
+                        updateInfo = updateInfo!!,
+                        onDismiss = { updateDialogShown = true }
+                    )
                 }
 
                 when {
