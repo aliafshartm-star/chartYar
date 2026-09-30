@@ -11,9 +11,6 @@ object RetryHelper {
     private const val BACKOFF_MULTIPLIER = 2.0
     private const val JITTER_FACTOR = 0.3
 
-    /**
-     * اجرای عملیات با Retry و Exponential Backoff
-     */
     suspend fun <T> withRetry(
         maxAttempts: Int = DEFAULT_MAX_ATTEMPTS,
         operation: suspend () -> T?
@@ -29,7 +26,6 @@ object RetryHelper {
             }
 
             if (attempt < maxAttempts) {
-                // Jitter برای جلوگیری از thundering herd
                 val jitter = (delayMs * JITTER_FACTOR * (Random.nextDouble() * 2 - 1)).toLong()
                 val actualDelay = (delayMs + jitter).coerceIn(100L, MAX_DELAY_MS)
                 delay(actualDelay)
@@ -40,9 +36,6 @@ object RetryHelper {
         return null
     }
 
-    /**
-     * چک آیا خطای HTTP قابل Retry هست
-     */
     fun isRetryable(errorCode: Int): Boolean {
         return when (errorCode) {
             408, 429, 500, 502, 503, 504 -> true
@@ -50,9 +43,6 @@ object RetryHelper {
         }
     }
 
-    /**
-     * محاسبه زمان انتظار برای Retry
-     */
     fun calculateDelay(attempt: Int): Long {
         var delay = INITIAL_DELAY_MS
         repeat(attempt) {
