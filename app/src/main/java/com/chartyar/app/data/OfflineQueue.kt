@@ -5,10 +5,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
-/**
- * صف درخواست‌های آفلاین
- * درخواست‌ها رو ذخیره می‌کنه و بعداً که آنلاین شدیم، ارسال می‌کنه
- */
 class OfflineQueue(private val context: Context) {
 
     private val queueFile: File
@@ -23,14 +19,10 @@ class OfflineQueue(private val context: Context) {
         val timestamp: Long
     )
 
-    /**
-     * اضافه کردن به صف
-     */
     fun enqueue(type: String, data: String) {
         try {
             val queue = loadQueue().toMutableList()
 
-            // اگه صف پر بود، قدیمی‌ترین رو حذف کن
             if (queue.size >= maxQueueSize) {
                 queue.removeAt(0)
             }
@@ -50,9 +42,6 @@ class OfflineQueue(private val context: Context) {
         }
     }
 
-    /**
-     * خواندن همه صف
-     */
     fun loadQueue(): List<QueuedRequest> {
         return try {
             if (!queueFile.exists()) return emptyList()
@@ -76,9 +65,6 @@ class OfflineQueue(private val context: Context) {
         }
     }
 
-    /**
-     * حذف از صف
-     */
     fun remove(id: String) {
         try {
             val queue = loadQueue().toMutableList()
@@ -89,9 +75,6 @@ class OfflineQueue(private val context: Context) {
         }
     }
 
-    /**
-     * پاک کردن صف
-     */
     fun clear() {
         try {
             queueFile.delete()
@@ -100,14 +83,8 @@ class OfflineQueue(private val context: Context) {
         }
     }
 
-    /**
-     * تعداد آیتم‌های صف
-     */
     fun size(): Int = loadQueue().size
 
-    /**
-     * چک خالی بودن
-     */
     fun isEmpty(): Boolean = loadQueue().isEmpty()
 
     private fun saveQueue(queue: List<QueuedRequest>) {
