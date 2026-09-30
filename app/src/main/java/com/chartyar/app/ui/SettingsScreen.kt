@@ -29,6 +29,7 @@ fun SettingsScreen(
     onShowTutorial: () -> Unit,
     onShowGlossary: () -> Unit,
     onShowEducation: () -> Unit,
+    onShowAbout: () -> Unit,
     onShowPrivacy: () -> Unit,
     onShowTerms: () -> Unit,
     onAutoSaveChange: (Boolean) -> Unit,
@@ -64,11 +65,11 @@ fun SettingsScreen(
             )
         }
 
-        SectionTitle("⚙️ تحلیل")
+        SectionTitle("تحلیل")
 
         SettingSwitch(
             title = "ذخیره خودکار در تاریخچه",
-            subtitle = "هر تحلیل به‌طور خودکار ذخیره شود",
+            subtitle = "هر تحلیل به طور خودکار ذخیره شود",
             checked = autoSaveHistory,
             onCheckedChange = onAutoSaveChange
         )
@@ -89,7 +90,7 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        SectionTitle("🎨 ظاهر")
+        SectionTitle("ظاهر")
 
         ThemeSelector(current = theme, onSelect = onThemeChange)
 
@@ -99,11 +100,11 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        SectionTitle("📚 راهنما و آموزش")
+        SectionTitle("راهنما و آموزش")
 
         DangerButton(
             title = "راهنمای استفاده",
-            subtitle = "آموزش ۴ مرحله‌ای چطور از اپ استفاده کنی",
+            subtitle = "آموزش 4 مرحله ای چطور از اپ استفاده کنی",
             color = AccentBlue,
             onClick = onShowTutorial
         )
@@ -112,7 +113,7 @@ fun SettingsScreen(
 
         DangerButton(
             title = "دیکشنری اصطلاحات",
-            subtitle = "توضیح اصطلاحات تریدینگ (RSI, MACD, الگوها, ...)",
+            subtitle = "توضیح اصطلاحات تریدینگ",
             color = AccentGreen,
             onClick = onShowGlossary
         )
@@ -121,14 +122,23 @@ fun SettingsScreen(
 
         DangerButton(
             title = "آموزش تحلیل",
-            subtitle = "۷ درس کوتاه برای یادگیری تحلیل تکنیکال",
+            subtitle = "7 درس کوتاه برای یادگیری تحلیل تکنیکال",
             color = AccentYellow,
             onClick = onShowEducation
         )
 
+        Spacer(Modifier.height(8.dp))
+
+        DangerButton(
+            title = "درباره اپ",
+            subtitle = "اطلاعات کامل اپ، تماس، نسخه",
+            color = AccentBlue,
+            onClick = onShowAbout
+        )
+
         Spacer(Modifier.height(20.dp))
 
-        SectionTitle("📄 قوانین")
+        SectionTitle("قوانین")
 
         DangerButton(
             title = "حریم خصوصی",
@@ -148,11 +158,11 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        SectionTitle("🗄️ داده‌ها")
+        SectionTitle("داده ها")
 
         DangerButton(
             title = "پاک کردن تاریخچه",
-            subtitle = "همه تحلیل‌های ذخیره‌شده حذف می‌شوند",
+            subtitle = "همه تحلیل های ذخیره شده حذف می شوند",
             color = AccentYellow,
             onClick = onClearHistory
         )
@@ -161,7 +171,7 @@ fun SettingsScreen(
 
         DangerButton(
             title = "نمایش مجدد سلب مسئولیت",
-            subtitle = "در اجرای بعدی صفحه شرایط نمایش داده می‌شود",
+            subtitle = "در اجرای بعدی صفحه شرایط نمایش داده می شود",
             color = AccentYellow,
             onClick = onResetDisclaimer
         )
@@ -170,23 +180,9 @@ fun SettingsScreen(
 
         DangerButton(
             title = "نمایش مجدد راهنما",
-            subtitle = "در اجرای بعدی صفحه راهنما نمایش داده می‌شود",
+            subtitle = "در اجرای بعدی صفحه راهنما نمایش داده می شود",
             color = AccentYellow,
             onClick = onResetTutorial
-        )
-
-        Spacer(Modifier.height(20.dp))
-
-        SectionTitle("ℹ️ درباره")
-
-        InfoCard(
-            title = "چارت‌یار",
-            lines = listOf(
-                "نسخه: ۱.۰.۰",
-                "ابزار تحلیل تکنیکال چارت",
-                "موتور: ۱۰+ اندیکاتور، ۱۱ الگو، ۴ استایل ترید",
-                "بدون توصیه مالی — فقط کمک به تصمیم‌گیری"
-            )
         )
 
         Spacer(Modifier.height(24.dp))
@@ -221,9 +217,18 @@ private fun SettingSwitch(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, color = TextPrimary, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                Text(
+                    title,
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
                 Spacer(Modifier.height(2.dp))
-                Text(subtitle, color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    subtitle,
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
             Switch(
                 checked = checked,
@@ -251,7 +256,12 @@ private fun TimeframeDropdown(current: String, onSelect: (String) -> Unit) {
         colors = CardDefaults.cardColors(containerColor = DarkSurface)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Text("تایم‌فریم پیش‌فرض", color = TextPrimary, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Text(
+                "تایم فریم پیش فرض",
+                color = TextPrimary,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
             Spacer(Modifier.height(8.dp))
             ExposedDropdownMenuBox(
                 expanded = expanded,
@@ -261,7 +271,9 @@ private fun TimeframeDropdown(current: String, onSelect: (String) -> Unit) {
                     value = current,
                     onValueChange = {},
                     readOnly = true,
-                    trailingIcon = { Icon(Icons.Filled.ArrowDropDown, null, tint = TextSecondary) },
+                    trailingIcon = {
+                        Icon(Icons.Filled.ArrowDropDown, null, tint = TextSecondary)
+                    },
                     modifier = Modifier.menuAnchor().fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = TextPrimary,
@@ -295,7 +307,7 @@ private fun TimeframeDropdown(current: String, onSelect: (String) -> Unit) {
 @Composable
 private fun ThemeSelector(current: String, onSelect: (String) -> Unit) {
     val themes = listOf(
-        "dark" to "دارک (پیش‌فرض)",
+        "dark" to "دارک (پیش فرض)",
         "light" to "روشن"
     )
 
@@ -305,7 +317,12 @@ private fun ThemeSelector(current: String, onSelect: (String) -> Unit) {
         colors = CardDefaults.cardColors(containerColor = DarkSurface)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Text("تم برنامه", color = TextPrimary, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Text(
+                "تم برنامه",
+                color = TextPrimary,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
             Spacer(Modifier.height(8.dp))
             themes.forEach { (key, label) ->
                 Row(
@@ -323,7 +340,11 @@ private fun ThemeSelector(current: String, onSelect: (String) -> Unit) {
                             unselectedColor = TextSecondary
                         )
                     )
-                    Text(label, color = TextPrimary, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        label,
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
             }
         }
@@ -343,7 +364,12 @@ private fun LanguageSelector(current: String, onSelect: (String) -> Unit) {
         colors = CardDefaults.cardColors(containerColor = DarkSurface)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Text("زبان برنامه", color = TextPrimary, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Text(
+                "زبان برنامه",
+                color = TextPrimary,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
             Spacer(Modifier.height(8.dp))
             languages.forEach { (key, label) ->
                 Row(
@@ -361,7 +387,11 @@ private fun LanguageSelector(current: String, onSelect: (String) -> Unit) {
                             unselectedColor = TextSecondary
                         )
                     )
-                    Text(label, color = TextPrimary, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        label,
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
             }
         }
@@ -384,31 +414,18 @@ private fun DangerButton(
         colors = CardDefaults.cardColors(containerColor = DarkSurface)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Text(title, color = color, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Text(
+                title,
+                color = color,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
             Spacer(Modifier.height(2.dp))
-            Text(subtitle, color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Composable
-private fun InfoCard(title: String, lines: List<String>) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Text(title, color = AccentBlue, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            lines.forEach { line ->
-                Text(
-                    "•  $line",
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(vertical = 2.dp)
-                )
-            }
+            Text(
+                subtitle,
+                color = TextSecondary,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }
