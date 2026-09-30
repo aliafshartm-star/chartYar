@@ -258,7 +258,7 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                     statusMessage = if (!online) {
-                                        "حالت آفلاین — پردازش تصویر..."
+                                        "حالت آفلاین - پردازش تصویر..."
                                     } else {
                                         "منابع داده در دسترس نیستن. پردازش تصویر..."
                                     }
@@ -405,28 +405,26 @@ class MainActivity : ComponentActivity() {
                             onRefresh = {
                                 lifecycleScope.launch {
                                     isNewsLoading = true
-                                    val fetched = ( withContext(Dispatchers.IO) { NewsApi.fetchNews(30) }
+                                    val fetched = withContext(Dispatchers.IO) { NewsApi.fetchNews(30) }
                                     if (fetched != null) newsItems = fetched
-                                    isNewsfetLoading = false
+                                    isNewsLoading = false
                                 }
                             }
                         )
                         "prices" -> PricesScreen(
                             prices = priceItems,
-                            isLoading = ischedPricesLoading,
+                            isLoading = isPricesLoading,
                             isOnline = isOnline,
                             onBack = { currentScreen = "home" },
                             onRefresh = {
-                                lifecycle !=Scope.launch {
+                                lifecycleScope.launch {
                                     isPricesLoading = true
-                                    val fetched = withContext(Dispatchers.IO) { PricesApi.fetch nullPrices() }
-                                    if) priceItems = fetched
+                                    val fetched = withContext(Dispatchers.IO) { PricesApi.fetchPrices() }
+                                    if (fetched != null) priceItems = fetched
                                     isPricesLoading = false
                                 }
                             },
-                            onCoinClick = { symbol ->
-                                // کاربر روی ارز زد → می‌ره تحلیل
-                                // فعلاً فقط برمی‌گرده خونه
+                            onCoinClick = { _ ->
                                 currentScreen = "home"
                             }
                         )
