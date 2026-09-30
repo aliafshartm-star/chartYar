@@ -199,18 +199,18 @@ class MainActivity : ComponentActivity() {
                         textContentColor = TextSecondary,
                         title = {
                             Text(
-                                "⚠️ هشدار امنیتی",
+                                text = "هشدار امنیتی",
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                             )
                         },
                         text = {
                             Text(
-                                "گوشی شما روت شده است. این ممکن است امنیت اپ و داده‌های شما را به خطر بیندازد. لطفاً با احتیاط استفاده کنید."
+                                text = "گوشی شما روت شده است. این ممکن است امنیت اپ و داده های شما را به خطر بیندازد."
                             )
                         },
                         confirmButton = {
                             TextButton(onClick = { rootWarningShown = true }) {
-                                Text("متوجه شدم", color = AccentBlue)
+                                Text(text = "متوجه شدم", color = AccentBlue)
                             }
                         }
                     )
@@ -352,11 +352,11 @@ class MainActivity : ComponentActivity() {
                                         return@launch
                                     }
                                     analyzeProgress = 0.5f
-                                    statusMessage = "تشخیص کندل‌ها..."
+                                    statusMessage = "تشخیص کندل ها..."
                                     delay(200)
                                     val prep = prepareAnalysis(uri2)
                                     analyzeProgress = 0.85f
-                                    statusMessage = "آماده‌سازی..."
+                                    statusMessage = "آماده سازی..."
                                     delay(300)
                                     analyzeProgress = 1f
                                     delay(200)
@@ -561,22 +561,17 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.padding(32.dp)
                             ) {
                                 Text(
-                                    if (!isOnline) "📶" else "⚠️",
-                                    style = MaterialTheme.typography.headlineLarge
-                                )
-                                Spacer(Modifier.height(16.dp))
-                                Text(
-                                    if (!isOnline) "حالت آفلاین" else "خطا",
+                                    text = if (!isOnline) "حالت آفلاین" else "خطا",
                                     color = TextPrimary,
                                     style = MaterialTheme.typography.headlineMedium
                                 )
                                 Spacer(Modifier.height(16.dp))
                                 Text(
-                                    errorMessage.ifEmpty {
+                                    text = errorMessage.ifEmpty {
                                         if (!isOnline) {
-                                            "اتصال اینترنت برقرار نیست. برای تحلیل دقیق، اینترنت را روشن کنید."
+                                            "اتصال اینترنت برقرار نیست."
                                         } else {
-                                            "لطفاً دوباره تلاش کنید."
+                                            "لطفا دوباره تلاش کنید."
                                         }
                                     },
                                     color = TextSecondary,
