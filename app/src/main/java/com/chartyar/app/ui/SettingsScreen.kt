@@ -30,6 +30,7 @@ fun SettingsScreen(
     onShowGlossary: () -> Unit,
     onShowEducation: () -> Unit,
     onShowAbout: () -> Unit,
+    onShowChangelog: () -> Unit,
     onShowPrivacy: () -> Unit,
     onShowTerms: () -> Unit,
     onAutoSaveChange: (Boolean) -> Unit,
@@ -134,6 +135,15 @@ fun SettingsScreen(
             subtitle = "اطلاعات کامل اپ، تماس، نسخه",
             color = AccentBlue,
             onClick = onShowAbout
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        DangerButton(
+            title = "تغییرات نسخه ها",
+            subtitle = "تاریخچه تغییرات اپ",
+            color = AccentGreen,
+            onClick = onShowChangelog
         )
 
         Spacer(Modifier.height(20.dp))
@@ -428,4 +438,4 @@ private fun DangerButton(
             )
         }
     }
-} 
+}
