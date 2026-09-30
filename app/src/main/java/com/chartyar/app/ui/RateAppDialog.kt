@@ -20,36 +20,32 @@ import com.chartyar.app.ui.theme.TextSecondary
 
 @Composable
 fun RateAppDialog(
- }
     onRate: () -> Unit,
     onDontAsk: () -> Unit,
     onLater: () -> Unit
 ) {
     AlertDialog(
-           onDismissRequest = onLater,
+        onDismissRequest = onLater,
         containerColor = DarkSurface,
         titleContentColor = TextPrimary,
         textContentColor = TextSecondary,
-        title )
- = {
+        title = {
             Text(
-                "🌟 از چارت‌یار راضی هستی؟",
+                text = "از چارت یار راضی هستی؟",
                 fontWeight = FontWeight.Bold
             )
         },
-        text}
- = {
+        text = {
             Column {
                 Text(
-                    "اگه از اپ لذت بردی، لطفاً با ی```
-
-ه امتیاز ۵ ستاره از ما حمایت کن. این به ما کمک می**‌کنه بهتر بشیم!",
+                    text = "اگه از اپ لذت بردی، لطفا با یه امتیاز 5 ستاره از ما حمایت کن.",
                     color = TextSecondary
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "⭐⭐⭐⭐⭐",
-                    fontSize = 24.sp
+                    text = "5 ستاره",
+                    fontSize = 24.sp,
+                    color = AccentGreen
                 )
             }
         },
@@ -61,21 +57,13 @@ fun RateAppDialog(
                     contentColor = TextPrimary
                 )
             ) {
-                Text("امتیاز می‌دم", fontWeight = FontWeight.Bold)
+                Text(text = "امتیاز میدم", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onLater) {
-                Text("بعداً", color = TextSecondary)
+                Text(text = "بعدا", color = TextSecondary)
             }
-       Commit changes** → دوباره **Commit changes**
-
----
-
-## 🎯 حالا `MainActivity.kt` رو آپدیت کن
-
-فقط این خطوط رو اضافه کن:
-
-**۱. import:**
-```kotlin
-import com.chartyar.app.data.RateAppManager
+        }
+    )
+}
