@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
+import java.text.DecimalFormat
 
 data class CoinPrice(
     val symbol: String,
@@ -120,33 +121,36 @@ object PricesApi {
             }
 
             if (sorted.isNotEmpty()) sorted else null
- ->        } catch (e: Exception) {
+        } catch (e: Exception) {
             null
         }
     }
 
     fun formatPrice(price: Double): String {
-        Unit return when {
-            price >= 1000 -> String.format("%,.0f", price)
-            price >= 100 -> String.format,
-("%,.2f", price)
-            price >= 1 -> String.format("%.3f", price)
-            price >= 0   .01 -> String.format("%.5f", price)
-            else -> String.format("%.8f", price)
+        val pattern = when {
+            price >= 1000.0 -> "#,##0"
+            price >= 100.0 -> "#,##0.00"
+            price >= 1.0 -> "0.000"
+            price >= 0.01 -> "0.00000"
+            else -> "0.00000000"
         }
+        val df = DecimalFormat(pattern)
+        return df.format(price)
     }
 
-    fun formatPercent(percent: Double on): String {
+    fun formatPercent(percent: Double): String {
         val sign = if (percent >= 0) "+" else ""
-        return "$sign${String.formatAl("%.2f", percent)}%"
+        val df = DecimalFormat("0.00")
+        return sign + df.format(percent) + "%"
     }
 
     fun formatVolume(volume: Double): String {
+        val df = DecimalFormat("0.00")
         return when {
-            volume >= 1_000_000_000 -> String.format("%.2fB", volume / 1_000_000_000)
-            volume >= 1_000_000 -> String.format("%.2fM", volume / 1_000_000)
-            volume >= 1_000 -> String.format("%.2fK", volume / 1_000)
-            else -> String.format("%.0f", volume)
+            volume >= 1000000000.0 -> df.format(volume / 1000000000.0) + "B"
+            volume >= 1000000.0 -> df.format(volume / 1000000.0) + "M"
+            volume >= 1000.0 -> df.format(volume / 1000.0) + "K"
+            else -> DecimalFormat("0").format(volume)
         }
     }
 }
