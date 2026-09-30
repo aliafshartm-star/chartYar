@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -74,6 +75,12 @@ class MainActivity : ComponentActivity() {
 
         val shortcutAction = intent?.getStringExtra("shortcut_action")
 
+        // بررسی Deep Link
+        val deepLinkUri = intent?.data
+        val deepLinkHost = deepLinkUri?.host
+        val deepLinkSymbol = deepLinkUri?.getQueryParameter("symbol") ?: ""
+        val deepLinkTimeframe = deepLinkUri?.getQueryParameter("timeframe") ?: "4H"
+
         setContent {
             val themeFlow = remember { prefs.theme }
             val currentTheme by themeFlow.collectAsState(initial = "dark")
@@ -110,6 +117,7 @@ class MainActivity : ComponentActivity() {
                 var updateInfo by remember { mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
                 var updateDialogShown by remember { mutableStateOf(false) }
                 var showRateDialog by remember { mutableStateOf(false) }
+                var showExitDialog by remember { mutableStateOf(false) }
 
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission()
@@ -189,6 +197,37 @@ class MainActivity : ComponentActivity() {
                         "alerts" -> currentScreen = "alerts"
                         "glossary" -> currentScreen = "glossary"
                     }
+
+                    // بررسی Deep Link
+                    when (deepLinkHost) {
+                        "open" -> {
+                            // اپ باز شده، برو به home
+                        }
+                        "analysis" -> {
+                            if (deepLinkSymbol.isNotEmpty()) {
+                                selectedTimeframe = deepLinkTimeframe
+                                currentScreen = "symbol"
+                            }
+                        }
+                    }
+                }
+
+                // BackHandler
+                BackHandler(enabled = !isLoading && disclaimerAccepted) {
+                    when (currentScreen) {
+                        "home" -> showExitDialog = true
+                        "privacy", "terms", "glossary", "education", "settings" -> {
+                            currentScreen = "home"
+                        }
+                        "history", "alerts", "news", "prices" -> {
+                            currentScreen = "home"
+                        }
+                        "upload" -> currentScreen = "home"
+                        "symbol" -> currentScreen = "upload"
+                        "calibration" -> currentScreen = "symbol"
+                        "result" -> currentScreen = "home"
+                        else -> showExitDialog = true
+                    }
                 }
 
                 if (isRooted && !rootWarningShown) {
@@ -235,6 +274,18 @@ class MainActivity : ComponentActivity() {
                         },
                         onLater = {
                             showRateDialog = false
+                        }
+                    )
+                }
+
+                if (showExitDialog) {
+                    ExitDialog(
+                        onConfirm = {
+                            showExitDialog = false
+                            finish()
+                        },
+                        onDismiss = {
+                            showExitDialog = false
                         }
                     )
                 }
