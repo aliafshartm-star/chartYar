@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,7 +36,8 @@ fun HomeScreen(
     onHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAlertsClick: () -> Unit,
-    onNewsClick: () -> Unit
+    onNewsClick: () -> Unit,
+    onPricesClick: () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -68,6 +70,13 @@ fun HomeScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
+            IconButton(onClick = onPricesClick) {
+                Icon(
+                    imageVector = Icons.Filled.TrendingUp,
+                    contentDescription = "قیمت‌ها",
+                    tint = AccentBlue
+                )
+            }
             IconButton(onClick = onNewsClick) {
                 Icon(
                     imageVector = Icons.Filled.Article,
