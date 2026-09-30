@@ -1,16 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- فقط HTTPS مجاز -->
+
+    <!-- تنظیمات پیش‌فرض: فقط HTTPS -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
-            <certificates src="system"/>
+            <certificates src="system" />
         </trust-anchors>
     </base-config>
 
-    <!-- دامنه‌های خاص Binance -->
+    <!-- دامنه‌های خاص: Binance و APIها -->
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">binance.com</domain>
         <domain includeSubdomains="true">api.binance.com</domain>
         <domain includeSubdomains="true">fapi.binance.com</domain>
+        <domain includeSubdomains="true">data-api.binance.vision</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
     </domain-config>
+
+    <!-- CoinGecko -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">coingecko.com</domain>
+        <domain includeSubdomains="true">api.coingecko.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- CoinPaprika -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">coinpaprika.com</domain>
+        <domain includeSubdomains="true">api.coinpaprika.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- CryptoCompare -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">cryptocompare.com</domain>
+        <domain includeSubdomains="true">min-api.cryptocompare.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Firebase (اگه استفاده می‌شه) -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">googleapis.com</domain>
+        <domain includeSubdomains="true">firebaseio.com</domain>
+        <domain includeSubdomains="true">firebase.google.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- ❌ دامنه‌های غیرمجاز: هیچ‌کدوم -->
+    <!-- فقط دامنه‌های بالا مجاز به ارتباط هستن -->
+
 </network-security-config>
