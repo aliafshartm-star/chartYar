@@ -63,6 +63,8 @@ class MainActivity : ComponentActivity() {
         NotificationHelper.createChannel(applicationContext)
         LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.APP_OPEN)
 
+        val shortcutAction = intent?.getStringExtra("shortcut_action")
+
         setContent {
             val themeFlow = remember { prefs.theme }
             val currentTheme by themeFlow.collectAsState(initial = "dark")
@@ -85,6 +87,8 @@ class MainActivity : ComponentActivity() {
                 var alertItems by remember { mutableStateOf<List<PriceAlert>>(emptyList()) }
                 var newsItems by remember { mutableStateOf<List<NewsItem>>(emptyList()) }
                 var isNewsLoading by remember { mutableStateOf(false) }
+                var priceItems by remember { mutableStateOf<List<CoinPrice>>(emptyList()) }
+                var isPricesLoading by remember { mutableStateOf(false) }
                 var autoSaveHistory by remember { mutableStateOf(true) }
                 var showWarnings by remember { mutableStateOf(true) }
                 var defaultTimeframe by remember { mutableStateOf("4H") }
@@ -132,6 +136,12 @@ class MainActivity : ComponentActivity() {
                         if (fetched != null) newsItems = fetched
                         isNewsLoading = false
                     }
+                    if (currentScreen == "prices" && priceItems.isEmpty()) {
+                        isPricesLoading = true
+                        val fetched = withContext(Dispatchers.IO) { PricesApi.fetchPrices() }
+                        if (fetched != null) priceItems = fetched
+                        isPricesLoading = false
+                    }
                 }
 
                 LaunchedEffect(Unit) {
@@ -140,6 +150,12 @@ class MainActivity : ComponentActivity() {
                     val elapsed = System.currentTimeMillis() - startTime
                     if (elapsed < 1500) delay(1500 - elapsed)
                     isLoading = false
+
+                    when (shortcutAction) {
+                        "new_analysis" -> currentScreen = "upload"
+                        "alerts" -> currentScreen = "alerts"
+                        "glossary" -> currentScreen = "glossary"
+                    }
                 }
 
                 when {
@@ -182,7 +198,8 @@ class MainActivity : ComponentActivity() {
                             onHistoryClick = { currentScreen = "history" },
                             onSettingsClick = { currentScreen = "settings" },
                             onAlertsClick = { currentScreen = "alerts" },
-                            onNewsClick = { currentScreen = "news" }
+                            onNewsClick = { currentScreen = "news" },
+                            onPricesClick = { currentScreen = "prices" }
                         )
                         "upload" -> UploadScreen(
                             onBack = { currentScreen = "home" },
@@ -388,10 +405,29 @@ class MainActivity : ComponentActivity() {
                             onRefresh = {
                                 lifecycleScope.launch {
                                     isNewsLoading = true
-                                    val fetched = withContext(Dispatchers.IO) { NewsApi.fetchNews(30) }
+                                    val fetched = ( withContext(Dispatchers.IO) { NewsApi.fetchNews(30) }
                                     if (fetched != null) newsItems = fetched
-                                    isNewsLoading = false
+                                    isNewsfetLoading = false
                                 }
+                            }
+                        )
+                        "prices" -> PricesScreen(
+                            prices = priceItems,
+                            isLoading = ischedPricesLoading,
+                            isOnline = isOnline,
+                            onBack = { currentScreen = "home" },
+                            onRefresh = {
+                                lifecycle !=Scope.launch {
+                                    isPricesLoading = true
+                                    val fetched = withContext(Dispatchers.IO) { PricesApi.fetch nullPrices() }
+                                    if) priceItems = fetched
+                                    isPricesLoading = false
+                                }
+                            },
+                            onCoinClick = { symbol ->
+                                // کاربر روی ارز زد → می‌ره تحلیل
+                                // فعلاً فقط برمی‌گرده خونه
+                                currentScreen = "home"
                             }
                         )
                         "settings" -> SettingsScreen(
