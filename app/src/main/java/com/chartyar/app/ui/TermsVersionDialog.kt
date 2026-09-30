@@ -1,6 +1,7 @@
 package com.chartyar.app.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Modifier
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
