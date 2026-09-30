@@ -7,18 +7,10 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
-/**
- * CryptoCompare API — منبع چهارم
- * رایگان: ۱۰۰,۰۰۰ درخواست در ماه
- * بدون نیاز به API Key
- */
 object CryptoCompareApi {
 
     private const val BASE_URL = "https://min-api.cryptocompare.com/data/v2"
 
-    /**
-     * تبدیل symbol به فرمت CryptoCompare
-     */
     private fun mapSymbol(symbol: String): String? {
         val clean = symbol.replace("USDT", "").replace("BUSD", "").uppercase()
         return when (clean) {
@@ -31,42 +23,52 @@ object CryptoCompareApi {
     }
 
     /**
-     * تبدیل تایم‌فریم به دقیقه برای CryptoCompare
+     * endpoint مناسب بر اساس تایم‌فریم
      */
-    private fun mapTimeframe(timeframe: String): Int? {
+    private fun getEndpoint(timeframe: String): String {
+        return when (timeframe) {
+            "1m", "5m", "15m", "30m" -> "histominute"
+            "1H", "4H" -> "histohour"
+            "1D", "1W", "1M" -> "histoday"
+            else -> "histohour"
+        }
+    }
+
+    /**
+     * aggregate مناسب بر اساس تایم‌فریم
+     */
+    private fun getAggregate(timeframe: String): Int {
         return when (timeframe) {
             "1m" -> 1
             "5m" -> 5
             "15m" -> 15
             "30m" -> 30
-            "1H" -> 60
-            "4H" -> 240
-            "1D" -> 1440
-            "1W" -> 10080
-            "1M" -> 43200
-            else -> 60
+            "1H" -> 1
+            "4H" -> 4
+            "1D" -> 1
+            "1W" -> 7
+            "1M" -> 30
+            else -> 1
         }
     }
 
-    /**
-     * دریافت کندل‌ها از CryptoCompare
-     */
     suspend fun fetchCandles(
         symbol: String,
         timeframe: String
     ): List<Candle>? = withContext(Dispatchers.IO) {
         try {
             val fsym = mapSymbol(symbol) ?: return@withContext null
-            val minutes = mapTimeframe(timeframe) ?: return@withContext null
+            val endpoint = getEndpoint(timeframe)
+            val aggregate = getAggregate(timeframe)
             val limit = 200
 
-            val urlString = "$BASE_URL/histominute?fsym=$fsym&tsym=USD&limit=$limit&aggregate=$minutes"
+            val urlString = "$BASE_URL/$endpoint?fsym=$fsym&tsym=USD&limit=$limit&aggregate=$aggregate"
             val url = URL(urlString)
 
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
-            connection.connectTimeout = 10000
-            connection.readTimeout = 10000
+            connection.connectTimeout = 15000
+            connection.readTimeout = 15000
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("User-Agent", "ChartYar/1.0")
 
@@ -85,9 +87,6 @@ object CryptoCompareApi {
         }
     }
 
-    /**
-     * فرمت: {"Response":"Success","Data":{"Data":[{"time":...,"open":...,"high":...,"low":...,"close":...,"volumefrom":...}]}}
-     */
     private fun parseResponse(json: String): List<Candle>? {
         return try {
             val root = JSONObject(json)
@@ -98,11 +97,13 @@ object CryptoCompareApi {
             for (i in 0 until dataArray.length()) {
                 val item = dataArray.getJSONObject(i)
                 val timestamp = item.getLong("time") * 1000
-                val open = item.getDouble("open")
-                val high = item.getDouble("high")
-                val low = item.getDouble("low")
-                val close = item.getDouble("close")
+                val open = item.optDouble("open", 0.0)
+                val high = item.optDouble("high", 0.0)
+                val low = item.optDouble("low", 0.0)
+                val close = item.optDouble("close", 0.0)
                 val volume = item.optDouble("volumefrom", 0.0)
+
+                if (open <= 0.0 || close <= 0.0) continue
 
                 candles.add(
                     Candle(
