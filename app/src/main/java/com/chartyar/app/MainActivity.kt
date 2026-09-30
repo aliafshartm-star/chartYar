@@ -50,6 +50,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var prefs: PrefsManager
     private lateinit var db: AppDatabase
     private lateinit var cache: CacheManager
+    private lateinit var rateAppManager: RateAppManager
     private var pendingBitmap: Bitmap? = null
     private var pendingCandlePixels: List<CandlePixel>? = null
     private var pendingChartTop: Int = 0
@@ -61,12 +62,15 @@ class MainActivity : ComponentActivity() {
         prefs = PrefsManager(applicationContext)
         db = AppDatabase.get(applicationContext)
         cache = CacheManager(applicationContext)
+        rateAppManager = RateAppManager(applicationContext)
 
         NotificationHelper.createChannel(applicationContext)
         LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.APP_OPEN)
 
         CameraHelper.clearOldCameraFiles(applicationContext)
         cache.clearOldCache()
+
+        rateAppManager.recordLaunch()
 
         val shortcutAction = intent?.getStringExtra("shortcut_action")
 
@@ -105,6 +109,7 @@ class MainActivity : ComponentActivity() {
                 var isRooted by remember { mutableStateOf(false) }
                 var updateInfo by remember { mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
                 var updateDialogShown by remember { mutableStateOf(false) }
+                var showRateDialog by remember { mutableStateOf(false) }
 
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission()
@@ -136,7 +141,6 @@ class MainActivity : ComponentActivity() {
                     }
                     isRooted = rootStatus.isRooted
 
-                    // چک آپدیت
                     if (isOnline) {
                         val info = withContext(Dispatchers.IO) {
                             UpdateChecker.checkForUpdate()
@@ -144,6 +148,11 @@ class MainActivity : ComponentActivity() {
                         if (info != null && info.hasUpdate) {
                             updateInfo = info
                         }
+                    }
+
+                    if (rateAppManager.shouldShowRateDialog()) {
+                        showRateDialog = true
+                        rateAppManager.markShown()
                     }
                 }
 
@@ -182,7 +191,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // دیالوگ هشدار روت
                 if (isRooted && !rootWarningShown) {
                     AlertDialog(
                         onDismissRequest = { rootWarningShown = true },
@@ -208,11 +216,26 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                // دیالوگ آپدیت
                 if (updateInfo != null && !updateDialogShown) {
                     UpdateDialog(
                         updateInfo = updateInfo!!,
                         onDismiss = { updateDialogShown = true }
+                    )
+                }
+
+                if (showRateDialog) {
+                    RateAppDialog(
+                        onRate = {
+                            rateAppManager.openInCafeBazaar()
+                            showRateDialog = false
+                        },
+                        onDontAsk = {
+                            rateAppManager.markDontAsk()
+                            showRateDialog = false
+                        },
+                        onLater = {
+                            showRateDialog = false
+                        }
                     )
                 }
 
