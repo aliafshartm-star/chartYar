@@ -6,19 +6,14 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
-/**
- * CoinPaprika API — منبع سوم
- * رایگان: ۲۰,۰۰۰ درخواست در ماه
- * بدون نیاز به API Key
- */
 object CoinPaprikaApi {
 
     private const val BASE_URL = "https://api.coinpaprika.com/v1"
 
-    /**
-     * تبدیل symbol به ID CoinPaprika
-     */
     private fun mapSymbol(symbol: String): String? {
         val clean = symbol.replace("USDT", "").replace("BUSD", "").uppercase()
         return when (clean) {
@@ -53,22 +48,44 @@ object CoinPaprikaApi {
     }
 
     /**
-     * دریافت کندل‌ها از CoinPaprika
+     * تعداد روز بر اساس تایم‌فریم
      */
+    private fun mapDays(timeframe: String): Int {
+        return when (timeframe) {
+            "1m", "5m", "15m", "30m" -> 7
+            "1H", "4H" -> 30
+            "1D" -> 90
+            "1W" -> 180
+            "1M" -> 365
+            else -> 30
+        }
+    }
+
+    /**
+     * تاریخ شروع به فرمت YYYY-MM-DD
+     */
+    private fun getStartDate(daysAgo: Int): String {
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.DAY_OF_YEAR, -daysAgo)
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        return sdf.format(cal.time)
+    }
+
     suspend fun fetchCandles(
         symbol: String,
         timeframe: String
     ): List<Candle>? = withContext(Dispatchers.IO) {
         try {
             val coinId = mapSymbol(symbol) ?: return@withContext null
-            // CoinPaprika فقط historical data داره، با روز محدود
-            val urlString = "$BASE_URL/coins/$coinId/ohlcv/latest"
+            val days = mapDays(timeframe)
+            val startDate = getStartDate(days)
+            val urlString = "$BASE_URL/coins/$coinId/ohlcv/historical?start=$startDate"
             val url = URL(urlString)
 
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
-            connection.connectTimeout = 10000
-            connection.readTimeout = 10000
+            connection.connectTimeout = 15000
+            connection.readTimeout = 15000
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("User-Agent", "ChartYar/1.0")
 
@@ -94,15 +111,24 @@ object CoinPaprikaApi {
         return try {
             val array = JSONArray(json)
             val candles = mutableListOf<Candle>()
-            val now = System.currentTimeMillis()
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
 
             for (i in 0 until array.length()) {
                 val item = array.getJSONObject(i)
-                val open = item.getDouble("open")
-                val high = item.getDouble("high")
-                val low = item.getDouble("low")
-                val close = item.getDouble("close")
+                val open = item.optDouble("open", 0.0)
+                val high = item.optDouble("high", 0.0)
+                val low = item.optDouble("low", 0.0)
+                val close = item.optDouble("close", 0.0)
                 val volume = item.optDouble("volume", 0.0)
+                val timeOpen = item.optString("time_open", "")
+
+                if (open <= 0.0 || close <= 0.0) continue
+
+                val timestamp = try {
+                    sdf.parse(timeOpen)?.time ?: 0L
+                } catch (e: Exception) {
+                    0L
+                }
 
                 candles.add(
                     Candle(
@@ -111,12 +137,12 @@ object CoinPaprikaApi {
                         low = low,
                         close = close,
                         volume = volume,
-                        timestamp = now - (array.length() - i) * 3600000L
+                        timestamp = timestamp
                     )
                 )
             }
 
-            if (candles.size >= 5) candles else null
+            if (candles.size >= 10) candles else null
         } catch (e: Exception) {
             null
         }
