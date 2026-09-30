@@ -7,6 +7,7 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
@@ -25,12 +26,33 @@
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.ChartYar"
+            android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
             android:windowSoftInputMode="adjustResize">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Deep Link برای اشتراک‌گذاری -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="chartyar"
+                    android:host="open" />
+            </intent-filter>
+
+            <!-- Deep Link برای تحلیل -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="chartyar"
+                    android:host="analysis" />
             </intent-filter>
 
             <meta-data
