@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
@@ -11,7 +12,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import kotlinx.coroutines.flow.Flow
 
-@Entity(tableName = "analysis_history")
+@Entity(
+    tableName = "analysis_history",
+    indices = [
+        Index(value = ["timestamp"]),
+        Index(value = ["timeframe"]),
+        Index(value = ["signalText"])
+    ]
+)
 data class AnalysisHistory(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val timestamp: Long,
@@ -34,6 +42,12 @@ interface AnalysisHistoryDao {
     @Query("SELECT * FROM analysis_history ORDER BY timestamp DESC")
     fun getAll(): Flow<List<AnalysisHistory>>
 
+    @Query("SELECT * FROM analysis_history ORDER BY timestamp DESC LIMIT :limit")
+    fun getRecent(limit: Int): Flow<List<AnalysisHistory>>
+
+    @Query("SELECT COUNT(*) FROM analysis_history")
+    suspend fun getCount(): Int
+
     @Insert
     suspend fun insert(item: AnalysisHistory): Long
 
@@ -46,7 +60,7 @@ interface AnalysisHistoryDao {
 
 @Database(
     entities = [AnalysisHistory::class, PriceAlert::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
