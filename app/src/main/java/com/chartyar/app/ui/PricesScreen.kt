@@ -9,15 +9,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chartyar.app.data.CoinPrice
 import com.chartyar.app.data.PricesApi
+import com.chartyar.app.data.WatchlistManager
 import com.chartyar.app.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -31,24 +35,37 @@ fun PricesScreen(
     onRefresh: () -> Unit,
     onCoinClick: (String) -> Unit
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    var lastRefresh by remember { mutableStateOf(System.currentTimeMillis()) }
+    val context = LocalContext.current
+    val watchlistManager = remember { WatchlistManager(context) }
 
-    // فیلتر جستجو
-    val filtered = remember(prices, searchQuery) {
-        if (searchQuery.isBlank()) prices
-        else prices.filter {
-            it.symbol.contains(searchQuery, ignoreCase = true) ||
-                    it.name.contains(searchQuery, ignoreCase = true)
+    var searchQuery by remember { mutableStateOf("") }
+    var showOnlyWatchlist by remember { mutableStateOf(false) }
+    var watchlistVersion by remember { mutableStateOf(0) }
+
+    // فیلتر
+    val filtered = remember(prices, searchQuery, showOnlyWatchlist, watchlistVersion) {
+        var result = prices
+
+        if (showOnlyWatchlist) {
+            val watchlist = watchlistManager.getAll()
+            result = result.filter { watchlist.contains(it.symbol) }
         }
+
+        if (searchQuery.isNotBlank()) {
+            result = result.filter {
+                it.symbol.contains(searchQuery, ignoreCase = true) ||
+                        it.name.contains(searchQuery, ignoreCase = true)
+            }
+        }
+
+        result
     }
 
-    // آپدیت خودکار هر ۳۰ ثانیه
+    // آپدیت خودکار
     LaunchedEffect(isOnline) {
         while (isOnline) {
             delay(30_000)
             onRefresh()
-            lastRefresh = System.currentTimeMillis()
         }
     }
 
@@ -105,7 +122,30 @@ fun PricesScreen(
             }
         }
 
-        // فیلد جستجو
+        // فیلتر Watchlist
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FilterChip(
+                selected = showOnlyWatchlist,
+                onClick = { showOnlyWatchlist = !showOnlyWatchlist },
+                label = {
+                    Text(
+                        "⭐ علاقه‌مندی‌ها (${watchlistManager.size()})",
+                        color = if (showOnlyWatchlist) TextPrimary else TextSecondary
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = AccentYellow.copy(alpha = 0.2f),
+                    containerColor = DarkSurface
+                )
+            )
+        }
+
+        // جستجو
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -150,13 +190,28 @@ fun PricesScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("💹", fontSize = 56.sp)
+                        Text(
+                            if (showOnlyWatchlist) "⭐" else "💹",
+                            fontSize = 56.sp
+                        )
                         Spacer(Modifier.height(12.dp))
                         Text(
-                            if (prices.isEmpty()) "قیمتی دریافت نشد" else "ارزی پیدا نشد",
+                            when {
+                                prices.isEmpty() -> "قیمتی دریافت نشد"
+                                showOnlyWatchlist -> "لیست علاقه‌مندی‌ها خالیه"
+                                else -> "ارزی پیدا نشد"
+                            },
                             color = TextSecondary,
                             style = MaterialTheme.typography.bodyLarge
                         )
+                        if (showOnlyWatchlist && watchlistManager.isEmpty()) {
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                "روی ستاره ارزها بزن",
+                                color = TextSecondary,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
             }
@@ -166,7 +221,19 @@ fun PricesScreen(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(filtered, key = { it.symbol }) { coin ->
-                        CoinPriceRow(coin = coin, onClick = { onCoinClick(coin.symbol) })
+                        val isFavorite = remember(watchlistVersion) {
+                            watchlistManager.contains(coin.symbol)
+                        }
+
+                        CoinPriceRow(
+                            coin = coin,
+                            isFavorite = isFavorite,
+                            onClick = { onCoinClick(coin.symbol) },
+                            onFavoriteToggle = {
+                                watchlistManager.toggle(coin.symbol)
+                                watchlistVersion++
+                            }
+                        )
                     }
                 }
             }
@@ -175,7 +242,12 @@ fun PricesScreen(
 }
 
 @Composable
-private fun CoinPriceRow(coin: CoinPrice, onClick: () -> Unit) {
+private fun CoinPriceRow(
+    coin: CoinPrice,
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    onFavoriteToggle: () -> Unit
+) {
     val changeColor = if (coin.isUp) AccentGreen else AccentRed
     val arrow = if (coin.isUp) "▲" else "▼"
 
@@ -189,9 +261,24 @@ private fun CoinPriceRow(coin: CoinPrice, onClick: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(start = 6.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // ستاره
+            IconButton(
+                onClick = onFavoriteToggle,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+                    contentDescription = "علاقه‌مندی",
+                    tint = if (isFavorite) AccentYellow else TextSecondary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            Spacer(Modifier.width(4.dp))
+
             // نام و نماد
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -218,11 +305,7 @@ private fun CoinPriceRow(coin: CoinPrice, onClick: () -> Unit) {
                 )
                 Spacer(Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        arrow,
-                        color = changeColor,
-                        fontSize = 10.sp
-                    )
+                    Text(arrow, color = changeColor, fontSize = 10.sp)
                     Spacer(Modifier.width(3.dp))
                     Text(
                         PricesApi.formatPercent(coin.changePercent24h),
