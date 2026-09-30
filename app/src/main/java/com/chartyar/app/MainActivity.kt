@@ -52,6 +52,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var db: AppDatabase
     private lateinit var cache: CacheManager
     private lateinit var rateAppManager: RateAppManager
+    private lateinit var legalManager: LegalManager
+    private lateinit var dataManager: DataManager
     private var pendingBitmap: Bitmap? = null
     private var pendingCandlePixels: List<CandlePixel>? = null
     private var pendingChartTop: Int = 0
@@ -64,6 +66,8 @@ class MainActivity : ComponentActivity() {
         db = AppDatabase.get(applicationContext)
         cache = CacheManager(applicationContext)
         rateAppManager = RateAppManager(applicationContext)
+        legalManager = LegalManager(applicationContext)
+        dataManager = DataManager(applicationContext)
 
         NotificationHelper.createChannel(applicationContext)
         LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.APP_OPEN)
@@ -117,6 +121,8 @@ class MainActivity : ComponentActivity() {
                 var updateDialogShown by remember { mutableStateOf(false) }
                 var showRateDialog by remember { mutableStateOf(false) }
                 var showExitDialog by remember { mutableStateOf(false) }
+                var showAgeDialog by remember { mutableStateOf(false) }
+                var showTermsUpdateDialog by remember { mutableStateOf(false) }
 
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission()
@@ -160,6 +166,12 @@ class MainActivity : ComponentActivity() {
                     if (rateAppManager.shouldShowRateDialog()) {
                         showRateDialog = true
                         rateAppManager.markShown()
+                    }
+
+                    if (!legalManager.hasConfirmedAge()) {
+                        showAgeDialog = true
+                    } else if (!legalManager.hasAcceptedLatestTerms()) {
+                        showTermsUpdateDialog = true
                     }
                 }
 
@@ -223,6 +235,32 @@ class MainActivity : ComponentActivity() {
                         "result" -> currentScreen = "home"
                         else -> showExitDialog = true
                     }
+                }
+
+                // دیالوگ تایید سن
+                if (showAgeDialog) {
+                    AgeVerificationDialog(
+                        onConfirm = {
+                            legalManager.confirmAge()
+                            legalManager.acceptTerms()
+                            legalManager.acceptPrivacy()
+                            showAgeDialog = false
+                        },
+                        onDecline = {
+                            finish()
+                        }
+                    )
+                }
+
+                // دیالوگ به‌روزرسانی شرایط
+                if (showTermsUpdateDialog) {
+                    TermsVersionDialog(
+                        onAccept = {
+                            legalManager.acceptTerms()
+                            legalManager.acceptPrivacy()
+                            showTermsUpdateDialog = false
+                        }
+                    )
                 }
 
                 if (isRooted && !rootWarningShown) {
