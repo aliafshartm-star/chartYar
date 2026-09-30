@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -38,12 +39,12 @@ fun ChangelogScreen(
                     "انتشار اولیه چارت یار",
                     "10+ اندیکاتور تکنیکال",
                     "11 الگوی کلاسیک",
-                    "تحلیل با 4 صرافی (Binance, CoinGecko, CoinPaprika, CryptoCompare)",
+                    "تحلیل با 4 صرافی",
                     "هشدار قیمت با نوتیفیکیشن",
                     "قیمت لحظه ای 30 ارز",
                     "اخبار بازار",
                     "دیکشنری اصطلاحات",
-                    "آموزش تحلیل (7 درس)",
+                    "آموزش تحلیل",
                     "پشتیبانی از فارسی و انگلیسی",
                     "حالت آفلاین",
                     "اشتراک گذاری متنی و تصویری",
@@ -61,7 +62,6 @@ fun ChangelogScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // هدر
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
@@ -77,7 +77,6 @@ fun ChangelogScreen(
             )
         }
 
-        // توضیح
         Card(
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             shape = RoundedCornerShape(12.dp),
@@ -87,7 +86,7 @@ fun ChangelogScreen(
                 modifier = Modifier.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "📋", fontSize = 24.sp)
+                Text(text = "info", fontSize = 20.sp)
                 Spacer(Modifier.width(10.dp))
                 Text(
                     text = "تاریخچه تغییرات اپ از ابتدا تا الان",
@@ -97,8 +96,7 @@ fun ChangelogScreen(
             }
         }
 
-        // لیست تغییرات
-        changelog.forEach { entry ->
+        for (entry in changelog) {
             ChangelogCard(entry = entry)
             Spacer(Modifier.height(12.dp))
         }
@@ -115,7 +113,6 @@ private fun ChangelogCard(entry: ChangelogEntry) {
         colors = CardDefaults.cardColors(containerColor = DarkSurface)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(18.dp)) {
-            // هدر کارت
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -162,8 +159,7 @@ private fun ChangelogCard(entry: ChangelogEntry) {
             Divider(color = Divider)
             Spacer(Modifier.height(12.dp))
 
-            // تغییرات
-            entry.changes.forEach { change ->
+            for (change in entry.changes) {
                 Row(
                     modifier = Modifier.padding(vertical = 3.dp),
                     verticalAlignment = Alignment.Top
