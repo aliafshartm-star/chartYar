@@ -3,6 +3,7 @@ package com.chartyar.app.ui
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Modifier
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,7 +40,7 @@ fun AgeVerificationDialog(
                     text = "این اپ مربوط به بازارهای مالی است و برای کاربران زیر 13 سال مناسب نیست.",
                     color = TextSecondary
                 )
-                Spacer(Modifier2.height(12.dp))
+                Spacer(Modifier.height(12.dp))
                 Text(
                     text = "آیا سن شما 13 سال یا بیشتر است؟",
                     color = TextPrimary,
@@ -64,8 +65,4 @@ fun AgeVerificationDialog(
             }
         }
     )
-}
-
-private object Modifier2 {
-    fun height(dp: androidx.compose.ui.unit.Dp) = androidx.compose.foundation.layout.Modifier.height(dp)
 }
