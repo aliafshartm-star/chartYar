@@ -75,7 +75,6 @@ class MainActivity : ComponentActivity() {
 
         val shortcutAction = intent?.getStringExtra("shortcut_action")
 
-        // بررسی Deep Link
         val deepLinkUri = intent?.data
         val deepLinkHost = deepLinkUri?.host
         val deepLinkSymbol = deepLinkUri?.getQueryParameter("symbol") ?: ""
@@ -198,11 +197,8 @@ class MainActivity : ComponentActivity() {
                         "glossary" -> currentScreen = "glossary"
                     }
 
-                    // بررسی Deep Link
                     when (deepLinkHost) {
-                        "open" -> {
-                            // اپ باز شده، برو به home
-                        }
+                        "open" -> { }
                         "analysis" -> {
                             if (deepLinkSymbol.isNotEmpty()) {
                                 selectedTimeframe = deepLinkTimeframe
@@ -212,11 +208,10 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // BackHandler
                 BackHandler(enabled = !isLoading && disclaimerAccepted) {
                     when (currentScreen) {
                         "home" -> showExitDialog = true
-                        "privacy", "terms", "glossary", "education", "settings" -> {
+                        "privacy", "terms", "glossary", "education", "about", "settings" -> {
                             currentScreen = "home"
                         }
                         "history", "alerts", "news", "prices" -> {
@@ -322,6 +317,9 @@ class MainActivity : ComponentActivity() {
                         onBack = { currentScreen = "settings" }
                     )
                     currentScreen == "education" -> EducationScreen(
+                        onBack = { currentScreen = "settings" }
+                    )
+                    currentScreen == "about" -> AboutScreen(
                         onBack = { currentScreen = "settings" }
                     )
                     else -> when (currentScreen) {
@@ -570,6 +568,7 @@ class MainActivity : ComponentActivity() {
                             onShowTutorial = { currentScreen = "tutorial" },
                             onShowGlossary = { currentScreen = "glossary" },
                             onShowEducation = { currentScreen = "education" },
+                            onShowAbout = { currentScreen = "about" },
                             onShowPrivacy = { currentScreen = "privacy" },
                             onShowTerms = { currentScreen = "terms" },
                             onAutoSaveChange = { v -> autoSaveHistory = v; lifecycleScope.launch { prefs.setAutoSaveHistory(v) } },
