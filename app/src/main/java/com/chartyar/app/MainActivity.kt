@@ -24,6 +24,7 @@ import com.chartyar.app.analysis.ImageProcessor.CandlePixel
 import com.chartyar.app.data.*
 import com.chartyar.app.ui.*
 import com.chartyar.app.ui.theme.*
+import com.chartyar.app.util.CameraHelper
 import com.chartyar.app.util.NotificationHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -62,6 +63,12 @@ class MainActivity : ComponentActivity() {
 
         NotificationHelper.createChannel(applicationContext)
         LocalAnalytics.logEvent(applicationContext, AnalyticsEvents.APP_OPEN)
+
+        // پاک کردن عکس‌های قدیمی دوربین
+        CameraHelper.clearOldCameraFiles(applicationContext)
+
+        // پاک کردن Cacheهای قدیمی
+        cache.clearOldCache()
 
         val shortcutAction = intent?.getStringExtra("shortcut_action")
 
