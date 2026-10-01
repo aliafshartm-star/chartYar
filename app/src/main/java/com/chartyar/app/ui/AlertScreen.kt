@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,13 +20,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chartyar.app.data.AlertHelper
-import com.chartyar.app.data.BinanceApi
+import com.chartyar.app.data.NobitexApi
 import com.chartyar.app.data.PriceAlert
 import com.chartyar.app.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -48,7 +49,6 @@ fun AlertScreen(
             .background(DarkBg)
             .padding(16.dp)
     ) {
-        // هدر
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
@@ -68,7 +68,6 @@ fun AlertScreen(
             }
         }
 
-        // توضیح
         Card(
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             shape = RoundedCornerShape(12.dp),
@@ -91,7 +90,6 @@ fun AlertScreen(
             }
         }
 
-        // لیست هشدارها
         if (alerts.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -129,7 +127,6 @@ fun AlertScreen(
         }
     }
 
-    // Dialog ساخت هشدار
     if (showCreateDialog) {
         CreateAlertDialog(
             onDismiss = { showCreateDialog = false },
@@ -166,7 +163,6 @@ private fun AlertCard(
         colors = CardDefaults.cardColors(containerColor = DarkSurface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // هدر کارت
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -263,6 +259,19 @@ private fun CreateAlertDialog(
     var symbolExpanded by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // ============ دریافت لیست ارزها از نوبیتکس ============
+    var allSymbols by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var isLoadingSymbols by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        isLoadingSymbols = true
+        val symbols = withContext(Dispatchers.IO) {
+            NobitexApi.fetchAllSymbols()
+        }
+        allSymbols = symbols
+        isLoadingSymbols = false
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = DarkSurface,
@@ -288,11 +297,11 @@ private fun CreateAlertDialog(
                     onExpandedChange = { symbolExpanded = !symbolExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedSymbol,
+                        value = if (isLoadingSymbols) "در حال بارگذاری..." else selectedSymbol,
                         onValueChange = {},
                         readOnly = true,
                         trailingIcon = {
-                            Icon(Icons.Filled.Add, null, tint = TextSecondary)
+                            Icon(Icons.Filled.ArrowDropDown, null, tint = TextSecondary)
                         },
                         modifier = Modifier.menuAnchor().fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -307,12 +316,20 @@ private fun CreateAlertDialog(
                         onDismissRequest = { symbolExpanded = false },
                         containerColor = DarkSurface
                     ) {
-                        BinanceApi.popularSymbols.forEach { (sym, name) ->
+                        allSymbols.forEach { (sym, name) ->
                             DropdownMenuItem(
                                 text = {
                                     Column {
-                                        Text(sym, color = TextPrimary, fontWeight = FontWeight.SemiBold)
-                                        Text(name, color = TextSecondary, fontSize = 11.sp)
+                                        Text(
+                                            sym,
+                                            color = TextPrimary,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            name,
+                                            color = TextSecondary,
+                                            fontSize = 11.sp
+                                        )
                                     }
                                 },
                                 onClick = {
@@ -382,7 +399,7 @@ private fun CreateAlertDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                // یادداشت (اختیاری)
+                // یادداشت
                 Text(
                     "یادداشت (اختیاری)",
                     color = TextPrimary,
