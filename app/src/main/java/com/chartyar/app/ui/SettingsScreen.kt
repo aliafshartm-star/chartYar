@@ -24,7 +24,6 @@ fun SettingsScreen(
     showWarnings: Boolean,
     defaultTimeframe: String,
     theme: String,
-    language: String,
     onBack: () -> Unit,
     onShowTutorial: () -> Unit,
     onShowGlossary: () -> Unit,
@@ -37,7 +36,6 @@ fun SettingsScreen(
     onShowWarningsChange: (Boolean) -> Unit,
     onDefaultTimeframeChange: (String) -> Unit,
     onThemeChange: (String) -> Unit,
-    onLanguageChange: (String) -> Unit,
     onResetDisclaimer: () -> Unit,
     onClearHistory: () -> Unit,
     onResetTutorial: () -> Unit
@@ -94,10 +92,6 @@ fun SettingsScreen(
         SectionTitle("ظاهر")
 
         ThemeSelector(current = theme, onSelect = onThemeChange)
-
-        Spacer(Modifier.height(12.dp))
-
-        LanguageSelector(current = language, onSelect = onLanguageChange)
 
         Spacer(Modifier.height(20.dp))
 
@@ -335,53 +329,6 @@ private fun ThemeSelector(current: String, onSelect: (String) -> Unit) {
             )
             Spacer(Modifier.height(8.dp))
             themes.forEach { (key, label) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onSelect(key) }
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = current == key,
-                        onClick = { onSelect(key) },
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = AccentGreen,
-                            unselectedColor = TextSecondary
-                        )
-                    )
-                    Text(
-                        label,
-                        color = TextPrimary,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LanguageSelector(current: String, onSelect: (String) -> Unit) {
-    val languages = listOf(
-        "fa" to "فارسی",
-        "en" to "English"
-    )
-
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Text(
-                "زبان برنامه",
-                color = TextPrimary,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(Modifier.height(8.dp))
-            languages.forEach { (key, label) ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
