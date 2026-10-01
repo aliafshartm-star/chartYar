@@ -1,5 +1,6 @@
 package com.chartyar.app.ui
 
+import android.app.Activity
 import android.view.ViewGroup
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -26,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.chartyar.app.ui.theme.*
 import ir.tapsell.mediation.Tapsell
+import ir.tapsell.mediation.ad.AdStateListener
 import ir.tapsell.mediation.ad.request.BannerSize
 import ir.tapsell.mediation.ad.request.RequestResultListener
 import ir.tapsell.mediation.ad.views.banner.BannerContainer
@@ -201,9 +204,12 @@ fun HomeScreen(
 // ============ بنر تبلیغاتی تپسل ============
 @Composable
 fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+
     AndroidView(
-        factory = { context ->
-            BannerContainer(context).apply {
+        factory = { ctx ->
+            BannerContainer(ctx).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
@@ -211,29 +217,42 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
             }
         },
         update = { container ->
-            try {
-                Tapsell.requestBannerAd(
-                    zoneId,
-                    BannerSize.BANNER_320_50,
-                    object : RequestResultListener {
-                        override fun onSuccess(adId: String) {
-                            try {
-                                val method = container.javaClass.getMethod(
-                                    "loadAd", String::class.java
-                                )
-                                method.invoke(container, adId)
-                            } catch (e: Exception) {
-                                // silent
+            if (activity != null) {
+                try {
+                    Tapsell.requestBannerAd(
+                        zoneId,
+                        BannerSize.BANNER_320_50,
+                        object : RequestResultListener {
+                            override fun onSuccess(adId: String) {
+                                try {
+                                    Tapsell.showBannerAd(
+                                        adId,
+                                        container,
+                                        activity,
+                                        object : AdStateListener.Banner {
+                                            override fun onAdImpression() {
+                                            }
+
+                                            override fun onAdClicked() {
+                                            }
+
+                                            override fun onAdFailed(message: String) {
+                                            }
+                                        }
+                                    )
+                                } catch (e: Exception) {
+                                    // silent
+                                }
+                            }
+
+                            override fun onFailure(message: String) {
+                                // تبلیغ در دسترس نیست
                             }
                         }
-
-                        override fun onFailure(message: String) {
-                            // silent
-                        }
-                    }
-                )
-            } catch (e: Exception) {
-                // silent
+                    )
+                } catch (e: Exception) {
+                    // silent
+                }
             }
         },
         modifier = modifier.fillMaxWidth()
