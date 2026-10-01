@@ -12,6 +12,7 @@ object NobitexApi {
     private const val BASE_URL = "https://apiv2.nobitex.ir"
     private const val MARKET_STATS_URL = "$BASE_URL/market/stats"
     private const val OHLC_URL = "$BASE_URL/market/udf/history"
+    private const val PING_URL = "$BASE_URL/v2/orderbook/BTCUSDT"
 
     @Volatile
     private var cachedSymbols: List<Pair<String, String>>? = null
@@ -100,6 +101,25 @@ object NobitexApi {
             parseOhlcResponse(response)
         } catch (e: Exception) {
             null
+        }
+    }
+
+    /**
+     * چک کردن آنلاین بودن نوبیتکس
+     */
+    suspend fun isOnline(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL(PING_URL)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
+            val code = connection.responseCode
+            connection.disconnect()
+            code in 200..299
+        } catch (e: Exception) {
+            false
         }
     }
 
