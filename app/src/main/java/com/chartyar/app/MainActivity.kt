@@ -1,7 +1,6 @@
 package com.chartyar.app
 
 import android.Manifest
-import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
@@ -34,7 +33,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Locale
 
 data class PreparationResult(
     val success: Boolean,
@@ -115,7 +113,6 @@ class MainActivity : ComponentActivity() {
                 var showWarnings by remember { mutableStateOf(true) }
                 var defaultTimeframe by remember { mutableStateOf("4H") }
                 var themeSetting by remember { mutableStateOf("dark") }
-                var languageSetting by remember { mutableStateOf("fa") }
                 var tutorialSeen by remember { mutableStateOf(true) }
                 var isOnline by remember { mutableStateOf(true) }
                 var rootWarningShown by remember { mutableStateOf(false) }
@@ -126,7 +123,6 @@ class MainActivity : ComponentActivity() {
                 var showExitDialog by remember { mutableStateOf(false) }
                 var showAgeDialog by remember { mutableStateOf(false) }
                 var showTermsUpdateDialog by remember { mutableStateOf(false) }
-                // ===== جدید: نتیجه Multi-TF =====
                 var multiTfResult by remember { mutableStateOf<MultiTimeframeResult?>(null) }
 
                 val permissionLauncher = rememberLauncherForActivityResult(
@@ -144,7 +140,6 @@ class MainActivity : ComponentActivity() {
                     showWarnings = prefs.showWarnings.first()
                     defaultTimeframe = prefs.defaultTimeframe.first()
                     themeSetting = prefs.theme.first()
-                    languageSetting = prefs.language.first()
                     tutorialSeen = prefs.isTutorialSeen.first()
                     selectedTimeframe = defaultTimeframe
 
@@ -629,7 +624,6 @@ class MainActivity : ComponentActivity() {
                             showWarnings = showWarnings,
                             defaultTimeframe = defaultTimeframe,
                             theme = themeSetting,
-                            language = languageSetting,
                             onBack = { currentScreen = "home" },
                             onShowTutorial = { currentScreen = "tutorial" },
                             onShowGlossary = { currentScreen = "glossary" },
@@ -642,13 +636,6 @@ class MainActivity : ComponentActivity() {
                             onShowWarningsChange = { v -> showWarnings = v; lifecycleScope.launch { prefs.setShowWarnings(v) } },
                             onDefaultTimeframeChange = { v -> defaultTimeframe = v; lifecycleScope.launch { prefs.setDefaultTimeframe(v) } },
                             onThemeChange = { v -> themeSetting = v; lifecycleScope.launch { prefs.setTheme(v) } },
-                            onLanguageChange = { v ->
-                                languageSetting = v
-                                lifecycleScope.launch {
-                                    prefs.setLanguage(v)
-                                    applyLanguage(v)
-                                }
-                            },
                             onResetDisclaimer = {
                                 lifecycleScope.launch {
                                     prefs.resetDisclaimer()
@@ -713,15 +700,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    private fun applyLanguage(langCode: String) {
-        val locale = Locale(langCode)
-        Locale.setDefault(locale)
-        val config = Configuration(resources.configuration)
-        config.setLocale(locale)
-        resources.updateConfiguration(config, resources.displayMetrics)
-        recreate()
     }
 
     private suspend fun prepareAnalysis(uri: Uri): PreparationResult = withContext(Dispatchers.Default) {
