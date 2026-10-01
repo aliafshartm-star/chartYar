@@ -28,7 +28,6 @@ import com.chartyar.app.ui.*
 import com.chartyar.app.ui.theme.*
 import com.chartyar.app.util.CameraHelper
 import com.chartyar.app.util.NotificationHelper
-import com.chartyar.app.work.WorkScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -77,9 +76,6 @@ class MainActivity : ComponentActivity() {
         cache.clearOldCache()
 
         rateAppManager.recordLaunch()
-
-        // زمان‌بندی چک خودکار قیمت‌ها
-        WorkScheduler.schedule(applicationContext)
 
         val shortcutAction = intent?.getStringExtra("shortcut_action")
 
@@ -241,7 +237,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // دیالوگ تایید سن
                 if (showAgeDialog) {
                     AgeVerificationDialog(
                         onConfirm = {
@@ -256,7 +251,6 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                // دیالوگ به‌روزرسانی شرایط
                 if (showTermsUpdateDialog) {
                     TermsVersionDialog(
                         onAccept = {
