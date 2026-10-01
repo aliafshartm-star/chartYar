@@ -2,202 +2,148 @@ package com.chartyar.app.analysis
 
 import com.chartyar.app.data.CacheManager
 import com.chartyar.app.data.MarketDataService
-
-data class TimeframeAnalysis(
-    val timeframe: String,
-    val signal: SignalType,
-    val confidence: Int,
-    val trend: TrendType,
-    val score: Double
-)
-
-data class MultiTimeframeResult(
-    val symbol: String,
-    val analyses: List<TimeframeAnalysis>,
-    val combinedSignal: SignalType,
-    val combinedConfidence: Int,
-    val alignment: Int,
-    val summary: String
-)
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 
 object MultiTimeframeAnalyzer {
 
-    /**
-     * انتخاب ۳ تایم‌فریم مرتبط بر اساس تایم فعلی
-     */
-    private fun getRelatedTimeframes(current: String): Triple<String, String, String> {
-        return when (current) {
-            "1m" -> Triple("15m", "1m", "1m")
-            "5m" -> Triple("30m", "5m", "1m")
-            "15m" -> Triple("1H", "15m", "5m")
-            "30m" -> Triple("4H", "30m", "15m")
-            "1H" -> Triple("4H", "1H", "15m")
-            "4H" -> Triple("1D", "4H", "1H")
-            "1D" -> Triple("1W", "1D", "4H")
-            "1W" -> Triple("1M", "1W", "1D")
-            "1M" -> Triple("1M", "1M", "1W")
-            else -> Triple("1D", "4H", "1H")
-        }
+    val DEFAULT_TIMEFRAMES = listOf("15m", "1H", "4H", "1D")
+
+    private fun weight(tf: String): Double = when (tf) {
+        "1m" -> 0.8
+        "5m" -> 1.0
+        "15m" -> 1.2
+        "30m" -> 1.5
+        "1H" -> 2.0
+        "4H" -> 3.0
+        "1D" -> 3.5
+        "1W" -> 4.0
+        "1M" -> 5.0
+        else -> 1.0
     }
 
-    /**
-     * وزن‌دهی تایم‌فریم‌ها
-     */
-    private fun getWeights(higher: String, current: String, lower: String): Triple<Double, Double, Double> {
-        return if (higher == current && current == lower) {
-            Triple(1.0, 0.0, 0.0)
-        } else if (higher == current) {
-            Triple(0.6, 0.0, 0.4)
-        } else if (current == lower) {
-            Triple(0.6, 0.4, 0.0)
-        } else {
-            Triple(0.5, 0.3, 0.2)
-        }
+    private fun signalValue(s: SignalType): Int = when (s) {
+        SignalType.STRONG_BUY -> 2
+        SignalType.BUY -> 1
+        SignalType.NEUTRAL -> 0
+        SignalType.SELL -> -1
+        SignalType.STRONG_SELL -> -2
     }
 
-    /**
-     * تبدیل سیگنال به امتیاز
-     */
-    private fun signalToScore(signal: SignalType): Double {
-        return when (signal) {
-            SignalType.STRONG_BUY -> 100.0
-            SignalType.BUY -> 60.0
-            SignalType.NEUTRAL -> 0.0
-            SignalType.SELL -> -60.0
-            SignalType.STRONG_SELL -> -100.0
-        }
-    }
-
-    /**
-     * تحلیل چند تایم‌فریم
-     */
     suspend fun analyze(
         symbol: String,
-        currentTimeframe: String,
+        timeframes: List<String> = DEFAULT_TIMEFRAMES,
         cache: CacheManager
-    ): MultiTimeframeResult? {
-        val (higher, current, lower) = getRelatedTimeframes(currentTimeframe)
-        val (wHigher, wCurrent, wLower) = getWeights(higher, current, lower)
+    ): MultiTimeframeResult? = withContext(Dispatchers.IO) {
 
-        val analyses = mutableListOf<TimeframeAnalysis>()
-
-        // تحلیل تایم بالاتر
-        val higherAnalysis = analyzeOneTimeframe(symbol, higher, cache)
-        if (higherAnalysis != null) analyses.add(higherAnalysis)
-
-        // تحلیل تایم فعلی
-        if (current != higher) {
-            val currentAnalysis = analyzeOneTimeframe(symbol, current, cache)
-            if (currentAnalysis != null) analyses.add(currentAnalysis)
+        // مرحله ۱: دریافت و تحلیل موازی همه تایم‌فریم‌ها
+        val results: List<Pair<String, AnalysisResult?>> = coroutineScope {
+            timeframes.map { tf ->
+                async {
+                    try {
+                        val data = MarketDataService.getCandles(symbol, tf, cache)
+                        val candles = data.candles
+                        if (candles == null || candles.size < 50) {
+                            tf to null
+                        } else {
+                            val r = withContext(Dispatchers.Default) {
+                                SignalEngine.analyze(candles, tf)
+                            }
+                            tf to r
+                        }
+                    } catch (e: Exception) {
+                        tf to null
+                    }
+                }
+            }.awaitAll()
         }
 
-        // تحلیل تایم پایین‌تر
-        if (lower != higher && lower != current) {
-            val lowerAnalysis = analyzeOneTimeframe(symbol, lower, cache)
-            if (lowerAnalysis != null) analyses.add(lowerAnalysis)
+        // مرحله ۲: جدا کردن موفق از ناموفق
+        val success = mutableMapOf<String, AnalysisResult>()
+        results.forEach { (tf, r) ->
+            if (r != null) success[tf] = r
         }
 
-        if (analyses.isEmpty()) return null
+        if (success.size < 2) return@withContext null
 
-        // محاسبه امتیاز ترکیبی
-        var combinedScore = 0.0
+        // مرحله ۳: سیگنال ترکیبی وزنی
+        var weightedSum = 0.0
         var totalWeight = 0.0
-
-        analyses.forEach { analysis ->
-            val weight = when (analysis.timeframe) {
-                higher -> wHigher
-                current -> wCurrent
-                lower -> wLower
-                else -> 0.0
-            }
-            combinedScore += signalToScore(analysis.signal) * weight
-            totalWeight += weight
+        success.forEach { (tf, r) ->
+            val w = weight(tf)
+            weightedSum += signalValue(r.signal) * w
+            totalWeight += w
         }
+        val normalized = if (totalWeight > 0) weightedSum / totalWeight else 0.0
 
-        val finalScore = if (totalWeight > 0) combinedScore / totalWeight else 0.0
-
-        // تعیین سیگنال نهایی
         val combinedSignal = when {
-            finalScore >= 60 -> SignalType.STRONG_BUY
-            finalScore >= 25 -> SignalType.BUY
-            finalScore <= -60 -> SignalType.STRONG_SELL
-            finalScore <= -25 -> SignalType.SELL
+            normalized >= 1.2 -> SignalType.STRONG_BUY
+            normalized >= 0.4 -> SignalType.BUY
+            normalized <= -1.2 -> SignalType.STRONG_SELL
+            normalized <= -0.4 -> SignalType.SELL
             else -> SignalType.NEUTRAL
         }
 
-        val combinedConfidence = minOf(95, maxOf(30, (kotlin.math.abs(finalScore) + 40).toInt()))
-
-        // محاسبه هماهنگی (Alignment)
-        val buyCount = analyses.count { it.signal == SignalType.BUY || it.signal == SignalType.STRONG_BUY }
-        val sellCount = analyses.count { it.signal == SignalType.SELL || it.signal == SignalType.STRONG_SELL }
-        val total = analyses.size
-
-        val alignment = when {
-            total == 0 -> 0
-            buyCount == total -> 100
-            sellCount == total -> 100
-            buyCount > sellCount -> (buyCount * 100) / total
-            sellCount > buyCount -> (sellCount * 100) / total
-            else -> 50
+        // مرحله ۴: اطمینان وزنی
+        var weightedConf = 0.0
+        success.forEach { (tf, r) ->
+            weightedConf += r.confidence * weight(tf)
         }
+        val avgConf = if (totalWeight > 0) weightedConf / totalWeight else 50.0
 
-        // خلاصه
-        val summary = buildString {
-            appendLine("تحلیل ${analyses.size} تایم‌فریم:")
-            analyses.forEach { a ->
-                val signalText = when (a.signal) {
-                    SignalType.STRONG_BUY -> "خرید قوی"
-                    SignalType.BUY -> "خرید"
-                    SignalType.NEUTRAL -> "خنثی"
-                    SignalType.SELL -> "فروش"
-                    SignalType.STRONG_SELL -> "فروش قوی"
-                }
-                appendLine("• ${a.timeframe}: $signalText (${a.confidence}%)")
-            }
-            appendLine()
+        // مرحله ۵: هماهنگی (چند تا هم‌جهت هستن)
+        val overallDir = signalValue(combinedSignal).coerceIn(-1, 1)
+        val aligned = success.count { (_, r) ->
+            val d = signalValue(r.signal)
             when {
-                alignment >= 80 -> append("✅ همه تایم‌فریم‌ها هم‌جهت هستن — سیگنال معتبر")
-                alignment >= 60 -> append("⚠️ بیشتر تایم‌فریم‌ها هم‌جهت هستن — نسبتاً معتبر")
-                else -> append("❌ تایم‌فریم‌ها هم‌جهت نیستن — احتیاط کن")
+                overallDir > 0 -> d > 0
+                overallDir < 0 -> d < 0
+                else -> d == 0
+            }
+        }
+        val alignment = ((aligned.toDouble() / success.size) * 100).toInt()
+
+        // مرحله ۶: اطمینان نهایی با پاداش هماهنگی
+        val finalConf = (avgConf + (alignment - 50) * 0.3).toInt().coerceIn(30, 95)
+
+        // مرحله ۷: لیست تحلیل‌های هر TF
+        val analyses = success.map { (tf, r) ->
+            TimeframeAnalysis(
+                timeframe = tf,
+                signal = r.signal,
+                trend = r.trend,
+                confidence = r.confidence
+            )
+        }
+
+        // مرحله ۸: خلاصه فارسی
+        val dirText = when (combinedSignal) {
+            SignalType.STRONG_BUY -> "صعودی قوی"
+            SignalType.BUY -> "صعودی"
+            SignalType.NEUTRAL -> "خنثی"
+            SignalType.SELL -> "نزولی"
+            SignalType.STRONG_SELL -> "نزولی قوی"
+        }
+
+        val summary = buildString {
+            append("$aligned از ${success.size} تایم‌فریم هم‌جهت با سیگنال $dirText. ")
+            when {
+                alignment >= 80 -> append("هماهنگی بین تایم‌فریم‌ها عالیه و اعتبار سیگنال بالاست.")
+                alignment >= 60 -> append("هماهنگی قابل قبول، ولی احتیاط کن.")
+                else -> append("تایم‌فریم‌ها هم‌جهت نیستن؛ احتمال نوسان و سیگنال کاذب زیاده.")
             }
         }
 
-        return MultiTimeframeResult(
+        MultiTimeframeResult(
             symbol = symbol,
-            analyses = analyses,
             combinedSignal = combinedSignal,
-            combinedConfidence = combinedConfidence,
+            combinedConfidence = finalConf,
             alignment = alignment,
+            analyses = analyses,
             summary = summary
         )
-    }
-
-    /**
-     * تحلیل یه تایم‌فریم خاص
-     */
-    private suspend fun analyzeOneTimeframe(
-        symbol: String,
-        timeframe: String,
-        cache: CacheManager
-    ): TimeframeAnalysis? {
-        return try {
-            val dataResult = MarketDataService.getCandles(symbol, timeframe, cache)
-            val candles = dataResult.candles ?: return null
-            if (candles.size < 20) return null
-
-            val result = SignalEngine.analyze(candles, timeframe) ?: return null
-
-            val score = signalToScore(result.signal)
-
-            TimeframeAnalysis(
-                timeframe = timeframe,
-                signal = result.signal,
-                confidence = result.confidence,
-                trend = result.trend,
-                score = score
-            )
-        } catch (e: Exception) {
-            null
-        }
     }
 }
