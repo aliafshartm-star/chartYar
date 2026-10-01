@@ -13,13 +13,15 @@ data class CoinPrice(
     val symbol: String,
     val name: String,
     val price: Double,
-    val changePercent: Double,
+    val changePercent24h: Double,
     val volume: Double
-)
+) {
+    val isUp: Boolean get() = changePercent24h >= 0
+}
 
 /**
- * Prices API — از صرافی نوبیتکس
- * عمومی، بدون API Key، از ایران قابل دسترسی
+ * Prices API — از نوبیتکس
+ * عمومی، بدون API Key، از ایران قابل دسترس
  */
 object PricesApi {
 
@@ -66,7 +68,8 @@ object PricesApi {
 
                 val item = stats.optJSONObject(key) ?: continue
 
-                val symbol = key.substringBefore("-rls").uppercase()
+                val baseAsset = key.substringBefore("-rls").uppercase()
+                val symbolFormat = "${baseAsset}IRT"
                 val price = item.optDouble("latest", 0.0)
                 val change = item.optDouble("dayChange", 0.0)
                 val volume = item.optDouble("volumeDst", 0.0)
@@ -74,10 +77,10 @@ object PricesApi {
                 if (price > 0) {
                     prices.add(
                         CoinPrice(
-                            symbol = symbol,
-                            name = symbol,
-                            price = price,
-                            changePercent = change,
+                            symbol = symbolFormat,
+                            name = "$baseAsset (تومان)",
+                            price = price / 10.0, // تبدیل ریال به تومان
+                            changePercent24h = change,
                             volume = volume
                         )
                     )
@@ -90,5 +93,26 @@ object PricesApi {
         } catch (e: Exception) {
             null
         }
+    }
+
+    /**
+     * فرمت کردن قیمت
+     */
+    fun formatPrice(price: Double): String {
+        return when {
+            price >= 1_000_000 -> "%,.0f".format(price)
+            price >= 1000 -> "%,.0f".format(price)
+            price >= 1 -> "%,.2f".format(price)
+            price >= 0.01 -> "%.4f".format(price)
+            else -> "%.8f".format(price)
+        }
+    }
+
+    /**
+     * فرمت کردن درصد
+     */
+    fun formatPercent(percent: Double): String {
+        val sign = if (percent >= 0) "+" else ""
+        return "$sign%.2f%%".format(percent)
     }
 }
