@@ -1,6 +1,5 @@
 package com.chartyar.app.ui
 
-import android.view.ViewGroup
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -30,16 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import com.chartyar.app.ui.theme.*
-import ir.tapsell.mediation.Tapsell
-import ir.tapsell.mediation.ad.request.BannerSize
-import ir.tapsell.mediation.ad.request.RequestResultListener
-import ir.tapsell.mediation.ad.views.banner.BannerContainer
 import kotlinx.coroutines.delay
-
-// ⚠️ این Zone ID رو بعداً با مقدار واقعی جایگزین کن
-private const val TAPSELL_BANNER_ZONE_ID = "YOUR_BANNER_ZONE_ID"
 
 @Composable
 fun HomeScreen(
@@ -175,18 +166,7 @@ fun HomeScreen(
             QuickStatsRow()
         }
 
-        Spacer(Modifier.height(12.dp))
-
-        // ============ بنر تبلیغاتی تپسل ============
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .alpha(fadeIn)
-        ) {
-            TapsellBannerAd(zoneId = TAPSELL_BANNER_ZONE_ID)
-        }
-
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
         Text(
             text = "این اپ توصیه مالی نیست | تحلیل صرفاً جهت کمک به تصمیم‌گیری",
@@ -196,41 +176,6 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth()
         )
     }
-}
-
-// ============ کامپوزبل بنر تپسل ============
-@Composable
-fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
-    AndroidView(
-        factory = { context ->
-            BannerContainer(context).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            }
-        },
-        update = { container ->
-            try {
-                Tapsell.requestBannerAd(
-                    zoneId = zoneId,
-                    bannerSize = BannerSize.BANNER_320_50,
-                    listener = object : RequestResultListener {
-                        override fun onSuccess(adId: String) {
-                            container.showAd(adId)
-                        }
-
-                        override fun onFailure(message: String) {
-                            // در صورت خطا، بنر نمایش داده نمی‌شه
-                        }
-                    }
-                )
-            } catch (e: Exception) {
-                // silent
-            }
-        },
-        modifier = modifier.fillMaxWidth()
-    )
 }
 
 @Composable
