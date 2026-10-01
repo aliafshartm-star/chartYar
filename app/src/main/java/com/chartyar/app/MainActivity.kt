@@ -184,7 +184,9 @@ class MainActivity : ComponentActivity() {
                     }
                     if (currentScreen == "news" && newsItems.isEmpty()) {
                         isNewsLoading = true
-                        val fetched = withContext(Dispatchers.IO) { NewsApi.fetchNews(30) }
+                        val fetched = withContext(Dispatchers.IO) {
+                            ArzdigitalNewsApi.fetchNews(30)
+                        }
                         if (fetched != null) newsItems = fetched
                         isNewsLoading = false
                     }
@@ -596,7 +598,9 @@ class MainActivity : ComponentActivity() {
                             onRefresh = {
                                 lifecycleScope.launch {
                                     isNewsLoading = true
-                                    val fetched = withContext(Dispatchers.IO) { NewsApi.fetchNews(30) }
+                                    val fetched = withContext(Dispatchers.IO) {
+                                        ArzdigitalNewsApi.fetchNews(30)
+                                    }
                                     if (fetched != null) newsItems = fetched
                                     isNewsLoading = false
                                 }
