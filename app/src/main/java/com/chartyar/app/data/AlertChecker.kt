@@ -13,7 +13,6 @@ object AlertChecker {
 
     /**
      * بررسی همه هشدارهای فعال
-     * @return لیست هشدارهای فعال شده
      */
     suspend fun checkAllAlerts(
         context: Context,
@@ -26,20 +25,16 @@ object AlertChecker {
             val activeAlerts = db.alertDao().getActiveAlerts()
             if (activeAlerts.isEmpty()) return@withContext emptyList()
 
-            // گروه‌بندی بر اساس symbol و timeframe
             val grouped = activeAlerts.groupBy { it.symbol }
 
             for ((symbol, alerts) in grouped) {
-                // دریافت قیمت فعلی (تایم‌فریم پیش‌فرض: 1H)
                 val currentPrice = fetchCurrentPrice(context, symbol, cache)
                     ?: continue
 
                 for (alert in alerts) {
                     if (AlertHelper.shouldTrigger(alert, currentPrice)) {
-                        // علامت‌گذاری به‌عنوان فعال‌شده
                         db.alertDao().markTriggered(alert.id, System.currentTimeMillis())
 
-                        // ارسال نوتیفیکیشن
                         NotificationHelper.showPriceAlertNotification(
                             context,
                             alert,
@@ -58,7 +53,7 @@ object AlertChecker {
     }
 
     /**
-     * دریافت قیمت فعلی یک ارز
+     * دریافت قیمت فعلی یک ارز — از نوبیتکس
      */
     private suspend fun fetchCurrentPrice(
         context: Context,
@@ -72,16 +67,10 @@ object AlertChecker {
                 return cachedCandles.last().close
             }
 
-            // از Binance
-            val candles = BinanceApi.fetchCandles(symbol, "1H", 5)
+            // از Nobitex
+            val candles = NobitexApi.fetchCandles(symbol, "1H", 5)
             if (candles != null && candles.isNotEmpty()) {
                 return candles.last().close
-            }
-
-            // از CoinGecko
-            val geckoCandles = CoinGeckoApi.fetchCandles(symbol, "1H")
-            if (geckoCandles != null && geckoCandles.isNotEmpty()) {
-                return geckoCandles.last().close
             }
 
             null
