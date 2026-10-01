@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import com.chartyar.app.util.ImageOptimizer
 import java.io.InputStream
 import kotlin.math.abs
 import kotlin.math.max
@@ -15,10 +16,10 @@ object ImageProcessor {
 
     data class CandlePixel(
         val x: Int,
-        val top: Int,      // بالای سایه (بالاترین نقطه)
-        val bottom: Int,   // پایین سایه (پایین‌ترین نقطه)
-        val bodyTop: Int,  // بالای بدنه
-        val bodyBottom: Int, // پایین بدنه
+        val top: Int,
+        val bottom: Int,
+        val bodyTop: Int,
+        val bodyBottom: Int,
         val isBullish: Boolean
     )
 
@@ -38,23 +39,21 @@ object ImageProcessor {
             }
             val bitmap = BitmapFactory.decodeStream(inputStream, null, options)
             inputStream?.close()
+
             bitmap?.let {
-                if (it.config != Bitmap.Config.ARGB_8888) {
-                    val converted = it.copy(Bitmap.Config.ARGB_8888, false)
+                val converted = if (it.config != Bitmap.Config.ARGB_8888) {
+                    val c = it.copy(Bitmap.Config.ARGB_8888, false)
                     it.recycle()
-                    converted
+                    c
                 } else it
+
+                ImageOptimizer.optimizeForOcr(converted)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
             null
         }
     }
 
-    /**
-     * تشخیص تم پس‌زمینه (دارک یا لایت)
-     * از نمونه‌برداری گوشه‌های تصویر استفاده می‌کنیم
-     */
     fun detectTheme(bitmap: Bitmap): Theme {
         val w = bitmap.width
         val h = bitmap.height
@@ -83,17 +82,11 @@ object ImageProcessor {
         return if (avgLum < 128) Theme.DARK else Theme.LIGHT
     }
 
-    /**
-     * تشخیص رنگ کندل بر اساس تم
-     * @return 1 = سبز، -1 = قرمز، 0 = نامشخص
-     */
     private fun detectCandleColor(r: Int, g: Int, b: Int, theme: Theme): Int {
-        // بررسی اشباع رنگ
         val maxC = max(r, max(g, b))
         val minC = min(r, min(g, b))
         val saturation = if (maxC == 0) 0 else (maxC - minC) * 100 / maxC
 
-        // رنگ‌های خاکستری (پس‌زمینه) رو رد کن
         if (saturation < 20) return 0
 
         val isGreen = g > r && g > b && g - r > 25 && g - b > 25
@@ -106,13 +99,9 @@ object ImageProcessor {
         }
     }
 
-    /**
-     * پیدا کردن محدوده چارت با حذف هدر و محور
-     */
     private fun findChartBounds(bitmap: Bitmap): ChartBounds {
         val width = bitmap.width
         val height = bitmap.height
-        // تلاش برای تشخیص خودکار نوار محور قیمت (سمت راست، معمولاً خاکستری یکنواخت)
         val top = (height * 0.06).toInt().coerceAtLeast(0)
         val bottom = (height * 0.94).toInt().coerceAtMost(height - 1)
         val left = (width * 0.01).toInt().coerceAtLeast(0)
@@ -122,9 +111,6 @@ object ImageProcessor {
 
     fun findChartBoundsPublic(bitmap: Bitmap): ChartBounds = findChartBounds(bitmap)
 
-    /**
-     * استخراج کندل‌ها با تشخیص سایه‌ها
-     */
     fun extractCandles(bitmap: Bitmap): List<CandlePixel>? {
         return try {
             val theme = detectTheme(bitmap)
@@ -143,8 +129,7 @@ object ImageProcessor {
             val pixels = IntArray(rowCount * colCount)
             bitmap.getPixels(pixels, 0, colCount, scanLeft, scanTop, colCount, rowCount)
 
-            // مرحله ۱: برای هر ستون، آیا کندل داره؟ (نقشه سبز/قرمز)
-            val columnColor = IntArray(colCount) // 1 سبز، -1 قرمز، 0 خالی
+            val columnColor = IntArray(colCount)
             for (cx in 0 until colCount) {
                 var greenCount = 0
                 var redCount = 0
@@ -167,7 +152,6 @@ object ImageProcessor {
                 }
             }
 
-            // مرحله ۲: گروه‌بندی ستون‌های متوالی با همون رنگ
             data class RawGroup(val start: Int, val end: Int, val color: Int)
             val rawGroups = mutableListOf<RawGroup>()
             var gStart = -1
@@ -179,7 +163,7 @@ object ImageProcessor {
                         gStart = cx
                         gColor = c
                     } else if (c == gColor) {
-                        // ادامه گروه
+                        // continue
                     } else {
                         rawGroups.add(RawGroup(gStart, cx - 1, gColor))
                         gStart = cx
@@ -196,11 +180,6 @@ object ImageProcessor {
 
             if (rawGroups.size < 10) return null
 
-            // مرحله ۳: محاسبه فاصله معمول بین کندل‌ها
-            val widths = rawGroups.map { it.end - it.start + 1 }
-            val medianWidth = widths.sorted()[widths.size / 2].coerceAtLeast(2)
-
-            // مرحله ۴: برای هر گروه، داده کندل رو استخراج کن
             val candles = mutableListOf<CandlePixel>()
             for (group in rawGroups) {
                 if (group.end - group.start < 1) continue
@@ -211,10 +190,6 @@ object ImageProcessor {
                 var bodyBottomY = -1
                 var greenCount = 0
                 var redCount = 0
-                var greenWidthSum = 0
-                var redWidthSum = 0
-                var greenCols = 0
-                var redCols = 0
 
                 val width = group.end - group.start + 1
 
@@ -237,7 +212,6 @@ object ImageProcessor {
                         if (topY == -1) topY = cy
                         bottomY = cy
 
-                        // بدنه: ردیفی که بیش از ۵۰٪ عرض گروه رنگ داره
                         if (totalInRow >= width * 0.5) {
                             if (bodyTopY == -1) bodyTopY = cy
                             bodyBottomY = cy
@@ -247,7 +221,6 @@ object ImageProcessor {
 
                 if (topY == -1 || bottomY <= topY) continue
 
-                // اگه بدنه پیدا نشد، از سایه به عنوان بدنه استفاده کن
                 if (bodyTopY == -1) {
                     bodyTopY = topY
                     bodyBottomY = bottomY
@@ -269,14 +242,10 @@ object ImageProcessor {
 
             if (candles.size >= 10) candles else null
         } catch (e: Exception) {
-            e.printStackTrace()
             null
         }
     }
 
-    /**
-     * تبدیل پیکسل به کندل با استفاده از بدنه (open/close) و سایه‌ها (high/low)
-     */
     fun pixelsToCandles(
         pixels: List<CandlePixel>,
         chartTop: Int,
