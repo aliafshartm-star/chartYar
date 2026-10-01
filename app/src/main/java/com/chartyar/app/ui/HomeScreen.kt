@@ -8,10 +8,12 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
@@ -37,7 +39,8 @@ fun HomeScreen(
     onSettingsClick: () -> Unit,
     onAlertsClick: () -> Unit,
     onNewsClick: () -> Unit,
-    onPricesClick: () -> Unit
+    onPricesClick: () -> Unit,
+    onMultiTfClick: () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -109,7 +112,7 @@ fun HomeScreen(
             modifier = Modifier.alpha(fadeIn)
         )
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(28.dp))
 
         Box(
             modifier = Modifier
@@ -119,7 +122,17 @@ fun HomeScreen(
             MainUploadCard(onUploadClick = onUploadClick)
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(14.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(fadeIn)
+        ) {
+            MultiTfCard(onClick = onMultiTfClick)
+        }
+
+        Spacer(Modifier.height(14.dp))
 
         Box(
             modifier = Modifier
@@ -166,6 +179,57 @@ fun HomeScreen(
 }
 
 @Composable
+private fun MultiTfCard(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        color = AccentGreen.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "🎯", fontSize = 24.sp)
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "تحلیل چند تایم‌فریمی",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "۴ تایم‌فریم همزمان + تشخیص هماهنگی",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            Icon(
+                imageVector = Icons.Filled.ArrowForward,
+                contentDescription = null,
+                tint = AccentBlue,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun MainUploadCard(onUploadClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -176,7 +240,7 @@ private fun MainUploadCard(onUploadClick: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(28.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -192,7 +256,7 @@ private fun MainUploadCard(onUploadClick: () -> Unit) {
 
             Box(
                 modifier = Modifier
-                    .size(90.dp)
+                    .size(80.dp)
                     .scale(pulseScale)
                     .background(
                         color = AccentBlue.copy(alpha = 0.1f),
@@ -200,24 +264,24 @@ private fun MainUploadCard(onUploadClick: () -> Unit) {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "📊", fontSize = 48.sp)
+                Text(text = "📊", fontSize = 42.sp)
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
             Text(
                 text = "شروع تحلیل",
                 style = MaterialTheme.typography.titleLarge,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 text = "اسکرین‌شات چارت خود را از گالری انتخاب کنید",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
                 textAlign = TextAlign.Center
             )
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(20.dp))
             Button(
                 onClick = onUploadClick,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
