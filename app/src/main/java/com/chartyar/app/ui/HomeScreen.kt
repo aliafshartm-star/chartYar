@@ -1,5 +1,6 @@
 package com.chartyar.app.ui
 
+import android.view.ViewGroup
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -29,8 +30,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.chartyar.app.ui.theme.*
+import ir.tapsell.mediation.Tapsell
+import ir.tapsell.mediation.ad.request.BannerSize
+import ir.tapsell.mediation.ad.request.RequestResultListener
+import ir.tapsell.mediation.ad.views.banner.BannerContainer
 import kotlinx.coroutines.delay
+
+// ============ Banner Zone ID تپسل ============
+private const val TAPSELL_BANNER_ZONE_ID = "6abe61690a772b2b3f29c2a5"
 
 @Composable
 fun HomeScreen(
@@ -166,7 +175,18 @@ fun HomeScreen(
             QuickStatsRow()
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
+
+        // ============ بنر تبلیغاتی تپسل ============
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(fadeIn)
+        ) {
+            TapsellBannerAd(zoneId = TAPSELL_BANNER_ZONE_ID)
+        }
+
+        Spacer(Modifier.height(12.dp))
 
         Text(
             text = "این اپ توصیه مالی نیست | تحلیل صرفاً جهت کمک به تصمیم‌گیری",
@@ -176,6 +196,48 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth()
         )
     }
+}
+
+// ============ بنر تبلیغاتی تپسل ============
+@Composable
+fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
+    AndroidView(
+        factory = { context ->
+            BannerContainer(context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            }
+        },
+        update = { container ->
+            try {
+                Tapsell.requestBannerAd(
+                    zoneId,
+                    BannerSize.BANNER_320_50,
+                    object : RequestResultListener {
+                        override fun onSuccess(adId: String) {
+                            try {
+                                val method = container.javaClass.getMethod(
+                                    "loadAd", String::class.java
+                                )
+                                method.invoke(container, adId)
+                            } catch (e: Exception) {
+                                // silent
+                            }
+                        }
+
+                        override fun onFailure(message: String) {
+                            // silent
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                // silent
+            }
+        },
+        modifier = modifier.fillMaxWidth()
+    )
 }
 
 @Composable
@@ -348,4 +410,4 @@ private fun QuickStat(emoji: String, value: String, label: String) {
             fontSize = 12.sp
         )
     }
-} 
+}
