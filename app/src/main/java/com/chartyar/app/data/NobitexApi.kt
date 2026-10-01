@@ -71,6 +71,67 @@ object NobitexApi {
         }
     }
 
+    /**
+     * دریافت قیمت لحظه‌ای یک ارز (سبک و سریع — برای هشدارها)
+     * از endpoint market/stats استفاده می‌کنه — جدا از fetchCandles
+     */
+    suspend fun fetchCurrentPrice(symbol: String): Double? = withContext(Dispatchers.IO) {
+        try {
+            val nobitexSymbol = convertToNobitexSymbol(symbol)
+            val parts = nobitexSymbol.split("-")
+            if (parts.size != 2) return@withContext null
+
+            val src = parts[0]
+            val dst = parts[1]
+
+            val url = URL("$MARKET_STATS_URL?srcCurrency=$src&dstCurrency=$dst")
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
+
+            if (connection.responseCode != 200) {
+                connection.disconnect()
+                return@withContext null
+            }
+
+            val response = connection.inputStream.bufferedReader().use { it.readText() }
+            connection.disconnect()
+
+            val root = JSONObject(response)
+            val stats = root.optJSONObject("stats") ?: return@withContext null
+
+            val key = stats.keys().asSequence().firstOrNull() ?: return@withContext null
+            val item = stats.optJSONObject(key) ?: return@withContext null
+
+            val latestStr = item.optString("latest", "0")
+            val latest = latestStr.toDoubleOrNull() ?: 0.0
+
+            if (latest <= 0) return@withContext null
+
+            // تبدیل ریال به تومان برای بازارهای ریالی
+            if (dst == "rls") latest / 10.0 else latest
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * تبدیل نماد اپ به فرمت نوبیتکس
+     * BTCUSDT → btc-usdt
+     * BTCRLS → btc-rls
+     */
+    private fun convertToNobitexSymbol(symbol: String): String {
+        val upper = symbol.uppercase()
+        return when {
+            upper.endsWith("USDT") -> "${upper.dropLast(4).lowercase()}-usdt"
+            upper.endsWith("RLS") -> "${upper.dropLast(3).lowercase()}-rls"
+            upper.endsWith("IRT") -> "${upper.dropLast(3).lowercase()}-rls"
+            else -> "${upper.lowercase()}-rls"
+        }
+    }
+
     suspend fun fetchCandles(
         symbol: String,
         timeframe: String,
@@ -104,9 +165,6 @@ object NobitexApi {
         }
     }
 
-    /**
-     * چک کردن آنلاین بودن نوبیتکس
-     */
     suspend fun isOnline(): Boolean = withContext(Dispatchers.IO) {
         try {
             val url = URL(PING_URL)
