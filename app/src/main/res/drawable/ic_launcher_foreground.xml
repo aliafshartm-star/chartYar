@@ -5,50 +5,57 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
+    <!-- کندل ۱ -->
     <path
-        android:pathData="M26,58 L26,72 L30,72 L30,58 Z"
-        android:fillColor="#2EBD85"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,62 L42,62 L42,74 L38,74 Z" />
     <path
-        android:pathData="M28,52 L28,58 L28,72 L28,78"
-        android:strokeColor="#2EBD85"
-        android:strokeWidth="1.5"/>
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M40,58 L40,78" />
 
+    <!-- کندل ۲ -->
     <path
-        android:pathData="M38,44 L38,68 L42,68 L42,44 Z"
-        android:fillColor="#2EBD85"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,54 L52,54 L52,72 L48,72 Z" />
     <path
-        android:pathData="M40,38 L40,44 L40,68 L40,74"
-        android:strokeColor="#2EBD85"
-        android:strokeWidth="1.5"/>
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M50,50 L50,76" />
 
+    <!-- کندل ۳ -->
     <path
-        android:pathData="M50,36 L50,58 L54,58 L54,36 Z"
-        android:fillColor="#F6465D"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M58,46 L62,46 L62,70 L58,70 Z" />
     <path
-        android:pathData="M52,30 L52,36 L52,58 L52,64"
-        android:strokeColor="#F6465D"
-        android:strokeWidth="1.5"/>
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M60,42 L60,74" />
 
+    <!-- کندل ۴ -->
     <path
-        android:pathData="M62,28 L62,52 L66,52 L66,28 Z"
-        android:fillColor="#2EBD85"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M68,38 L72,38 L72,68 L68,68 Z" />
     <path
-        android:pathData="M64,22 L64,28 L64,52 L64,58"
-        android:strokeColor="#2EBD85"
-        android:strokeWidth="1.5"/>
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M70,34 L70,72" />
 
+    <!-- فلش صعودی (خط + نوک) -->
     <path
-        android:pathData="M74,24 L74,44 L78,44 L78,24 Z"
-        android:fillColor="#2EBD85"/>
-    <path
-        android:pathData="M76,18 L76,24 L76,44 L76,50"
-        android:strokeColor="#2EBD85"
-        android:strokeWidth="1.5"/>
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M32,74 L48,66 L60,60 L76,46" />
 
+    <!-- نوک فلش -->
     <path
-        android:pathData="M22,78 L82,20"
-        android:strokeColor="#FFD700"
-        android:strokeWidth="2.5"
-        android:strokeLineCap="round"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M76,46 L67,48 L74,54 Z" />
 
 </vector>
