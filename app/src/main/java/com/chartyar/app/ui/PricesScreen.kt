@@ -42,7 +42,6 @@ fun PricesScreen(
     var showOnlyWatchlist by remember { mutableStateOf(false) }
     var watchlistVersion by remember { mutableStateOf(0) }
 
-    // فیلتر
     val filtered = remember(prices, searchQuery, showOnlyWatchlist, watchlistVersion) {
         var result = prices
 
@@ -289,7 +288,7 @@ private fun CoinPriceRow(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    coin.symbol.replace("USDT", "/USDT"),
+                    coin.symbol.replace("IRT", "/تومان"),
                     color = TextSecondary,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -298,7 +297,7 @@ private fun CoinPriceRow(
             // قیمت و تغییر
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    "$" + PricesApi.formatPrice(coin.price),
+                    PricesApi.formatPrice(coin.price) + " تومان",
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyLarge
