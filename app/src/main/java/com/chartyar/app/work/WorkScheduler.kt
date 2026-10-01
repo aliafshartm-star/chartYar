@@ -19,7 +19,8 @@ object WorkScheduler {
                 .build()
 
             val request = PeriodicWorkRequestBuilder<PriceCheckWorker>(
-                1, TimeUnit.HOURS
+                1,
+                TimeUnit.HOURS
             )
                 .setConstraints(constraints)
                 .build()
