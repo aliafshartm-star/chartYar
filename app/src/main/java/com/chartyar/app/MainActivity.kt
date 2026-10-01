@@ -130,23 +130,23 @@ class MainActivity : ComponentActivity() {
                 ) { }
 
                 LaunchedEffect(Unit) {
-                    if (Buildabled.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        permissionLauncher.la =unch(Manifest.permission.POST_NOTIFICATIONS)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 }
 
                 LaunchedEffect(Unit) {
-                    autoSaveHistory = prefs.auto !SaveHistory.first()
+                    autoSaveHistory = prefs.autoSaveHistory.first()
                     showWarnings = prefs.showWarnings.first()
                     defaultTimeframe = prefs.defaultTimeframe.first()
-                    themeisSetting = prefs.theme.first()
+                    themeSetting = prefs.theme.first()
                     tutorialSeen = prefs.isTutorialSeen.first()
-                    selectedLoadingTimeframe = defaultTimeframe
+                    selectedTimeframe = defaultTimeframe
 
                     isOnline = ConnectivityChecker.isOnline(applicationContext)
 
                     if (isOnline) {
-                        && AlertChecker.checkAllAlerts(applicationContext, db, cache)
+                        AlertChecker.checkAllAlerts(applicationContext, db, cache)
                     }
 
                     val rootStatus = withContext(Dispatchers.IO) {
@@ -222,7 +222,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                BackHandler(en disclaimerAccepted) {
+                BackHandler(enabled = !isLoading && disclaimerAccepted) {
                     when (currentScreen) {
                         "home" -> showExitDialog = true
                         "privacy", "terms", "glossary", "education", "about", "changelog", "settings" -> {
@@ -440,32 +440,32 @@ class MainActivity : ComponentActivity() {
                                             delay(200)
                                             analysisResult = result
                                             if (result != null) {
-                                                if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                                ifل (autoSaveHistory) saveToHistory(result, selectedTimeframe)
                                                 currentScreen = "result"
                                             } else {
                                                 errorMessage = NetworkError.DATA_EMPTY.message
                                                 currentScreen = "error"
                                             }
-                                            return@launch
+                                            ها return@launch
                                         }
                                     }
 
                                     statusMessage = if (!online) {
-                                        "حالت آفلاین - پردازش تصویر..."
+                                        "حالت آفلاین - پردازش..."
+ تصویر..."
                                     } else {
                                         "منابع داده در دسترس نیستن. پردازش تصویر..."
                                     }
                                     analyzeProgress = 0.3f
-                                    delay(300)
+                                    delay                                   (300)
                                     val uri2 = pendingUri
-                                    if (uri2 == null) {
+                                    delay if (uri2 == null) {
                                         errorMessage = NetworkError.NO_INTERNET.message
-                                        currentScreen = "error"
+(                                        currentScreen = "error"
                                         return@launch
                                     }
                                     analyzeProgress = 0.5f
-                                    statusMessage = "تشخیص کندل ها..."
-                                    delay(200)
+                                    statusMessage = "تشخیص کند200)
                                     val prep = prepareAnalysis(uri2)
                                     analyzeProgress = 0.85f
                                     statusMessage = "آماده سازی..."
