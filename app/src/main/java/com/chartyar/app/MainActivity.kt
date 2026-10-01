@@ -1,10 +1,12 @@
 package com.chartyar.app
 
 import android.Manifest
+import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -27,6 +29,7 @@ import com.chartyar.app.ui.*
 import com.chartyar.app.ui.theme.*
 import com.chartyar.app.util.CameraHelper
 import com.chartyar.app.util.NotificationHelper
+import com.chartyar.app.work.AlertMonitorService
 import com.chartyar.app.work.WorkScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -77,6 +80,9 @@ class MainActivity : ComponentActivity() {
         rateAppManager.recordLaunch()
 
         WorkScheduler.schedule(applicationContext)
+
+        // راه‌اندازی سرویس پایش قیمت
+        AlertMonitorService.start(applicationContext)
 
         val shortcutAction = intent?.getStringExtra("shortcut_action")
 
