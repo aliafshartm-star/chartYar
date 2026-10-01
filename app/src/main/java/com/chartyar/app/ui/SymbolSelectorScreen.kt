@@ -17,8 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chartyar.app.data.BinanceApi
+import com.chartyar.app.data.NobitexApi
 import com.chartyar.app.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +29,19 @@ fun SymbolSelectorScreen(
     onSymbolSelected: (String) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    val allSymbols = BinanceApi.popularSymbols
+    var allSymbols by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    // دریافت لیست ارزها از نوبیتکس
+    LaunchedEffect(Unit) {
+        isLoading = true
+        val symbols = withContext(Dispatchers.IO) {
+            NobitexApi.fetchAllSymbols()
+        }
+        allSymbols = symbols
+        isLoading = false
+    }
+
     val filtered = if (searchQuery.isBlank()) {
         allSymbols
     } else {
@@ -58,7 +72,6 @@ fun SymbolSelectorScreen(
             )
         }
 
-        // توضیح
         Card(
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             shape = RoundedCornerShape(12.dp),
@@ -76,7 +89,7 @@ fun SymbolSelectorScreen(
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    "ارز چارت خود را انتخاب کنید. داده واقعی از Binance گرفته می‌شود (دقت ۱۰۰٪).",
+                    "ارز چارت خود را انتخاب کنید. داده واقعی از نوبیتکس گرفته می‌شود.",
                     color = TextSecondary,
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 20.sp
@@ -84,7 +97,6 @@ fun SymbolSelectorScreen(
             }
         }
 
-        // جستجو
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -104,7 +116,22 @@ fun SymbolSelectorScreen(
             )
         )
 
-        if (filtered.isEmpty()) {
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = AccentBlue)
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "در حال دریافت لیست ارزها...",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        } else if (filtered.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
