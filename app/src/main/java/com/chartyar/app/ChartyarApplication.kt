@@ -9,12 +9,13 @@ class ChartyarApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // مدیریت خطاهای سراسری
+        // ============ مدیریت خطاهای سراسری ============
         GlobalExceptionHandler.install(applicationContext) { throwable ->
             Log.e("ChartYar", "Uncaught exception", throwable)
         }
 
-        // Tapsell خودش به‌صورت خودکار از روی AndroidManifest راه‌اندازی می‌شه
+        // ============ Tapsell ============
+        // تپسل خودش به صورت خودکار از روی AndroidManifest راه‌اندازی می‌شه
         // نیازی به کد راه‌اندازی دستی نیست
     }
 }
