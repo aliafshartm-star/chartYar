@@ -440,32 +440,32 @@ class MainActivity : ComponentActivity() {
                                             delay(200)
                                             analysisResult = result
                                             if (result != null) {
-                                                ifل (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                                if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
                                                 currentScreen = "result"
                                             } else {
                                                 errorMessage = NetworkError.DATA_EMPTY.message
                                                 currentScreen = "error"
                                             }
-                                            ها return@launch
+                                            return@launch
                                         }
                                     }
 
                                     statusMessage = if (!online) {
-                                        "حالت آفلاین - پردازش..."
- تصویر..."
+                                        "حالت آفلاین - پردازش تصویر..."
                                     } else {
                                         "منابع داده در دسترس نیستن. پردازش تصویر..."
                                     }
                                     analyzeProgress = 0.3f
-                                    delay                                   (300)
+                                    delay(300)
                                     val uri2 = pendingUri
-                                    delay if (uri2 == null) {
+                                    if (uri2 == null) {
                                         errorMessage = NetworkError.NO_INTERNET.message
-(                                        currentScreen = "error"
+                                        currentScreen = "error"
                                         return@launch
                                     }
                                     analyzeProgress = 0.5f
-                                    statusMessage = "تشخیص کند200)
+                                    statusMessage = "تشخیص کندل ها..."
+                                    delay(200)
                                     val prep = prepareAnalysis(uri2)
                                     analyzeProgress = 0.85f
                                     statusMessage = "آماده سازی..."
@@ -636,10 +636,30 @@ class MainActivity : ComponentActivity() {
                             onShowChangelog = { currentScreen = "changelog" },
                             onShowPrivacy = { currentScreen = "privacy" },
                             onShowTerms = { currentScreen = "terms" },
-                            onAutoSaveChange = { v -> autoSaveHistory = v; lifecycleScope.launch { prefs.setAutoSaveHistory(v) } },
-                            onShowWarningsChange = { v -> showWarnings = v; lifecycleScope.launch { prefs.setShowWarnings(v) } },
-                            onDefaultTimeframeChange = { v -> defaultTimeframe = v; lifecycleScope.launch { prefs.setDefaultTimeframe(v) } },
-                            onThemeChange = { v -> themeSetting = v; lifecycleScope.launch { prefs.setTheme(v) } },
+                            onAutoSaveChange = { v ->
+                                autoSaveHistory = v
+                                lifecycleScope.launch {
+                                    prefs.setAutoSaveHistory(v)
+                                }
+                            },
+                            onShowWarningsChange = { v ->
+                                showWarnings = v
+                                lifecycleScope.launch {
+                                    prefs.setShowWarnings(v)
+                                }
+                            },
+                            onDefaultTimeframeChange = { v ->
+                                defaultTimeframe = v
+                                lifecycleScope.launch {
+                                    prefs.setDefaultTimeframe(v)
+                                }
+                            },
+                            onThemeChange = { v ->
+                                themeSetting = v
+                                lifecycleScope.launch {
+                                    prefs.setTheme(v)
+                                }
+                            },
                             onResetDisclaimer = {
                                 lifecycleScope.launch {
                                     prefs.resetDisclaimer()
