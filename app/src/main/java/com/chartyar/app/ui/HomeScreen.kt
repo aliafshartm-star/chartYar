@@ -348,4 +348,4 @@ private fun QuickStat(emoji: String, value: String, label: String) {
             fontSize = 12.sp
         )
     }
-}
+} 
