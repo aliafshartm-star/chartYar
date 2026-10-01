@@ -14,6 +14,13 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
+
+        // ============ Tapsell App Key ============
+        addManifestPlaceholders(
+            mapOf(
+                "TapsellMediationAppKey" to "slnbpalgsemltbefkjhjraafbkdcgkiogfokoemepmtghajtlokddfsdsddlqonmflpspk"
+            )
+        )
     }
 
     buildTypes {
@@ -75,4 +82,14 @@ dependencies {
     kapt("androidx.room:room-compiler:2.6.1")
 
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+
+    // ============ Tapsell SDK ============
+    implementation("ir.tapsell:tapsell:1.3.0") {
+        exclude(group = "androidx.work", module = "work-runtime")
+        exclude(group = "androidx.work", module = "work-runtime-ktx")
+    }
+    implementation("ir.tapsell.mediation.adapter:legacy:1.3.0") {
+        exclude(group = "androidx.work", module = "work-runtime")
+        exclude(group = "androidx.work", module = "work-runtime-ktx")
+    }
 }
