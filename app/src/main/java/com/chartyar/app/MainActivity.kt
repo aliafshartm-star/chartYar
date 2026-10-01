@@ -126,6 +126,8 @@ class MainActivity : ComponentActivity() {
                 var showExitDialog by remember { mutableStateOf(false) }
                 var showAgeDialog by remember { mutableStateOf(false) }
                 var showTermsUpdateDialog by remember { mutableStateOf(false) }
+                // ===== جدید: نتیجه Multi-TF =====
+                var multiTfResult by remember { mutableStateOf<MultiTimeframeResult?>(null) }
 
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission()
@@ -236,6 +238,8 @@ class MainActivity : ComponentActivity() {
                         "symbol" -> currentScreen = "upload"
                         "calibration" -> currentScreen = "symbol"
                         "result" -> currentScreen = "home"
+                        "multi_tf" -> currentScreen = "home"
+                        "multi_tf_result" -> currentScreen = "multi_tf"
                         else -> showExitDialog = true
                     }
                 }
@@ -371,7 +375,8 @@ class MainActivity : ComponentActivity() {
                             onSettingsClick = { currentScreen = "settings" },
                             onAlertsClick = { currentScreen = "alerts" },
                             onNewsClick = { currentScreen = "news" },
-                            onPricesClick = { currentScreen = "prices" }
+                            onPricesClick = { currentScreen = "prices" },
+                            onMultiTfClick = { currentScreen = "multi_tf" }
                         )
                         "upload" -> UploadScreen(
                             onBack = { currentScreen = "home" },
@@ -381,6 +386,25 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "symbol"
                             }
                         )
+                        "multi_tf" -> MultiTfInputScreen(
+                            cache = cache,
+                            onBack = { currentScreen = "home" },
+                            onResult = { res ->
+                                multiTfResult = res
+                                currentScreen = "multi_tf_result"
+                            }
+                        )
+                        "multi_tf_result" -> {
+                            val r = multiTfResult
+                            if (r != null) {
+                                MultiTimeframeScreen(
+                                    result = r,
+                                    onBack = { currentScreen = "multi_tf" }
+                                )
+                            } else {
+                                currentScreen = "multi_tf"
+                            }
+                        }
                         "symbol" -> SymbolSelectorScreen(
                             onBack = { currentScreen = "upload" },
                             onSymbolSelected = { symbol ->
@@ -406,7 +430,7 @@ class MainActivity : ComponentActivity() {
 
                                         val sourceName = MarketDataService.sourceLabel(dataResult.source)
 
-                                        if (dataResult.candles != null && dataResult.candles.size >= 20) {
+                                        if (dataResult.candles != null && dataResult.candles.size >= 50) {
                                             analyzeProgress = 0.7f
                                             statusMessage = "داده از $sourceName"
                                             delay(300)
