@@ -48,11 +48,11 @@ object ConnectivityChecker {
     }
 
     /**
-     * تست واقعی اینترنت (با یه درخواست کوچیک)
+     * تست واقعی اینترنت (با یه درخواست کوچیک به نوبیتکس)
      */
     suspend fun testConnection(): Boolean = withContext(Dispatchers.IO) {
         try {
-            BinanceApi.isOnline()
+            NobitexApi.isOnline()
         } catch (e: Exception) {
             false
         }
