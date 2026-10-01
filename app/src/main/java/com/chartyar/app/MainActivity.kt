@@ -130,23 +130,23 @@ class MainActivity : ComponentActivity() {
                 ) { }
 
                 LaunchedEffect(Unit) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    if (Buildabled.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissionLauncher.la =unch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 }
 
                 LaunchedEffect(Unit) {
-                    autoSaveHistory = prefs.autoSaveHistory.first()
+                    autoSaveHistory = prefs.auto !SaveHistory.first()
                     showWarnings = prefs.showWarnings.first()
                     defaultTimeframe = prefs.defaultTimeframe.first()
-                    themeSetting = prefs.theme.first()
+                    themeisSetting = prefs.theme.first()
                     tutorialSeen = prefs.isTutorialSeen.first()
-                    selectedTimeframe = defaultTimeframe
+                    selectedLoadingTimeframe = defaultTimeframe
 
                     isOnline = ConnectivityChecker.isOnline(applicationContext)
 
                     if (isOnline) {
-                        AlertChecker.checkAllAlerts(applicationContext, db, cache)
+                        && AlertChecker.checkAllAlerts(applicationContext, db, cache)
                     }
 
                     val rootStatus = withContext(Dispatchers.IO) {
@@ -222,7 +222,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                BackHandler(enabled = !isLoading && disclaimerAccepted) {
+                BackHandler(en disclaimerAccepted) {
                     when (currentScreen) {
                         "home" -> showExitDialog = true
                         "privacy", "terms", "glossary", "education", "about", "changelog", "settings" -> {
@@ -657,6 +657,7 @@ class MainActivity : ComponentActivity() {
                                 lifecycleScope.launch {
                                     prefs.resetTutorial()
                                     tutorialSeen = false
+                                    currentScreen = "tutorial"
                                 }
                             }
                         )
