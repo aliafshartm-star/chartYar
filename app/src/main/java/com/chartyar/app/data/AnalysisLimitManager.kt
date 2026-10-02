@@ -15,31 +15,40 @@ class AnalysisLimitManager(context: Context) {
         private const val KEY_AD_COUNT_TODAY = "ad_count_today"
         private const val KEY_UNLIMITED_UNTIL = "unlimited_until"
         private const val KEY_TOTAL_ADS_WATCHED = "total_ads_watched"
+        private const val KEY_UNLOCKED_STRATEGIES = "unlocked_strategies"
+        private const val KEY_ADS_SINCE_REWARD = "ads_since_reward"
 
         const val INITIAL_FREE = 3
         const val ADS_FOR_REWARD = 3
         const val ANALYSES_PER_REWARD = 2
         const val ADS_FOR_BONUS = 10
         const val BONUS_HOURS = 12
+        const val DEFAULT_STRATEGY = "SWING"
     }
 
     data class LimitStatus(
         val remainingFree: Int,
         val adCountToday: Int,
+        val adsSinceReward: Int,
         val isUnlimited: Boolean,
         val unlimitedUntil: Long,
         val canAnalyze: Boolean,
         val hasReachedBonus: Boolean,
-        val adsNeededForBonus: Int
+        val adsNeededForBonus: Int,
+        val adsNeededForNextReward: Int
+    )
+
+    data class AdWatchResult(
+        val analysesGiven: Int,
+        val bonusActivated: Boolean,
+        val adsUntilNextReward: Int,
+        val adsUntilBonus: Int
     )
 
     init {
         resetIfNewDay()
     }
 
-    /**
-     * چک کن آیا روز جدید شده و ریست کن
-     */
     fun resetIfNewDay() {
         val today = getTodayKey()
         val lastReset = prefs.getString(KEY_LAST_RESET, null)
@@ -49,52 +58,48 @@ class AnalysisLimitManager(context: Context) {
                 putString(KEY_LAST_RESET, today)
                 putInt(KEY_REMAINING, INITIAL_FREE)
                 putInt(KEY_AD_COUNT_TODAY, 0)
-                // پاداش نامحدود هم پاک می‌شه
+                putInt(KEY_ADS_SINCE_REWARD, 0)
                 putLong(KEY_UNLIMITED_UNTIL, 0L)
+                putStringSet(KEY_UNLOCKED_STRATEGIES, emptySet())
             }
         }
     }
 
-    /**
-     * بررسی وضعیت فعلی
-     */
     fun getStatus(): LimitStatus {
         resetIfNewDay()
 
         val remaining = prefs.getInt(KEY_REMAINING, INITIAL_FREE)
         val adCount = prefs.getInt(KEY_AD_COUNT_TODAY, 0)
+        val adsSinceReward = prefs.getInt(KEY_ADS_SINCE_REWARD, 0)
         val unlimitedUntil = prefs.getLong(KEY_UNLIMITED_UNTIL, 0L)
         val now = System.currentTimeMillis()
         val isUnlimited = unlimitedUntil > now
 
         val canAnalyze = isUnlimited || remaining > 0
         val hasReachedBonus = adCount >= ADS_FOR_BONUS
-        val adsNeeded = (ADS_FOR_BONUS - adCount).coerceAtLeast(0)
+        val adsNeededBonus = (ADS_FOR_BONUS - adCount).coerceAtLeast(0)
+        val adsNeededReward = (ADS_FOR_REWARD - adsSinceReward).coerceAtLeast(0)
 
         return LimitStatus(
             remainingFree = remaining,
             adCountToday = adCount,
+            adsSinceReward = adsSinceReward,
             isUnlimited = isUnlimited,
             unlimitedUntil = unlimitedUntil,
             canAnalyze = canAnalyze,
             hasReachedBonus = hasReachedBonus,
-            adsNeededForBonus = adsNeeded
+            adsNeededForBonus = adsNeededBonus,
+            adsNeededForNextReward = adsNeededReward
         )
     }
 
-    /**
-     * قبل از تحلیل، این رو صدا بزن
-     * @return true اگه اجازه داشت
-     */
     fun consumeAnalysis(): Boolean {
         resetIfNewDay()
 
         val status = getStatus()
 
-        // اگه پاداش نامحدود فعاله → اجازه بده
         if (status.isUnlimited) return true
 
-        // اگه سهمیه داره → کم کن
         if (status.remainingFree > 0) {
             prefs.edit {
                 putInt(KEY_REMAINING, status.remainingFree - 1)
@@ -102,38 +107,80 @@ class AnalysisLimitManager(context: Context) {
             return true
         }
 
-        // سهمیه تموم شده
         return false
     }
 
-    /**
-     * وقتی کاربر تبلیغ دید، این رو صدا بزن
-     * @return true اگه کاربر به پاداش رسید
-     */
-    fun onAdWatched(): Boolean {
+    fun onAdWatched(): AdWatchResult {
         resetIfNewDay()
 
-        val current = prefs.getInt(KEY_AD_COUNT_TODAY, 0)
-        val newCount = current + 1
-        val totalAds = prefs.getInt(KEY_TOTAL_ADS_WATCHED, 0) + 1
+        val adsSinceRewardOld = prefs.getInt(KEY_ADS_SINCE_REWARD, 0)
+        val adsSinceRewardNew = adsSinceRewardOld + 1
+        val totalAdsOld = prefs.getInt(KEY_AD_COUNT_TODAY, 0)
+        val totalAdsNew = totalAdsOld + 1
+        val grandTotalAds = prefs.getInt(KEY_TOTAL_ADS_WATCHED, 0) + 1
 
-        prefs.edit {
-            putInt(KEY_AD_COUNT_TODAY, newCount)
-            putInt(KEY_TOTAL_ADS_WATCHED, totalAds)
+        var analysesGiven = 0
+        var bonusActivated = false
+
+        if (adsSinceRewardNew >= ADS_FOR_REWARD) {
+            val current = prefs.getInt(KEY_REMAINING, 0)
+            analysesGiven = ANALYSES_PER_REWARD
+
+            prefs.edit {
+                putInt(KEY_REMAINING, current + ANALYSES_PER_REWARD)
+                putInt(KEY_ADS_SINCE_REWARD, 0)
+                putInt(KEY_AD_COUNT_TODAY, totalAdsNew)
+                putInt(KEY_TOTAL_ADS_WATCHED, grandTotalAds)
+            }
+        } else {
+            prefs.edit {
+                putInt(KEY_ADS_SINCE_REWARD, adsSinceRewardNew)
+                putInt(KEY_AD_COUNT_TODAY, totalAdsNew)
+                putInt(KEY_TOTAL_ADS_WATCHED, grandTotalAds)
+            }
         }
 
-        // چک کن آیا به پاداش وفاداری رسید
-        if (newCount == ADS_FOR_BONUS) {
+        if (totalAdsNew >= ADS_FOR_BONUS) {
             activateBonus()
-            return true
+            bonusActivated = true
         }
 
-        return false
+        val adsUntilNext = if (analysesGiven > 0) ADS_FOR_REWARD else ADS_FOR_REWARD - adsSinceRewardNew
+        val adsUntilBonus = (ADS_FOR_BONUS - totalAdsNew).coerceAtLeast(0)
+
+        return AdWatchResult(
+            analysesGiven = analysesGiven,
+            bonusActivated = bonusActivated,
+            adsUntilNextReward = adsUntilNext,
+            adsUntilBonus = adsUntilBonus
+        )
     }
 
-    /**
-     * وقتی کاربر به تعداد تبلیغ کافی رسید، ۱۲ ساعت نامحدود بده
-     */
+    fun isStrategyUnlocked(strategyType: String): Boolean {
+        resetIfNewDay()
+
+        if (strategyType == DEFAULT_STRATEGY) return true
+
+        val set = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
+        return set.contains(strategyType)
+    }
+
+    fun unlockStrategy(strategyType: String) {
+        resetIfNewDay()
+
+        if (strategyType == DEFAULT_STRATEGY) return
+
+        val current = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
+        val newSet = current + strategyType
+        prefs.edit { putStringSet(KEY_UNLOCKED_STRATEGIES, newSet) }
+    }
+
+    fun getUnlockedStrategies(): Set<String> {
+        resetIfNewDay()
+        val set = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
+        return set + DEFAULT_STRATEGY
+    }
+
     private fun activateBonus() {
         val now = System.currentTimeMillis()
         val bonusEnd = now + (BONUS_HOURS * 60 * 60 * 1000L)
@@ -142,51 +189,34 @@ class AnalysisLimitManager(context: Context) {
         }
     }
 
-    /**
-     * هر تبلیغ = ۳ تحلیل اضافه (پس از دیدنش)
-     * این بعد از تبلیغ صدا زده می‌شه
-     */
-    fun addAnalysesFromReward() {
-        val current = prefs.getInt(KEY_REMAINING, 0)
-        prefs.edit {
-            putInt(KEY_REMAINING, current + ANALYSES_PER_REWARD)
-        }
-    }
-
-    /**
-     * تعداد تبلیغ‌های امروز
-     */
-    fun getAdCountToday(): Int {
-        resetIfNewDay()
-        return prefs.getInt(KEY_AD_COUNT_TODAY, 0)
-    }
-
-    /**
-     * تعداد تحلیل باقی‌مونده
-     */
     fun getRemainingFree(): Int {
         resetIfNewDay()
         return prefs.getInt(KEY_REMAINING, INITIAL_FREE)
     }
 
-    /**
-     * چک کن آیا پاداش نامحدود فعاله
-     */
+    fun getAdCountToday(): Int {
+        resetIfNewDay()
+        return prefs.getInt(KEY_AD_COUNT_TODAY, 0)
+    }
+
+    fun getAdsSinceReward(): Int {
+        resetIfNewDay()
+        return prefs.getInt(KEY_ADS_SINCE_REWARD, 0)
+    }
+
     fun isUnlimitedActive(): Boolean {
         val until = prefs.getLong(KEY_UNLIMITED_UNTIL, 0L)
         return until > System.currentTimeMillis()
     }
 
-    /**
-     * کل زمانی که کاربر تبلیغ دیده
-     */
+    fun getUnlimitedUntil(): Long {
+        return prefs.getLong(KEY_UNLIMITED_UNTIL, 0L)
+    }
+
     fun getTotalAdsWatched(): Int {
         return prefs.getInt(KEY_TOTAL_ADS_WATCHED, 0)
     }
 
-    /**
-     * برای دیباگ — همه چی رو ریست کن
-     */
     fun resetAll() {
         prefs.edit { clear() }
     }
