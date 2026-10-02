@@ -32,4 +32,20 @@
     <string name="percent_label">درصد</string>
     <string name="leverage_suffix">x</string>
     <string name="back_button">بازگشت</string>
+
+    <string name="mining_title">ماشین حساب استخراج</string>
+    <string name="mining_subtitle">درآمد استخراج بیت‌کوین را حساب کن</string>
+    <string name="hashrate_label">قدرت دستگاه (TH/s)</string>
+    <string name="power_label">مصرف برق (وات)</string>
+    <string name="electricity_price_label">قیمت برق (تومان هر کیلووات)</string>
+    <string name="pool_fee_label">کارمزد استخر (درصد)</string>
+    <string name="btc_price_label">قیمت بیت‌کوین (تومان)</string>
+    <string name="mining_calculate">محاسبه کن</string>
+    <string name="daily_income">درآمد روزانه</string>
+    <string name="daily_electricity">هزینه برق روزانه</string>
+    <string name="daily_profit">سود خالص روزانه</string>
+    <string name="monthly_profit">سود خالص ماهانه</string>
+    <string name="yearly_profit">سود خالص سالانه</string>
+    <string name="mining_fetching_price">در حال دریافت قیمت بیت‌کوین</string>
+    <string name="mining_fetch_failed">قیمت دریافت نشد. دستی وارد کن.</string>
 </resources>
