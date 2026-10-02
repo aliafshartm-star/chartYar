@@ -216,6 +216,22 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        delay(15_000L)
+                        if (disclaimerAccepted) {
+                            val online = ConnectivityChecker.isOnline(applicationContext)
+                            isOnline = online
+                            if (online) {
+                                try {
+                                    AlertChecker.checkAllAlerts(applicationContext, db, cache)
+                                } catch (e: Exception) {
+                                }
+                            }
+                        }
+                    }
+                }
+
                 LaunchedEffect(currentScreen) {
                     if (currentScreen == "history") {
                         historyItems = db.historyDao().getAll().first()
@@ -520,10 +536,10 @@ class MainActivity : ComponentActivity() {
                         "alerts" -> AlertScreen(
                             alerts = alertItems,
                             onBack = { currentScreen = "home" },
-                            onCreateAlert = { symbol, price, condition, note ->
+                            onCreateAlert = { symbol, price, condition, note, currency ->
                                 lifecycleScope.launch {
                                     db.alertDao().insert(
-                                        AlertHelper.createAlert(symbol, price, condition, note)
+                                        AlertHelper.createAlert(symbol, price, condition, note, currency)
                                     )
                                     alertItems = db.alertDao().getAll().first()
                                 }
