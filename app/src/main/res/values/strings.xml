@@ -20,11 +20,11 @@
     <string name="margin_label">سرمایه</string>
     <string name="calculate_button">محاسبه کن</string>
     <string name="profit_loss">سود یا زیان</string>
-    <string name="roe_label">ROE - بازده سرمایه</string>
+    <string name="roe_label">ROE</string>
     <string name="final_balance">موجودی نهایی</string>
-    <string name="liquidation_warning">لیکویید شدی!</string>
+    <string name="liquidation_warning">لیکویید</string>
     <string name="liquidation_subtext">کل سرمایه از دست رفته</string>
-    <string name="calculator_disclaimer">این محاسبه تقریبی است. کارمزد صرافی در نظر گرفته نشده.</string>
+    <string name="calculator_disclaimer">این محاسبه تقریبی است</string>
     <string name="error_invalid_entry">قیمت ورود معتبر وارد کن</string>
     <string name="error_invalid_exit">قیمت خروج معتبر وارد کن</string>
     <string name="error_invalid_leverage">اهرم باید بین 1 تا 200 باشد</string>
@@ -35,17 +35,17 @@
 
     <string name="mining_title">ماشین حساب استخراج</string>
     <string name="mining_subtitle">درآمد استخراج بیت‌کوین را حساب کن</string>
-    <string name="hashrate_label">قدرت دستگاه (TH/s)</string>
-    <string name="power_label">مصرف برق (وات)</string>
-    <string name="electricity_price_label">قیمت برق (تومان هر کیلووات)</string>
-    <string name="pool_fee_label">کارمزد استخر (درصد)</string>
-    <string name="btc_price_label">قیمت بیت‌کوین (تومان)</string>
+    <string name="hashrate_label">قدرت دستگاه</string>
+    <string name="power_label">مصرف برق</string>
+    <string name="electricity_price_label">قیمت برق</string>
+    <string name="pool_fee_label">کارمزد استخر</string>
+    <string name="btc_price_label">قیمت بیت‌کوین</string>
     <string name="mining_calculate">محاسبه کن</string>
     <string name="daily_income">درآمد روزانه</string>
     <string name="daily_electricity">هزینه برق روزانه</string>
     <string name="daily_profit">سود خالص روزانه</string>
     <string name="monthly_profit">سود خالص ماهانه</string>
     <string name="yearly_profit">سود خالص سالانه</string>
-    <string name="mining_fetching_price">در حال دریافت قیمت بیت‌کوین</string>
-    <string name="mining_fetch_failed">قیمت دریافت نشد. دستی وارد کن.</string>
+    <string name="mining_fetching_price">در حال دریافت قیمت</string>
+    <string name="mining_fetch_failed">قیمت دریافت نشد</string>
 </resources>
