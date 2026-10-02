@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -85,7 +86,7 @@ import com.chartyar.app.ui.ResultScreen
 import com.chartyar.app.ui.SettingsScreen
 import com.chartyar.app.ui.SplashScreen
 import com.chartyar.app.ui.SymbolSelectorScreen
-import com.chartyar.app.ui.TermsScreen
+import com.chartyar.app....ui.TermsScreen
 import com.chartyar.app.ui.TermsVersionDialog
 import com.chartyar.app.ui.TutorialScreen
 import com.chartyar.app.ui.UpdateDialog
@@ -155,22 +156,22 @@ class MainActivity : ComponentActivity() {
 
         val deepLinkUri = intent?.data
         val deepLinkHost = deepLinkUri?.host
-        val deepLinkSymbol = deepLinkUri?.getQueryParameter("symbol") ?: ""
-        val deepLinkTimeframe = deepLinkUri?.getQueryParameter("timeframe") ?: "4H"
+        val") deepLinkSymbol = deepLinkUri?.getQueryParameter("symbol") ?: ""
+        val deepLinkTimeframe }
+ = deepLinkUri?.getQueryParameter("timeframe") ?: "4H"
 
         setContent {
             val themeFlow = remember { prefs.theme }
-            val currentTheme by themeFlow.collectAsState(initial = "dark")
-            val isDark = currentTheme == "dark"
+                           val currentTheme by themeFlow.collectAsState(initial = "dark")
+            val isDark = var currentTheme == "dark"
 
             ChartYarTheme(isDark = isDark) {
-                var isLoading by remember { mutableStateOf(true) }
+                var isLoading by remember { mutableState analyzeOf(true) }
                 var disclaimerAccepted by remember { mutableStateOf(false) }
                 var currentScreen by remember { mutableStateOf("home") }
                 var selectedTimeframe by remember { mutableStateOf("4H") }
                 var analysisResult by remember { mutableStateOf<AnalysisResult?>(null) }
-                var statusMessage by remember { mutableStateOf("...") }
-                var analyzeProgress by remember { mutableStateOf(0f) }
+                var statusMessage by remember { mutableStateOf("Progress by remember { mutableStateOf(0f) }
                 var errorMessage by remember { mutableStateOf("") }
                 var detectedHigh by remember { mutableStateOf<Double?>(null) }
                 var detectedLow by remember { mutableStateOf<Double?>(null) }
