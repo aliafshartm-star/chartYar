@@ -39,9 +39,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chartyar.app.R
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.AccentGreen
 import com.chartyar.app.ui.theme.DarkBg
@@ -81,31 +83,34 @@ private val exchanges = listOf(
     )
 )
 
+private fun openExchangeUrl(context: Context, url: String, errorMsg: String) {
+    try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+    }
+}
+
+private fun copyReferralCode(context: Context, code: String, successMsg: String, failMsg: String) {
+    try {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("Referral Code", code)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(context, successMsg, Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        Toast.makeText(context, failMsg, Toast.LENGTH_SHORT).show()
+    }
+}
+
 @Composable
 fun ExchangesScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-
-    fun openUrl(url: String) {
-        try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            Toast.makeText(context, "Link open failed", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    fun copyCode(code: String) {
-        try {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("Referral Code", code)
-            clipboard.setPrimaryClip(clip)
-            Toast.makeText(context, "Code copied", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(context, "Copy failed", Toast.LENGTH_SHORT).show()
-        }
-    }
+    val linkFailedMsg = stringResource(R.string.exchanges_link_failed)
+    val copySuccessMsg = stringResource(R.string.exchanges_copy_success)
+    val copyFailedMsg = stringResource(R.string.exchanges_copy_failed)
 
     Column(
         modifier = Modifier
@@ -121,7 +126,7 @@ fun ExchangesScreen(onBack: () -> Unit) {
                 Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
             }
             Text(
-                "صرافی ها",
+                stringResource(R.string.exchanges_title),
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold
@@ -134,7 +139,7 @@ fun ExchangesScreen(onBack: () -> Unit) {
             colors = CardDefaults.cardColors(containerColor = DarkSurface)
         ) {
             Text(
-                "با ثبت‌نام از طریق لینک‌های زیر، از تخفیف کارمزد و مزایای ویژه بهره‌مند شوید",
+                stringResource(R.string.exchanges_subtitle),
                 color = TextSecondary,
                 modifier = Modifier.padding(14.dp),
                 style = MaterialTheme.typography.bodyMedium,
@@ -148,8 +153,12 @@ fun ExchangesScreen(onBack: () -> Unit) {
             items(exchanges) { exchange ->
                 ExchangeCard(
                     exchange = exchange,
-                    onOpen = { openUrl(exchange.referralUrl) },
-                    onCopy = { copyCode(exchange.referralCode) }
+                    onOpen = {
+                        openExchangeUrl(context, exchange.referralUrl, linkFailedMsg)
+                    },
+                    onCopy = {
+                        copyReferralCode(context, exchange.referralCode, copySuccessMsg, copyFailedMsg)
+                    }
                 )
             }
         }
@@ -224,7 +233,7 @@ private fun ExchangeCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "کد معرف",
+                        stringResource(R.string.exchanges_referral_code),
                         color = TextSecondary,
                         fontSize = 10.sp
                     )
@@ -263,7 +272,7 @@ private fun ExchangeCard(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    "ثبت‌نام در ${exchange.nameFa}",
+                    text = stringResource(R.string.exchanges_register) + " " + exchange.nameFa,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
