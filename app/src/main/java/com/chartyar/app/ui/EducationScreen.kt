@@ -2,7 +2,15 @@ package com.chartyar.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -10,14 +18,30 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chartyar.app.ui.theme.*
+import com.chartyar.app.ui.theme.AccentBlue
+import com.chartyar.app.ui.theme.DarkBg
+import com.chartyar.app.ui.theme.DarkSurface
+import com.chartyar.app.ui.theme.Divider as DividerColor
+import com.chartyar.app.ui.theme.TextPrimary
+import com.chartyar.app.ui.theme.TextSecondary
 
 data class Lesson(
     val emoji: String,
@@ -117,22 +141,66 @@ fun EducationScreen(
             Lesson(
                 emoji = "📱",
                 title = "۶. چطور از چارت‌یار استفاده کنم؟",
-                subtitle = "راهنمای اپ",
+                subtitle = "راهنمای گام‌به‌گام",
                 content = listOf(
-                    "۱. اسکرین‌شات چارت خود را از TradingView یا صرافی بگیر",
-                    "۲. توی اپ، تصویر رو آپلود کن",
-                    "۳. ارز و تایم‌فریم رو انتخاب کن",
-                    "۴. تحلیل حرفه‌ای بگیر",
+                    "تحلیل ارز:",
+                    "  ۱. از صفحه اصلی، دکمه «انتخاب جفت ارز» رو بزن",
+                    "  ۲. جفت ارز خودت رو انتخاب کن (مثل BTCUSDT)",
+                    "  ۳. تایم‌فریم معاملاتت رو انتخاب کن (15m / 1H / 4H / 1D)",
+                    "  ۴. تحلیل حرفه‌ای و کامل دریافت کن",
                     "",
-                    "🔹 دقت تحلیل‌ها به کیفیت تصویر بستگی دارد.",
-                    "🔹 بهترین حالت: تم دارک TradingView، کندل‌های واضح.",
-                    "🔹 اگه اینترنت نداری، از حالت آفلاین استفاده کن.",
-                    "🔹 تحلیل‌ها در تاریخچه ذخیره می‌شوند."
+                    "🔹 داده‌ها لحظه‌ای از نوبیتکس دریافت می‌شوند",
+                    "🔹 بدون نیاز به آپلود عکس — مستقیم و دقیق",
+                    "🔹 تحلیل‌ها در تاریخچه ذخیره می‌شوند"
+                )
+            ),
+            Lesson(
+                emoji = "🚀",
+                title = "۷. امکانات چارت‌یار",
+                subtitle = "همه‌ی قابلیت‌ها",
+                content = listOf(
+                    "📊 تحلیل جفت ارز:",
+                    "  • ۱۰+ اندیکاتور، ۱۱ الگو، سیگنال دقیق",
+                    "  • نقطه ورود، حد ضرر، ۳ هدف",
+                    "",
+                    "🎯 چند تایم‌فریمی (Multi-TF):",
+                    "  • تحلیل همزمان در چند تایم‌فریم",
+                    "  • تأیید سیگنال قوی‌تر",
+                    "",
+                    "💰 قیمت لحظه‌ای ارزها:",
+                    "  • قیمت به تومان + دلار",
+                    "  • نمایش درصد تغییر ۲۴ ساعته",
+                    "  • لیست علاقه‌مندی‌ها",
+                    "  • صفحه جزئیات هر ارز",
+                    "",
+                    "🔔 هشدار قیمت:",
+                    "  • هشدار بالاتر / پایین‌تر از قیمت هدف",
+                    "  • پشتیبانی از تومان و دلار",
+                    "  • چک خودکار هر ۱۵ ثانیه",
+                    "",
+                    "📰 اخبار لحظه‌ای:",
+                    "  • آخرین اخبار ارز دیجیتال از ارزدیجیتال",
+                    "",
+                    "📊 شاخص ترس و طمع:",
+                    "  • حس کلی بازار کریپتو",
+                    "",
+                    "🧮 ماشین حساب‌ها:",
+                    "  • ماشین‌حساب فیوچرز (سود/زیان)",
+                    "  • ماشین‌حساب استخراج (درآمد ماینینگ)",
+                    "",
+                    "🏦 صرافی ها:",
+                    "  • نوبیتکس و KCEX با کد معرف",
+                    "  • تخفیف کارمزد برای کاربران",
+                    "",
+                    "📚 بخش‌های آموزشی:",
+                    "  • دیکشنری اصطلاحات",
+                    "  • درس‌های تحلیل تکنیکال",
+                    "  • راهنمای استفاده"
                 )
             ),
             Lesson(
                 emoji = "⚠️",
-                title = "۷. اشتباهات رایج",
+                title = "۸. اشتباهات رایج",
                 subtitle = "از اینا دوری کن",
                 content = listOf(
                     "❌ معامله بدون حد ضرر",
@@ -166,7 +234,7 @@ fun EducationScreen(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Filled.ArrowBack, "بازگشت", tint = TextPrimary)
+                    Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
                 }
                 Text(
                     "آموزش تحلیل",
@@ -188,7 +256,7 @@ fun EducationScreen(
                     Text("📚", fontSize = 28.sp)
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        "۷ درس کوتاه برای یادگیری تحلیل تکنیکال از صفر",
+                        "۸ درس کوتاه برای یادگیری تحلیل تکنیکال از صفر",
                         color = TextSecondary,
                         style = MaterialTheme.typography.bodyMedium,
                         lineHeight = 20.sp
@@ -255,7 +323,7 @@ private fun LessonDetailScreen(lesson: Lesson, onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, "بازگشت", tint = TextPrimary)
+                Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
             }
             Text(
                 lesson.title,
@@ -281,7 +349,7 @@ private fun LessonDetailScreen(lesson: Lesson, onBack: () -> Unit) {
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(Modifier.height(16.dp))
-                Divider(color = Divider)
+                Divider(color = DividerColor)
                 Spacer(Modifier.height(16.dp))
 
                 lesson.content.forEach { line ->
