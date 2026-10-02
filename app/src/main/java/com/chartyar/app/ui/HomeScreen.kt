@@ -608,10 +608,13 @@ private fun SocialIcon(
     }
 }
 
+// ============ Tapsell Banner Ad — بر اساس مستندات رسمی ============
 @Composable
 fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val activity = context as? Activity
+
+    var adShown by remember { mutableStateOf(false) }
 
     AndroidView(
         factory = { ctx ->
@@ -623,28 +626,29 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
             }
         },
         update = { container ->
-            if (activity != null) {
+            if (activity != null && !adShown) {
                 try {
                     Tapsell.requestBannerAd(
                         zoneId,
                         BannerSize.BANNER_320_50,
+                        activity,
                         object : RequestResultListener {
                             override fun onSuccess(adId: String) {
                                 try {
-                                    val method = container.javaClass.getMethod(
-                                        "loadAd",
-                                        String::class.java
-                                    )
-                                    method.invoke(container, adId)
+                                    container.loadAd(adId)
+                                    adShown = true
                                 } catch (e: Exception) {
+                                    adShown = false
                                 }
                             }
 
                             override fun onFailure(message: String) {
+                                adShown = false
                             }
                         }
                     )
                 } catch (e: Exception) {
+                    adShown = false
                 }
             }
         },
