@@ -2,7 +2,13 @@
 <resources>
     <string name="app_name">چارت‌یار</string>
 
-    <!-- ============ ماشین حساب فیوچرز ============ -->
+    <string name="shortcut_new_analysis">تحلیل جدید</string>
+    <string name="shortcut_new_analysis_long">شروع تحلیل چارت جدید</string>
+    <string name="shortcut_alerts">هشدار قیمت</string>
+    <string name="shortcut_alerts_long">مشاهده هشدارهای قیمت</string>
+    <string name="shortcut_glossary">دیکشنری</string>
+    <string name="shortcut_glossary_long">دیکشنری اصطلاحات تریدینگ</string>
+
     <string name="calculator_title">ماشین حساب فیوچرز</string>
     <string name="calculator_subtitle">سود یا زیان معامله فیوچرز را حساب کن</string>
     <string name="position_type">نوع پوزیشن</string>
