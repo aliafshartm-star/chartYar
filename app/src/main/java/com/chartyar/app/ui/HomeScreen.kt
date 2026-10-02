@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -143,14 +144,14 @@ fun HomeScreen(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "چارت‌یار",
+                    text = stringResource(R.string.home_app_title),
                     style = MaterialTheme.typography.headlineLarge,
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp
                 )
                 Text(
-                    text = "تحلیل هوشمند چارت",
+                    text = stringResource(R.string.home_app_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                     fontSize = 11.sp
@@ -159,28 +160,28 @@ fun HomeScreen(
 
             HeaderIconButton(
                 icon = Icons.Filled.TrendingUp,
-                label = "قیمت",
+                label = stringResource(R.string.home_nav_prices),
                 tint = AccentBlue,
                 onClick = onPricesClick
             )
 
             HeaderIconButton(
                 icon = Icons.Filled.Article,
-                label = "اخبار",
+                label = stringResource(R.string.home_nav_news),
                 tint = AccentGreen,
                 onClick = onNewsClick
             )
 
             HeaderIconButton(
                 icon = Icons.Filled.SwapHoriz,
-                label = "صرافی",
+                label = stringResource(R.string.home_nav_exchanges),
                 tint = AccentYellow,
                 onClick = onExchangesClick
             )
 
             HeaderIconButton(
                 icon = Icons.Filled.Settings,
-                label = "تنظیمات",
+                label = stringResource(R.string.home_nav_settings),
                 tint = TextSecondary,
                 onClick = onSettingsClick
             )
@@ -271,7 +272,7 @@ fun HomeScreen(
         Spacer(Modifier.height(16.dp))
 
         Text(
-            text = "این اپ توصیه مالی نیست | تحلیل صرفاً جهت کمک به تصمیم‌گیری",
+            text = stringResource(R.string.home_disclaimer),
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary,
             textAlign = TextAlign.Center,
@@ -357,13 +358,13 @@ private fun AlertsCompactButton(onClick: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "هشدار قیمت",
+                    text = stringResource(R.string.home_alerts_title),
                     color = TextPrimary,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "اطلاع از رسیدن قیمت به هدف",
+                    text = stringResource(R.string.home_alerts_subtitle),
                     color = TextSecondary,
                     fontSize = 11.sp
                 )
@@ -416,13 +417,13 @@ private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
                     Spacer(Modifier.width(14.dp))
                     Column {
                         Text(
-                            text = "تحلیل حرفه‌ای",
+                            text = stringResource(R.string.home_hero_title),
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp
                         )
                         Text(
-                            text = "هوش مصنوعی + اندیکاتورهای پیشرفته",
+                            text = stringResource(R.string.home_hero_subtitle),
                             color = Color.White.copy(alpha = 0.8f),
                             fontSize = 12.sp
                         )
@@ -432,7 +433,7 @@ private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
                 Spacer(Modifier.height(16.dp))
 
                 Text(
-                    text = "جفت ارز خود را انتخاب کنید و در چند ثانیه تحلیل کامل دریافت کنید: سیگنال خرید/فروش، خطوط روند، الگوها و سطوح کلیدی",
+                    text = stringResource(R.string.home_hero_description),
                     color = Color.White.copy(alpha = 0.9f),
                     fontSize = 12.sp,
                     lineHeight = 18.sp
@@ -458,7 +459,7 @@ private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "انتخاب جفت ارز برای تحلیل",
+                        text = stringResource(R.string.home_hero_button),
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )
@@ -498,13 +499,13 @@ private fun MultiTfActionCard(onClick: () -> Unit) {
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                text = "چند تایم‌فریمی",
+                text = stringResource(R.string.home_multi_tf_title),
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 13.sp
             )
             Text(
-                text = "Multi-TF",
+                text = stringResource(R.string.home_multi_tf_sub),
                 color = TextSecondary,
                 fontSize = 10.sp
             )
@@ -547,13 +548,13 @@ private fun CalculatorActionCard(onClick: () -> Unit) {
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                text = "ماشین فیوچرز",
+                text = stringResource(R.string.home_calc_title),
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 13.sp
             )
             Text(
-                text = "PnL Calc",
+                text = stringResource(R.string.home_calc_sub),
                 color = TextSecondary,
                 fontSize = 10.sp
             )
@@ -591,13 +592,13 @@ private fun MiningActionCard(onClick: () -> Unit) {
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                text = "ماشین استخراج",
+                text = stringResource(R.string.home_mining_title),
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 13.sp
             )
             Text(
-                text = "Mining",
+                text = stringResource(R.string.home_mining_sub),
                 color = TextSecondary,
                 fontSize = 10.sp
             )
@@ -640,13 +641,13 @@ private fun HistoryActionCard(onClick: () -> Unit) {
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                text = "تاریخچه",
+                text = stringResource(R.string.home_history_title),
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 13.sp
             )
             Text(
-                text = "History",
+                text = stringResource(R.string.home_history_sub),
                 color = TextSecondary,
                 fontSize = 10.sp
             )
@@ -720,7 +721,7 @@ private fun FearGreedCardWallex() {
                     FearGreedArc(value = value, color = color)
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "${data!!.value}",
+                            text = data!!.value.toString(),
                             color = TextPrimary,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold
@@ -739,14 +740,14 @@ private fun FearGreedCardWallex() {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "شاخص ترس و طمع",
+                    text = stringResource(R.string.home_fear_greed_title),
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "حس کلی بازار کریپتو",
+                    text = stringResource(R.string.home_fear_greed_subtitle),
                     color = TextSecondary,
                     fontSize = 11.sp
                 )
@@ -885,7 +886,7 @@ private fun SocialLinksRow() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "ما را دنبال کنید",
+                text = stringResource(R.string.home_social_title),
                 color = TextSecondary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
