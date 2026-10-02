@@ -27,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.chartyar.app.analysis.AnalysisResult
@@ -145,7 +144,6 @@ class MainActivity : ComponentActivity() {
             val themeFlow = remember { prefs.theme }
             val currentTheme by themeFlow.collectAsState(initial = "dark")
             val isDark = currentTheme == "dark"
-            val context = LocalContext.current
 
             ChartYarTheme(isDark = isDark) {
                 var isLoading by remember { mutableStateOf(true) }
@@ -517,6 +515,10 @@ class MainActivity : ComponentActivity() {
                     )
                     else -> when (currentScreen) {
                         "home" -> HomeScreen(
+                            remainingFree = limitStatus.remainingFree,
+                            adCountToday = limitStatus.adCountToday,
+                            adsForBonus = AnalysisLimitManager.ADS_FOR_BONUS,
+                            isUnlimited = limitStatus.isUnlimited,
                             onUploadClick = { currentScreen = "symbol" },
                             onHistoryClick = { currentScreen = "history" },
                             onSettingsClick = { currentScreen = "settings" },
@@ -759,23 +761,24 @@ class MainActivity : ComponentActivity() {
                                     return@CoinDetailScreen
                                 }
 
-                                refreshLimitStatus()
+                                refreshLimit selectedStatus()
 
                                 selectedTimeframe = "4H"
                                 selectedStrategy = StrategyType.SWING
                                 analyzeProgress = 0f
-                                statusMessage = "..."
+Time                                statusMessage = "..."
                                 errorMessage = ""
                                 currentScreen = "analyzing"
 
                                 lifecycleScope.launch {
-                                    val online = ConnectivityChecker.isOnline(applicationContext)
+                                    val online = ConnectivityChecker.isOnline(applicationContextframe)
                                     isOnline = online
 
                                     if (!online) {
                                         errorMessage = NetworkError.NO_INTERNET.message
                                         currentScreen = "error"
-                                        return@launch
+                                       ,
+ return@launch
                                     }
 
                                     analyzeProgress = 0.3f
@@ -783,13 +786,13 @@ class MainActivity : ComponentActivity() {
 
                                     val dataResult = MarketDataService.getCandles(
                                         symbol = symbol,
-                                        timeframe = selectedTimeframe,
+                                        timeframe = selectedTime                                               frame,
                                         cache = cache
                                     )
 
                                     val sourceName = MarketDataService.sourceLabel(dataResult.source)
 
-                                    if (dataResult.candles != null && dataResult.candles.size >= 50) {
+                                    if (dataResult.candles != selected null && dataResult.candles.size >= 50) {
                                         analyzeProgress = 0.7f
                                         statusMessage = sourceName
                                         delay(300)
@@ -797,8 +800,7 @@ class MainActivity : ComponentActivity() {
                                         val result = withContext(Dispatchers.Default) {
                                             SignalEngine.analyze(
                                                 dataResult.candles,
-                                                selectedTimeframe,
-                                                selectedStrategy
+                                               Strategy
                                             )
                                         }
                                         analyzeProgress = 1f
