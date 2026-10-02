@@ -1,6 +1,8 @@
 package com.chartyar.app.ui
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.view.ViewGroup
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -12,6 +14,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -26,23 +29,35 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.chartyar.app.R
+import com.chartyar.app.data.FearGreedApi
+import com.chartyar.app.data.FearGreedData
 import com.chartyar.app.ui.theme.*
 import ir.tapsell.mediation.Tapsell
-import ir.tapsell.mediation.ad.AdStateListener
 import ir.tapsell.mediation.ad.request.BannerSize
 import ir.tapsell.mediation.ad.request.RequestResultListener
 import ir.tapsell.mediation.ad.views.banner.BannerContainer
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 // ============ Banner Zone ID تپسل ============
 private const val TAPSELL_BANNER_ZONE_ID = "6abe61690a772b2b3f29c2a5"
+
+// ============ لینک‌های سوشال ============
+private const val TELEGRAM_URL = "https://t.me/chartyar_app"
+private const val INSTAGRAM_URL = "https://www.instagram.com/chartyar_app"
 
 @Composable
 fun HomeScreen(
@@ -72,6 +87,7 @@ fun HomeScreen(
             .background(DarkBg)
             .padding(20.dp)
     ) {
+        // ============ هدر ============
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -126,6 +142,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(24.dp))
 
+        // ============ کارت شروع تحلیل ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -136,6 +153,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(14.dp))
 
+        // ============ کارت Multi-TF ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -146,6 +164,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(14.dp))
 
+        // ============ دکمه تاریخچه ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -170,12 +189,24 @@ fun HomeScreen(
 
         Spacer(Modifier.weight(1f))
 
+        // ============ کارت شاخص ترس و طمع ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .alpha(fadeIn)
         ) {
-            QuickStatsRow()
+            FearGreedCard()
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // ============ ردیف شبکه‌های اجتماعی ============
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(fadeIn)
+        ) {
+            SocialLinksRow()
         }
 
         Spacer(Modifier.height(12.dp))
@@ -197,6 +228,231 @@ fun HomeScreen(
             color = TextSecondary,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+// ============ کارت شاخص ترس و طمع ============
+@Composable
+private fun FearGreedCard() {
+    var data by remember { mutableStateOf<FearGreedData?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    // دریافت داده از API
+    LaunchedEffect(Unit) {
+        isLoading = true
+        val result = withContext(Dispatchers.IO) {
+            FearGreedApi.fetchFearGreed()
+        }
+        data = result
+        isLoading = false
+    }
+
+    // آپدیت خودکار هر ۳۰ دقیقه
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30 * 60 * 1000L) // ۳۰ دقیقه
+            val result = withContext(Dispatchers.IO) {
+                FearGreedApi.fetchFearGreed()
+            }
+            if (result != null) data = result
+        }
+    }
+
+    val value = data?.value ?: 0
+    val color = when {
+        value <= 25 -> AccentRed
+        value <= 45 -> Color(0xFFE8A33D)
+        value <= 55 -> AccentYellow
+        value <= 75 -> Color(0xFF7BC97C)
+        else -> AccentGreen
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "شاخص ترس و طمع",
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "حس کلی بازار کریپتو",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = AccentBlue,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else if (data == null) {
+                    Text(
+                        text = "ناموجود",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    // دایره با عدد
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(color.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${data!!.value}",
+                            color = color,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            if (data != null && !isLoading) {
+                Spacer(Modifier.height(12.dp))
+
+                // نوار پیشرفت
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(DarkCard)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(fraction = value / 100f)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(color)
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "ترس شدید",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = data!!.classificationFa,
+                        color = color,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "طمع شدید",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============ ردیف شبکه‌های اجتماعی ============
+@Composable
+private fun SocialLinksRow() {
+    val context = LocalContext.current
+
+    fun openUrl(url: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // silent
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "ما را دنبال کنید:",
+                color = TextSecondary,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
+            )
+
+            // تلگرام
+            SocialIcon(
+                iconRes = R.drawable.ic_telegram,
+                backgroundColor = Color(0xFF229ED9),
+                contentDescription = "تلگرام",
+                onClick = { openUrl(TELEGRAM_URL) }
+            )
+
+            Spacer(Modifier.width(12.dp))
+
+            // اینستاگرام
+            SocialIcon(
+                iconRes = R.drawable.ic_instagram,
+                backgroundColor = Color(0xFFE4405F),
+                contentDescription = "اینستاگرام",
+                onClick = { openUrl(INSTAGRAM_URL) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SocialIcon(
+    iconRes: Int,
+    backgroundColor: Color,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    val painter: Painter = painterResource(id = iconRes)
+
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .background(backgroundColor, CircleShape)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painter = painter,
+            contentDescription = contentDescription,
+            tint = Color.White,
+            modifier = Modifier.size(22.dp)
         )
     }
 }
@@ -225,28 +481,14 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
                         object : RequestResultListener {
                             override fun onSuccess(adId: String) {
                                 try {
-                                    Tapsell.showBannerAd(
-                                        adId,
-                                        container,
-                                        activity,
-                                        object : AdStateListener.Banner {
-                                            override fun onAdImpression() {
-                                            }
-
-                                            override fun onAdClicked() {
-                                            }
-
-                                            override fun onAdFailed(message: String) {
-                                            }
-                                        }
-                                    )
+                                    container.showAd(adId)
                                 } catch (e: Exception) {
                                     // silent
                                 }
                             }
 
                             override fun onFailure(message: String) {
-                                // تبلیغ در دسترس نیست
+                                // silent
                             }
                         }
                     )
@@ -259,6 +501,7 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
     )
 }
 
+// ============ کارت Multi-TF ============
 @Composable
 private fun MultiTfCard(onClick: () -> Unit) {
     Card(
@@ -310,6 +553,7 @@ private fun MultiTfCard(onClick: () -> Unit) {
     }
 }
 
+// ============ کارت شروع تحلیل ============
 @Composable
 private fun MainUploadCard(onUploadClick: () -> Unit) {
     Card(
@@ -381,52 +625,5 @@ private fun MainUploadCard(onUploadClick: () -> Unit) {
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun QuickStatsRow() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(DarkSurface, RoundedCornerShape(14.dp))
-            .padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        QuickStat("⚡", "۱۰+", "اندیکاتور")
-        Box(
-            modifier = Modifier
-                .height(40.dp)
-                .width(1.dp)
-                .background(Divider)
-        )
-        QuickStat("🔍", "۱۱", "الگو")
-        Box(
-            modifier = Modifier
-                .height(40.dp)
-                .width(1.dp)
-                .background(Divider)
-        )
-        QuickStat("🎯", "۴", "استایل")
-    }
-}
-
-@Composable
-private fun QuickStat(emoji: String, value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(emoji, fontSize = 20.sp)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = value,
-            color = AccentBlue,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp
-        )
-        Text(
-            text = label,
-            color = TextSecondary,
-            fontSize = 12.sp
-        )
     }
 }
