@@ -11,6 +11,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,7 +48,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,7 +60,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -78,6 +84,15 @@ import com.chartyar.app.ui.theme.AccentYellow
 import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.DarkCard
 import com.chartyar.app.ui.theme.DarkSurface
+import com.chartyar.app.ui.theme.Divider
+import com.chartyar.app.ui.theme.GradientBlueEnd
+import com.chartyar.app.ui.theme.GradientBlueStart
+import com.chartyar.app.ui.theme.GradientGreenEnd
+import com.chartyar.app.ui.theme.GradientGreenStart
+import com.chartyar.app.ui.theme.GradientGoldEnd
+import com.chartyar.app.ui.theme.GradientGoldStart
+import com.chartyar.app.ui.theme.GradientPurpleEnd
+import com.chartyar.app.ui.theme.GradientPurpleStart
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.ui.theme.TextSecondary
 import ir.tapsell.mediation.Tapsell
@@ -123,21 +138,31 @@ fun HomeScreen(
             .fillMaxSize()
             .background(DarkBg)
             .verticalScroll(scrollState)
-            .padding(20.dp)
+            .padding(horizontal = 16.dp)
+            .padding(top = 16.dp, bottom = 20.dp)
     ) {
+        // ============ Header ============
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .alpha(fadeIn),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "چارت‌یار",
-                style = MaterialTheme.typography.headlineLarge,
-                color = AccentBlue,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "چارت‌یار",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 28.sp
+                )
+                Text(
+                    text = "تحلیل هوشمند چارت",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+            }
             IconButton(onClick = onPricesClick) {
                 Icon(
                     imageVector = Icons.Filled.TrendingUp,
@@ -152,13 +177,6 @@ fun HomeScreen(
                     tint = AccentGreen
                 )
             }
-            IconButton(onClick = onAlertsClick) {
-                Icon(
-                    imageVector = Icons.Filled.Notifications,
-                    contentDescription = "alerts",
-                    tint = AccentYellow
-                )
-            }
             IconButton(onClick = onSettingsClick) {
                 Icon(
                     imageVector = Icons.Filled.Settings,
@@ -168,91 +186,103 @@ fun HomeScreen(
             }
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(20.dp))
 
-        Text(
-            text = "تحلیل حرفه‌ای چارت با یک کلیک",
-            style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondary,
-            modifier = Modifier.alpha(fadeIn)
-        )
-
-        Spacer(Modifier.height(24.dp))
-
+        // ============ Alerts Button (compact top) ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .alpha(fadeIn)
         ) {
-            MainUploadCard(onUploadClick = onUploadClick)
+            AlertsCompactButton(onClick = onAlertsClick)
         }
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(16.dp))
 
+        // ============ Hero Card - Start Analysis ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .alpha(fadeIn)
         ) {
-            MultiTfCard(onClick = onMultiTfClick)
+            HeroAnalysisCard(onUploadClick = onUploadClick)
         }
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(16.dp))
 
-        Box(
+        // ============ Action Cards Grid ============
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .alpha(fadeIn)
+                .alpha(fadeIn),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            CalculatorCard(onClick = onCalculatorClick)
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .alpha(fadeIn)
-        ) {
-            MiningCalculatorCard(onClick = onMiningClick)
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .alpha(fadeIn)
-        ) {
-            OutlinedButton(
-                onClick = onHistoryClick,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Refresh,
-                    contentDescription = null,
-                    tint = AccentBlue,
-                    modifier = Modifier.size(20.dp)
+            Box(modifier = Modifier.weight(1f)) {
+                ActionCard(
+                    title = "چند تایم‌فریمی",
+                    subtitle = "Multi-TF",
+                    iconType = IconType.MULTI_TF,
+                    gradientStart = GradientPurpleStart,
+                    gradientEnd = GradientPurpleEnd,
+                    onClick = onMultiTfClick
                 )
-                Spacer(Modifier.width(8.dp))
-                Text("تاریخچه تحلیل‌ها", style = MaterialTheme.typography.bodyLarge)
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                ActionCard(
+                    title = "ماشین فیوچرز",
+                    subtitle = "PnL Calc",
+                    iconType = IconType.CALCULATOR,
+                    gradientStart = GradientBlueStart,
+                    gradientEnd = GradientBlueEnd,
+                    onClick = onCalculatorClick
+                )
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(fadeIn),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                ActionCard(
+                    title = "ماشین استخراج",
+                    subtitle = "Mining",
+                    iconType = IconType.MINING,
+                    gradientStart = GradientGoldStart,
+                    gradientEnd = GradientGoldEnd,
+                    onClick = onMiningClick
+                )
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                ActionCard(
+                    title = "تاریخچه",
+                    subtitle = "History",
+                    iconType = IconType.HISTORY,
+                    gradientStart = GradientGreenStart,
+                    gradientEnd = GradientGreenEnd,
+                    onClick = onHistoryClick
+                )
             }
         }
 
         Spacer(Modifier.height(20.dp))
 
+        // ============ Fear & Greed Card ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .alpha(fadeIn)
         ) {
-            FearGreedCard()
+            FearGreedCardWallex()
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
+        // ============ Social Links ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -263,6 +293,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(12.dp))
 
+        // ============ Tapsell Banner ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -271,129 +302,249 @@ fun HomeScreen(
             TapsellBannerAd(zoneId = TAPSELL_BANNER_ZONE_ID)
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
         Text(
             text = "این اپ توصیه مالی نیست | تحلیل صرفاً جهت کمک به تصمیم‌گیری",
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary,
             textAlign = TextAlign.Center,
+            fontSize = 11.sp,
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
     }
 }
 
+// ============ Enum برای نوع آیکون ============
+private enum class IconType {
+    MULTI_TF,
+    CALCULATOR,
+    MINING,
+    HISTORY
+}
+
+// ============ Alerts Compact Button ============
 @Composable
-private fun MiningCalculatorCard(onClick: () -> Unit) {
+private fun AlertsCompactButton(onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, Divider)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(38.dp)
                     .background(
                         color = AccentYellow.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "M", fontSize = 24.sp, color = AccentYellow, fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "ماشین حساب استخراج",
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = "درآمد استخراج بیت‌کوین را حساب کن",
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            Icon(
-                imageVector = Icons.Filled.ArrowForward,
-                contentDescription = null,
-                tint = AccentBlue,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun CalculatorCard(onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        color = AccentYellow.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(10.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Calculate,
+                    imageVector = Icons.Filled.Notifications,
                     contentDescription = null,
                     tint = AccentYellow,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "ماشین حساب فیوچرز",
+                    text = "هشدار قیمت",
                     color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
                 )
-                Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "سود و زیان معامله را حساب کن",
+                    text = "اطلاع از رسیدن قیمت به هدف",
                     color = TextSecondary,
-                    style = MaterialTheme.typography.bodyMedium
+                    fontSize = 11.sp
                 )
             }
             Icon(
                 imageVector = Icons.Filled.ArrowForward,
                 contentDescription = null,
                 tint = AccentBlue,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(18.dp)
             )
         }
     }
 }
 
+// ============ Hero Analysis Card (Gradient) ============
 @Composable
-private fun FearGreedCard() {
+private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(GradientBlueStart, GradientPurpleEnd)
+                    )
+                )
+                .padding(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                color = Color.White.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(12.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "📊", fontSize = 26.sp)
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column {
+                        Text(
+                            text = "تحلیل چارت",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        )
+                        Text(
+                            text = "با هوش مصنوعی و بینایی ماشین",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    text = "عکس چارت خود را آپلود کن و تحلیل کامل دریافت کن: سیگنال خرید/فروش، خطوط روند، الگوها و سطوح کلیدی",
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 12.sp,
+                    lineHeight = 18.sp
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Button(
+                    onClick = onUploadClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = GradientBlueStart
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "شروع تحلیل",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============ Action Card (Grid item) ============
+@Composable
+private fun ActionCard(
+    title: String,
+    subtitle: String,
+    iconType: IconType,
+    gradientStart: Color,
+    gradientEnd: Color,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, Divider)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(gradientStart, gradientEnd)
+                        ),
+                        shape = RoundedCornerShape(11.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                when (iconType) {
+                    IconType.MULTI_TF -> Text(text = "🎯", fontSize = 20.sp)
+                    IconType.CALCULATOR -> Icon(
+                        Icons.Filled.Calculate,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    IconType.MINING -> Text(text = "M", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    IconType.HISTORY -> Icon(
+                        Icons.Filled.Refresh,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            Text(
+                text = title,
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.sp
+            )
+            Text(
+                text = subtitle,
+                color = TextSecondary,
+                fontSize = 10.sp
+            )
+        }
+    }
+}
+
+// ============ Fear & Greed Card (Wallex Style with Arc) ============
+@Composable
+private fun FearGreedCardWallex() {
     var data by remember { mutableStateOf<FearGreedData?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
@@ -419,7 +570,7 @@ private fun FearGreedCard() {
     val value = data?.value ?: 0
     val color = when {
         value <= 25 -> AccentRed
-        value <= 45 -> Color(0xFFE8A33D)
+        value <= 45 -> Color(0xFFFF8C42)
         value <= 55 -> AccentYellow
         value <= 75 -> Color(0xFF7BC97C)
         else -> AccentGreen
@@ -427,103 +578,158 @@ private fun FearGreedCard() {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, Divider)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            // Left: Arc Gauge
+            Box(
+                modifier = Modifier.size(110.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "شاخص ترس و طمع",
-                        color = TextPrimary,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = "حس کلی بازار کریپتو",
-                        color = TextSecondary,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-
                 if (isLoading) {
                     CircularProgressIndicator(
                         color = AccentBlue,
                         strokeWidth = 2.dp,
                         modifier = Modifier.size(24.dp)
                     )
-                } else if (data == null) {
-                    Text(
-                        text = "-",
-                        color = TextSecondary,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(color.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
+                } else if (data != null) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val strokeWidth = 10.dp.toPx()
+                        val arcSize = Size(
+                            size.width - strokeWidth,
+                            size.height - strokeWidth
+                        )
+                        val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
+
+                        // Background arc
+                        drawArc(
+                            color = DarkCard,
+                            startAngle = 180f,
+                            sweepAngle = 180f,
+                            useCenter = false,
+                            topLeft = topLeft,
+                            size = arcSize,
+                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                        )
+
+                        // Colored arc segments for zones
+                        val segments = listOf(
+                            0f to 25f to AccentRed,
+                            25f to 45f to Color(0xFFFF8C42),
+                            45f to 55f to AccentYellow,
+                            55f to 75f to Color(0xFF7BC97C),
+                            75f to 100f to AccentGreen
+                        )
+                        segments.forEach { (range, c) ->
+                            val (start, end) = range
+                            drawArc(
+                                color = c.copy(alpha = 0.35f),
+                                startAngle = 180f + (start / 100f) * 180f,
+                                sweepAngle = ((end - start) / 100f) * 180f,
+                                useCenter = false,
+                                topLeft = topLeft,
+                                size = arcSize,
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
+                            )
+                        }
+
+                        // Value indicator
+                        val sweep = (value / 100f) * 180f
+                        drawArc(
+                            color = color,
+                            startAngle = 180f,
+                            sweepAngle = sweep,
+                            useCenter = false,
+                            topLeft = topLeft,
+                            size = arcSize,
+                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                        )
+
+                        // Indicator dot
+                        val angleRad = Math.toRadians((180f + sweep).toDouble())
+                        val radius = arcSize.width / 2
+                        val cx = topLeft.x + radius + (radius * kotlin.math.cos(angleRad)).toFloat()
+                        val cy = topLeft.y + radius + (radius * kotlin.math.sin(angleRad)).toFloat()
+                        drawCircle(color = color, radius = strokeWidth * 0.7f, center = Offset(cx, cy))
+                    }
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "${data!!.value}",
-                            color = color,
-                            fontSize = 20.sp,
+                            color = TextPrimary,
+                            fontSize = 24.sp,
                             fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = data!!.classificationFa,
+                            color = color,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
             }
 
-            if (data != null && !isLoading) {
-                Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.width(16.dp))
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(DarkCard)
-                ) {
+            // Right: Info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "شاخص ترس و طمع",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "حس کلی بازار کریپتو",
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+
+                if (data != null && !isLoading) {
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Fear",
+                            color = TextSecondary,
+                            fontSize = 10.sp
+                        )
+                        Text(
+                            text = "Greed",
+                            color = TextSecondary,
+                            fontSize = 10.sp
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    // Gradient bar
                     Box(
                         modifier = Modifier
-                            .fillMaxHeight()
-                            .fillMaxWidth(fraction = value / 100f)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(color)
-                    )
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Fear",
-                        color = TextSecondary,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = data!!.classificationFa,
-                        color = color,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "Greed",
-                        color = TextSecondary,
-                        style = MaterialTheme.typography.bodySmall
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        AccentRed,
+                                        Color(0xFFFF8C42),
+                                        AccentYellow,
+                                        Color(0xFF7BC97C),
+                                        AccentGreen
+                                    )
+                                )
+                            )
                     )
                 }
             }
@@ -531,6 +737,7 @@ private fun FearGreedCard() {
     }
 }
 
+// ============ Social Links ============
 @Composable
 private fun SocialLinksRow() {
     val context = LocalContext.current
@@ -548,7 +755,8 @@ private fun SocialLinksRow() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, Divider)
     ) {
         Row(
             modifier = Modifier
@@ -557,9 +765,9 @@ private fun SocialLinksRow() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "ما را دنبال کنید:",
+                text = "ما را دنبال کنید",
                 color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f)
             )
@@ -571,7 +779,7 @@ private fun SocialLinksRow() {
                 onClick = { openUrl(TELEGRAM_URL) }
             )
 
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(10.dp))
 
             SocialIcon(
                 iconRes = R.drawable.ic_instagram,
@@ -594,7 +802,7 @@ private fun SocialIcon(
 
     Box(
         modifier = Modifier
-            .size(44.dp)
+            .size(38.dp)
             .background(backgroundColor, CircleShape)
             .clickable { onClick() },
         contentAlignment = Alignment.Center
@@ -603,12 +811,12 @@ private fun SocialIcon(
             painter = painter,
             contentDescription = contentDescription,
             tint = Color.White,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(20.dp)
         )
     }
 }
 
-// ============ Tapsell Banner Ad — با Reflection ============
+// ============ Tapsell Banner ============
 @Composable
 fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -672,129 +880,4 @@ private fun tryShowAd(container: BannerContainer, adId: String): Boolean {
         }
     }
     return false
-}
-
-@Composable
-private fun MultiTfCard(onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        color = AccentGreen.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "M", fontSize = 20.sp, color = AccentGreen, fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "تحلیل چند تایم‌فریمی",
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = "۴ تایم‌فریم همزمان + تشخیص هماهنگی",
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            Icon(
-                imageVector = Icons.Filled.ArrowForward,
-                contentDescription = null,
-                tint = AccentBlue,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun MainUploadCard(onUploadClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-            val pulseScale by infiniteTransition.animateFloat(
-                initialValue = 1f,
-                targetValue = 1.15f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1500, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "pulseScale"
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .scale(pulseScale)
-                    .background(
-                        color = AccentBlue.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(50)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "📊", fontSize = 42.sp)
-            }
-
-            Spacer(Modifier.height(16.dp))
-            Text(
-                text = "شروع تحلیل",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "اسکرین‌شات چارت خود را از گالری انتخاب کنید",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(20.dp))
-            Button(
-                onClick = onUploadClick,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentBlue,
-                    contentColor = TextPrimary
-                )
-            ) {
-                Icon(imageVector = Icons.Filled.Add, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "انتخاب تصویر چارت",
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-        }
-    }
 }
