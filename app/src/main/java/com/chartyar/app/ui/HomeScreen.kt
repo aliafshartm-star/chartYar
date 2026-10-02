@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -59,7 +58,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -87,10 +85,10 @@ import com.chartyar.app.ui.theme.DarkSurface
 import com.chartyar.app.ui.theme.Divider
 import com.chartyar.app.ui.theme.GradientBlueEnd
 import com.chartyar.app.ui.theme.GradientBlueStart
-import com.chartyar.app.ui.theme.GradientGreenEnd
-import com.chartyar.app.ui.theme.GradientGreenStart
 import com.chartyar.app.ui.theme.GradientGoldEnd
 import com.chartyar.app.ui.theme.GradientGoldStart
+import com.chartyar.app.ui.theme.GradientGreenEnd
+import com.chartyar.app.ui.theme.GradientGreenStart
 import com.chartyar.app.ui.theme.GradientPurpleEnd
 import com.chartyar.app.ui.theme.GradientPurpleStart
 import com.chartyar.app.ui.theme.TextPrimary
@@ -141,7 +139,6 @@ fun HomeScreen(
             .padding(horizontal = 16.dp)
             .padding(top = 16.dp, bottom = 20.dp)
     ) {
-        // ============ Header ============
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -188,7 +185,6 @@ fun HomeScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // ============ Alerts Button (compact top) ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -199,7 +195,6 @@ fun HomeScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // ============ Hero Card - Start Analysis ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -210,7 +205,6 @@ fun HomeScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // ============ Action Cards Grid ============
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -218,24 +212,10 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(modifier = Modifier.weight(1f)) {
-                ActionCard(
-                    title = "چند تایم‌فریمی",
-                    subtitle = "Multi-TF",
-                    iconType = IconType.MULTI_TF,
-                    gradientStart = GradientPurpleStart,
-                    gradientEnd = GradientPurpleEnd,
-                    onClick = onMultiTfClick
-                )
+                MultiTfActionCard(onClick = onMultiTfClick)
             }
             Box(modifier = Modifier.weight(1f)) {
-                ActionCard(
-                    title = "ماشین فیوچرز",
-                    subtitle = "PnL Calc",
-                    iconType = IconType.CALCULATOR,
-                    gradientStart = GradientBlueStart,
-                    gradientEnd = GradientBlueEnd,
-                    onClick = onCalculatorClick
-                )
+                CalculatorActionCard(onClick = onCalculatorClick)
             }
         }
 
@@ -248,30 +228,15 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(modifier = Modifier.weight(1f)) {
-                ActionCard(
-                    title = "ماشین استخراج",
-                    subtitle = "Mining",
-                    iconType = IconType.MINING,
-                    gradientStart = GradientGoldStart,
-                    gradientEnd = GradientGoldEnd,
-                    onClick = onMiningClick
-                )
+                MiningActionCard(onClick = onMiningClick)
             }
             Box(modifier = Modifier.weight(1f)) {
-                ActionCard(
-                    title = "تاریخچه",
-                    subtitle = "History",
-                    iconType = IconType.HISTORY,
-                    gradientStart = GradientGreenStart,
-                    gradientEnd = GradientGreenEnd,
-                    onClick = onHistoryClick
-                )
+                HistoryActionCard(onClick = onHistoryClick)
             }
         }
 
         Spacer(Modifier.height(20.dp))
 
-        // ============ Fear & Greed Card ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -282,7 +247,6 @@ fun HomeScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // ============ Social Links ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -293,7 +257,6 @@ fun HomeScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // ============ Tapsell Banner ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -317,15 +280,6 @@ fun HomeScreen(
     }
 }
 
-// ============ Enum برای نوع آیکون ============
-private enum class IconType {
-    MULTI_TF,
-    CALCULATOR,
-    MINING,
-    HISTORY
-}
-
-// ============ Alerts Compact Button ============
 @Composable
 private fun AlertsCompactButton(onClick: () -> Unit) {
     Card(
@@ -382,7 +336,6 @@ private fun AlertsCompactButton(onClick: () -> Unit) {
     }
 }
 
-// ============ Hero Analysis Card (Gradient) ============
 @Composable
 private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
     Card(
@@ -473,16 +426,8 @@ private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
     }
 }
 
-// ============ Action Card (Grid item) ============
 @Composable
-private fun ActionCard(
-    title: String,
-    subtitle: String,
-    iconType: IconType,
-    gradientStart: Color,
-    gradientEnd: Color,
-    onClick: () -> Unit
-) {
+private fun MultiTfActionCard(onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -501,40 +446,23 @@ private fun ActionCard(
                     .size(42.dp)
                     .background(
                         brush = Brush.linearGradient(
-                            colors = listOf(gradientStart, gradientEnd)
+                            colors = listOf(GradientPurpleStart, GradientPurpleEnd)
                         ),
                         shape = RoundedCornerShape(11.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                when (iconType) {
-                    IconType.MULTI_TF -> Text(text = "🎯", fontSize = 20.sp)
-                    IconType.CALCULATOR -> Icon(
-                        Icons.Filled.Calculate,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    IconType.MINING -> Text(text = "M", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    IconType.HISTORY -> Icon(
-                        Icons.Filled.Refresh,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                Text(text = "🎯", fontSize = 20.sp)
             }
-
             Spacer(Modifier.height(10.dp))
-
             Text(
-                text = title,
+                text = "چند تایم‌فریمی",
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 13.sp
             )
             Text(
-                text = subtitle,
+                text = "Multi-TF",
                 color = TextSecondary,
                 fontSize = 10.sp
             )
@@ -542,7 +470,148 @@ private fun ActionCard(
     }
 }
 
-// ============ Fear & Greed Card (Wallex Style with Arc) ============
+@Composable
+private fun CalculatorActionCard(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, Divider)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(GradientBlueStart, GradientBlueEnd)
+                        ),
+                        shape = RoundedCornerShape(11.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Calculate,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = "ماشین فیوچرز",
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.sp
+            )
+            Text(
+                text = "PnL Calc",
+                color = TextSecondary,
+                fontSize = 10.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun MiningActionCard(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, Divider)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(GradientGoldStart, GradientGoldEnd)
+                        ),
+                        shape = RoundedCornerShape(11.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "M", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = "ماشین استخراج",
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.sp
+            )
+            Text(
+                text = "Mining",
+                color = TextSecondary,
+                fontSize = 10.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun HistoryActionCard(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, Divider)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(GradientGreenStart, GradientGreenEnd)
+                        ),
+                        shape = RoundedCornerShape(11.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Refresh,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = "تاریخچه",
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.sp
+            )
+            Text(
+                text = "History",
+                color = TextSecondary,
+                fontSize = 10.sp
+            )
+        }
+    }
+}
+
 @Composable
 private fun FearGreedCardWallex() {
     var data by remember { mutableStateOf<FearGreedData?>(null) }
@@ -588,7 +657,6 @@ private fun FearGreedCardWallex() {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left: Arc Gauge
             Box(
                 modifier = Modifier.size(110.dp),
                 contentAlignment = Alignment.Center
@@ -599,67 +667,15 @@ private fun FearGreedCardWallex() {
                         strokeWidth = 2.dp,
                         modifier = Modifier.size(24.dp)
                     )
-                } else if (data != null) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val strokeWidth = 10.dp.toPx()
-                        val arcSize = Size(
-                            size.width - strokeWidth,
-                            size.height - strokeWidth
-                        )
-                        val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
-
-                        // Background arc
-                        drawArc(
-                            color = DarkCard,
-                            startAngle = 180f,
-                            sweepAngle = 180f,
-                            useCenter = false,
-                            topLeft = topLeft,
-                            size = arcSize,
-                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                        )
-
-                        // Colored arc segments for zones
-                        val segments = listOf(
-                            0f to 25f to AccentRed,
-                            25f to 45f to Color(0xFFFF8C42),
-                            45f to 55f to AccentYellow,
-                            55f to 75f to Color(0xFF7BC97C),
-                            75f to 100f to AccentGreen
-                        )
-                        segments.forEach { (range, c) ->
-                            val (start, end) = range
-                            drawArc(
-                                color = c.copy(alpha = 0.35f),
-                                startAngle = 180f + (start / 100f) * 180f,
-                                sweepAngle = ((end - start) / 100f) * 180f,
-                                useCenter = false,
-                                topLeft = topLeft,
-                                size = arcSize,
-                                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
-                            )
-                        }
-
-                        // Value indicator
-                        val sweep = (value / 100f) * 180f
-                        drawArc(
-                            color = color,
-                            startAngle = 180f,
-                            sweepAngle = sweep,
-                            useCenter = false,
-                            topLeft = topLeft,
-                            size = arcSize,
-                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                        )
-
-                        // Indicator dot
-                        val angleRad = Math.toRadians((180f + sweep).toDouble())
-                        val radius = arcSize.width / 2
-                        val cx = topLeft.x + radius + (radius * kotlin.math.cos(angleRad)).toFloat()
-                        val cy = topLeft.y + radius + (radius * kotlin.math.sin(angleRad)).toFloat()
-                        drawCircle(color = color, radius = strokeWidth * 0.7f, center = Offset(cx, cy))
-                    }
-
+                } else if (data == null) {
+                    Text(
+                        text = "-",
+                        color = TextSecondary,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                } else {
+                    FearGreedArc(value = value, color = color)
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "${data!!.value}",
@@ -679,7 +695,6 @@ private fun FearGreedCardWallex() {
 
             Spacer(Modifier.width(16.dp))
 
-            // Right: Info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "شاخص ترس و طمع",
@@ -713,7 +728,6 @@ private fun FearGreedCardWallex() {
                         )
                     }
                     Spacer(Modifier.height(6.dp))
-                    // Gradient bar
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -737,7 +751,64 @@ private fun FearGreedCardWallex() {
     }
 }
 
-// ============ Social Links ============
+@Composable
+private fun FearGreedArc(value: Int, color: Color) {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val strokeWidth = 10.dp.toPx()
+        val arcSize = Size(
+            size.width - strokeWidth,
+            size.height - strokeWidth
+        )
+        val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
+
+        drawArc(
+            color = DarkCard,
+            startAngle = 180f,
+            sweepAngle = 180f,
+            useCenter = false,
+            topLeft = topLeft,
+            size = arcSize,
+            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+        )
+
+        val segments = listOf(
+            Triple(0f, 25f, AccentRed),
+            Triple(25f, 45f, Color(0xFFFF8C42)),
+            Triple(45f, 55f, AccentYellow),
+            Triple(55f, 75f, Color(0xFF7BC97C)),
+            Triple(75f, 100f, AccentGreen)
+        )
+        segments.forEach { (start, end, c) ->
+            drawArc(
+                color = c.copy(alpha = 0.35f),
+                startAngle = 180f + (start / 100f) * 180f,
+                sweepAngle = ((end - start) / 100f) * 180f,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
+            )
+        }
+
+        val sweep = (value / 100f) * 180f
+        drawArc(
+            color = color,
+            startAngle = 180f,
+            sweepAngle = sweep,
+            useCenter = false,
+            topLeft = topLeft,
+            size = arcSize,
+            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+        )
+
+        val angleRad = Math.toRadians((180f + sweep).toDouble())
+        val radius = arcSize.width / 2
+        val cx = topLeft.x + radius + (radius * kotlin.math.cos(angleRad)).toFloat()
+        val cy = topLeft.y + radius + (radius * kotlin.math.sin(angleRad)).toFloat()
+        drawCircle(color = color, radius = strokeWidth * 0.7f, center = Offset(cx, cy))
+    }
+}
+
 @Composable
 private fun SocialLinksRow() {
     val context = LocalContext.current
@@ -816,7 +887,6 @@ private fun SocialIcon(
     }
 }
 
-// ============ Tapsell Banner ============
 @Composable
 fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
