@@ -309,7 +309,7 @@ private fun MiningCalculatorCard(onClick: () -> Unit) {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "⛏", fontSize = 24.sp)
+                Text(text = "M", fontSize = 24.sp, color = AccentYellow, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -462,7 +462,7 @@ private fun FearGreedCard() {
                     )
                 } else if (data == null) {
                     Text(
-                        text = "ناموجود",
+                        text = "-",
                         color = TextSecondary,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -510,7 +510,7 @@ private fun FearGreedCard() {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "ترس شدید",
+                        text = "Fear",
                         color = TextSecondary,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -521,7 +521,7 @@ private fun FearGreedCard() {
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "طمع شدید",
+                        text = "Greed",
                         color = TextSecondary,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -676,7 +676,7 @@ private fun MultiTfCard(onClick: () -> Unit) {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "🎯", fontSize = 24.sp)
+                Text(text = "M", fontSize = 20.sp, color = AccentGreen, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
