@@ -1,6 +1,7 @@
 package com.chartyar.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,8 +19,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,12 +39,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chartyar.app.analysis.StrategyInfo
+import com.chartyar.app.analysis.StrategyType
 import com.chartyar.app.data.NobitexApi
 import com.chartyar.app.ui.theme.AccentBlue
+import com.chartyar.app.ui.theme.AccentGreen
+import com.chartyar.app.ui.theme.AccentYellow
 import com.chartyar.app.ui.theme.DarkBg
+import com.chartyar.app.ui.theme.DarkCard
 import com.chartyar.app.ui.theme.DarkSurface
 import com.chartyar.app.ui.theme.Divider
 import com.chartyar.app.ui.theme.TextPrimary
@@ -54,11 +61,16 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SymbolSelectorScreen(
+    strategies: List<StrategyInfo>,
+    selectedStrategy: StrategyType,
+    defaultTimeframe: String,
+    lockedStrategies: Set<StrategyType>,
+    onStrategyChange: (StrategyType) -> Unit,
     onBack: () -> Unit,
-    onSymbolSelected: (String, String) -> Unit
+    onSymbolSelected: (String, String, StrategyType) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedTimeframe by remember { mutableStateOf("4H") }
+    var selectedTimeframe by remember { mutableStateOf(defaultTimeframe) }
     var allSymbols by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
@@ -88,6 +100,7 @@ fun SymbolSelectorScreen(
             .background(DarkBg)
             .padding(16.dp)
     ) {
+        // Header
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
@@ -96,45 +109,58 @@ fun SymbolSelectorScreen(
                 Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
             }
             Text(
-                "انتخاب ارز",
+                "تحلیل جدید",
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold
             )
         }
 
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        // Strategy Buttons
+        Text(
+            "استراتژی معاملاتی",
+            color = TextPrimary,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Row(
-                modifier = Modifier.padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Filled.TrendingUp,
-                    contentDescription = null,
-                    tint = AccentBlue,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    "داده واقعی از نوبیتکس — ابتدا تایم‌فریم سپس ارز را انتخاب کنید.",
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    lineHeight = 20.sp
+            strategies.forEach { strategy ->
+                val isLocked = strategy.type in lockedStrategies
+                val isSelected = strategy.type == selectedStrategy
+                StrategyButton(
+                    strategy = strategy,
+                    isSelected = isSelected,
+                    isLocked = isLocked,
+                    onClick = { onStrategyChange(strategy.type) },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
 
+        // Strategy description
+        val currentStrategy = strategies.firstOrNull { it.type == selectedStrategy }
+        if (currentStrategy != null) {
+            Text(
+                text = currentStrategy.description,
+                color = TextSecondary,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+        }
+
+        // Timeframe
         Text(
             "تایم‌فریم",
             color = TextPrimary,
             fontWeight = FontWeight.SemiBold,
-            fontSize = 14.sp
+            fontSize = 13.sp,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
-        Spacer(Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -162,15 +188,17 @@ fun SymbolSelectorScreen(
             }
         }
 
+        // Search
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("جستجو...", color = TextSecondary) },
+            placeholder = { Text("جستجوی ارز...", color = TextSecondary, fontSize = 13.sp) },
             leadingIcon = {
-                Icon(Icons.Filled.Search, contentDescription = null, tint = TextSecondary)
+                Icon(Icons.Filled.Search, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(20.dp))
             },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = TextPrimary,
                 unfocusedTextColor = TextPrimary,
@@ -181,6 +209,7 @@ fun SymbolSelectorScreen(
             )
         )
 
+        // Symbol list
         if (isLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -192,7 +221,7 @@ fun SymbolSelectorScreen(
                     Text(
                         "در حال دریافت لیست ارزها...",
                         color = TextSecondary,
-                        style = MaterialTheme.typography.bodyMedium
+                        fontSize = 13.sp
                     )
                 }
             }
@@ -204,7 +233,7 @@ fun SymbolSelectorScreen(
                 Text(
                     "ارزی پیدا نشد",
                     color = TextSecondary,
-                    style = MaterialTheme.typography.bodyLarge
+                    fontSize = 14.sp
                 )
             }
         } else {
@@ -215,14 +244,16 @@ fun SymbolSelectorScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onSymbolSelected(symbol, selectedTimeframe) },
+                            .clickable {
+                                onSymbolSelected(symbol, selectedTimeframe, selectedStrategy)
+                            },
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = DarkSurface)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
@@ -230,23 +261,82 @@ fun SymbolSelectorScreen(
                                     name,
                                     color = TextPrimary,
                                     fontWeight = FontWeight.SemiBold,
-                                    style = MaterialTheme.typography.bodyLarge
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontSize = 14.sp
                                 )
                                 Spacer(Modifier.height(2.dp))
                                 Text(
                                     symbol,
                                     color = TextSecondary,
-                                    style = MaterialTheme.typography.bodyMedium
+                                    fontSize = 12.sp
                                 )
                             }
                             Text(
                                 "›",
                                 color = AccentBlue,
-                                fontSize = 28.sp,
+                                fontSize = 26.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StrategyButton(
+    strategy: StrategyInfo,
+    isSelected: Boolean,
+    isLocked: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val borderColor = if (isSelected) AccentBlue else Divider
+    val bgColor = if (isSelected) AccentBlue.copy(alpha = 0.15f) else DarkCard
+
+    Card(
+        modifier = modifier
+            .height(78.dp)
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = bgColor)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = strategy.emoji,
+                    fontSize = 22.sp
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = strategy.displayName,
+                    color = if (isSelected) TextPrimary else TextSecondary,
+                    fontSize = 10.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                )
+                if (isLocked) {
+                    Spacer(Modifier.height(2.dp))
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = "locked",
+                        tint = AccentYellow,
+                        modifier = Modifier.size(10.dp)
+                    )
                 }
             }
         }
