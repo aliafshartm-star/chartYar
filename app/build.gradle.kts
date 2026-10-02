@@ -15,7 +15,7 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        // ============ Tapsell App Key ============
+        // ⚠️ Tapsell App ID
         addManifestPlaceholders(
             mapOf(
                 "TapsellMediationAppKey" to "slnbpalgsemltbefkjhjraafbkdcgkiogfokoemepmtghajtlokddfsdsddlqonmflpspk"
@@ -83,7 +83,7 @@ dependencies {
 
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
-    // ============ Tapsell SDK ============
+    // ============ Tapsell SDK — طبق مستندات رسمی ============
     implementation("ir.tapsell:tapsell:1.3.0") {
         exclude(group = "androidx.work", module = "work-runtime")
         exclude(group = "androidx.work", module = "work-runtime-ktx")
