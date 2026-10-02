@@ -24,7 +24,9 @@ data class AnalysisResult(
     val warnings: List<String>,
     val timeframe: String,
     val indicatorScores: Map<String, Int>,
-    val patterns: List<DetectedPattern> = emptyList()
+    val patterns: List<DetectedPattern> = emptyList(),
+    val visionTrendLines: List<ChartVisionAnalyzer.TrendLine> = emptyList(),
+    val visionDominantTrend: Int = 0
 )
 
 object SignalEngine {
@@ -40,7 +42,7 @@ object SignalEngine {
 
         // ============ ۱. ساختار بازار ============
         val trendScore = analyzeMarketStructure(candles, reasons)
-        scores["ساختار بازار"] = trendScore
+        scores["Market Structure"] = trendScore
 
         val trend = when {
             trendScore >= 40 -> TrendType.UPTREND
@@ -54,11 +56,23 @@ object SignalEngine {
         var rsiScore = 0
         if (rsi != null) {
             rsiScore = when {
-                rsi < 30 -> { reasons.add("RSI در اشباع فروش (${"%.1f".format(rsi)}) — احتمال برگشت صعودی"); 70 }
-                rsi < 40 -> { reasons.add("RSI ضعیف ولی رو به بهبود (${"%.1f".format(rsi)})"); 40 }
+                rsi < 30 -> {
+                    reasons.add("RSI oversold (${"%.1f".format(rsi)}) - possible bullish reversal")
+                    70
+                }
+                rsi < 40 -> {
+                    reasons.add("RSI weak but improving (${"%.1f".format(rsi)})")
+                    40
+                }
                 rsi in 40.0..60.0 -> 0
-                rsi < 70 -> { reasons.add("RSI نرمال رو به بالا (${"%.1f".format(rsi)})"); -20 }
-                else -> { reasons.add("⚠️ RSI در اشباع خرید (${"%.1f".format(rsi)}) — احتمال اصلاح"); -70 }
+                rsi < 70 -> {
+                    reasons.add("RSI normal but rising (${"%.1f".format(rsi)})")
+                    -20
+                }
+                else -> {
+                    reasons.add("RSI overbought (${"%.1f".format(rsi)}) - possible correction")
+                    -70
+                }
             }
         }
         scores["RSI"] = rsiScore
@@ -66,11 +80,17 @@ object SignalEngine {
         // ============ ۳. واگرایی RSI ============
         val divergence = TechnicalIndicators.detectDivergence(candles, rsiValues, 30)
         val divScore = when (divergence) {
-            1 -> { reasons.add("واگرایی صعودی RSI — سیگنال برگشت"); 60 }
-            -1 -> { reasons.add("⚠️ واگرایی نزولی RSI — سیگنال برگشت نزولی"); -60 }
+            1 -> {
+                reasons.add("Bullish RSI divergence - reversal signal")
+                60
+            }
+            -1 -> {
+                reasons.add("Bearish RSI divergence - reversal signal")
+                -60
+            }
             else -> 0
         }
-        scores["واگرایی"] = divScore
+        scores["Divergence"] = divScore
 
         // ============ ۴. MACD ============
         val macdResult = TechnicalIndicators.macd(closes)
@@ -80,14 +100,20 @@ object SignalEngine {
         var macdScore = 0
         if (macdLine != null && signalLine != null && histogram != null) {
             macdScore = when {
-                macdLine > signalLine && histogram > 0 -> { reasons.add("MACD کراس صعودی — مومنتوم مثبت"); 50 }
-                macdLine < signalLine && histogram < 0 -> { reasons.add("⚠️ MACD کراس نزولی — مومنتوم منفی"); -50 }
+                macdLine > signalLine && histogram > 0 -> {
+                    reasons.add("MACD bullish cross - positive momentum")
+                    50
+                }
+                macdLine < signalLine && histogram < 0 -> {
+                    reasons.add("MACD bearish cross - negative momentum")
+                    -50
+                }
                 else -> 0
             }
             val prevHist = macdResult.histogram.dropLast(1).lastOrNull()
             if (prevHist != null && histogram > prevHist && histogram > 0) {
                 macdScore += 10
-                reasons.add("هیستوگرام MACD در حال افزایش — تقویت روند")
+                reasons.add("MACD histogram increasing - trend strengthening")
             }
         }
         scores["MACD"] = macdScore
@@ -100,19 +126,19 @@ object SignalEngine {
         if (ema9 != null && ema21 != null) {
             if (ema9 > ema21) {
                 emaScore += 30
-                reasons.add("EMA9 بالای EMA21 — روند کوتاه‌مدت صعودی")
+                reasons.add("EMA9 above EMA21 - short-term uptrend")
             } else {
                 emaScore -= 30
-                reasons.add("⚠️ EMA9 زیر EMA21 — روند کوتاه‌مدت نزولی")
+                reasons.add("EMA9 below EMA21 - short-term downtrend")
             }
         }
         if (ema50 != null) {
             if (currentPrice > ema50) {
                 emaScore += 20
-                reasons.add("قیمت بالای EMA50 — روند میان‌مدت صعودی")
+                reasons.add("Price above EMA50 - mid-term uptrend")
             } else {
                 emaScore -= 20
-                reasons.add("⚠️ قیمت زیر EMA50 — روند میان‌مدت نزولی")
+                reasons.add("Price below EMA50 - mid-term downtrend")
             }
         }
         scores["EMA"] = emaScore
@@ -123,9 +149,17 @@ object SignalEngine {
         var adxScore = 0
         if (adx != null) {
             when {
-                adx > 40 -> { adxScore = 30; reasons.add("ADX قوی (${"%.1f".format(adx)}) — روند قدرتمند") }
-                adx > 25 -> { adxScore = 15; reasons.add("ADX متوسط (${"%.1f".format(adx)}) — روند فعال") }
-                else -> { warnings.add("ADX ضعیف (${"%.1f".format(adx)}) — بازار رنج") }
+                adx > 40 -> {
+                    adxScore = 30
+                    reasons.add("ADX strong (${"%.1f".format(adx)}) - powerful trend")
+                }
+                adx > 25 -> {
+                    adxScore = 15
+                    reasons.add("ADX moderate (${"%.1f".format(adx)}) - active trend")
+                }
+                else -> {
+                    warnings.add("ADX weak (${"%.1f".format(adx)}) - ranging market")
+                }
             }
             if (ema9 != null && ema21 != null && ema9 < ema21) adxScore = -adxScore
         }
@@ -138,8 +172,14 @@ object SignalEngine {
         var stochScore = 0
         if (k != null && d != null) {
             when {
-                k < 20 && k > d -> { stochScore = 40; reasons.add("Stochastic اشباع فروش با کراس صعودی") }
-                k > 80 && k < d -> { stochScore = -40; reasons.add("⚠️ Stochastic اشباع خرید با کراس نزولی") }
+                k < 20 && k > d -> {
+                    stochScore = 40
+                    reasons.add("Stochastic oversold with bullish cross")
+                }
+                k > 80 && k < d -> {
+                    stochScore = -40
+                    reasons.add("Stochastic overbought with bearish cross")
+                }
             }
         }
         scores["Stochastic"] = stochScore
@@ -152,41 +192,76 @@ object SignalEngine {
         var bbScore = 0
         if (upper != null && lower != null && middle != null) {
             bbScore = when {
-                currentPrice <= lower -> { reasons.add("قیمت روی باند پایین بولینگر — اشباع فروش"); 50 }
-                currentPrice >= upper -> { reasons.add("⚠️ قیمت روی باند بالای بولینگر — اشباع خرید"); -50 }
+                currentPrice <= lower -> {
+                    reasons.add("Price on lower Bollinger Band - oversold")
+                    50
+                }
+                currentPrice >= upper -> {
+                    reasons.add("Price on upper Bollinger Band - overbought")
+                    -50
+                }
                 currentPrice > middle -> 15
                 else -> -15
             }
         }
-        scores["بولینگر"] = bbScore
+        scores["Bollinger"] = bbScore
 
         // ============ ۹. تحلیل کندلی ============
         val priceActionScore = analyzePriceAction(candles, reasons, warnings)
         scores["Price Action"] = priceActionScore
 
-        // ============ ۱۰. الگوهای کلاسیک (جدید) ============
+        // ============ ۱۰. الگوهای کلاسیک ============
         val detectedPatterns = PatternDetector.detectAll(candles)
         var patternScore = 0
         if (detectedPatterns.isNotEmpty()) {
-            // بالاترین الگو رو در نظر بگیر
             val bestPattern = detectedPatterns.first()
             patternScore = (bestPattern.direction * bestPattern.confidence * 0.8).toInt()
 
             val dirText = when (bestPattern.direction) {
-                1 -> "صعودی"
-                -1 -> "نزولی"
-                else -> "خنثی"
+                1 -> "bullish"
+                -1 -> "bearish"
+                else -> "neutral"
             }
-            reasons.add("الگوی ${bestPattern.name} — سیگنال $dirText (اطمینان ${bestPattern.confidence}%)")
+            reasons.add("Pattern ${bestPattern.name} - $dirText signal (confidence ${bestPattern.confidence}%)")
 
-            // اگه الگوهای دیگه‌ای هم هستن
             if (detectedPatterns.size > 1) {
                 detectedPatterns.drop(1).take(2).forEach {
-                    reasons.add("الگوی اضافی: ${it.name}")
+                    reasons.add("Additional pattern: ${it.name}")
                 }
             }
         }
-        scores["الگوهای کلاسیک"] = patternScore
+        scores["Patterns"] = patternScore
+
+        // ============ ۱۱. Computer Vision Analysis ============
+        val vision = ChartVisionAnalyzer.analyze(candles)
+        val visionScore = when (vision.dominantTrend) {
+            1 -> 45
+            -1 -> -45
+            else -> 0
+        }
+        scores["Vision"] = visionScore
+
+        when (vision.dominantTrend) {
+            1 -> reasons.add("Vision detected bullish trend lines")
+            -1 -> reasons.add("Vision detected bearish trend lines")
+        }
+
+        for (line in vision.trendLines) {
+            when {
+                line.isSupport && line.slope < 0 -> {
+                    reasons.add("Rising support line detected (strength ${line.strength})")
+                }
+                !line.isSupport && line.slope > 0 -> {
+                    reasons.add("Falling resistance line detected (strength ${line.strength})")
+                }
+                line.isSupport -> {
+                    reasons.add("Descending support detected (strength ${line.strength})")
+                }
+                else -> {
+                    reasons.add("Ascending resistance detected (strength ${line.strength})")
+                }
+            }
+        }
 
         // ============ وزن‌دهی بر اساس تایم‌فریم ============
         val weights = getTimeframeWeights(timeframe)
@@ -232,20 +307,25 @@ object SignalEngine {
         val target3 = if (isBuy) entry + risk * 4.0 else entry - risk * 4.0
         val rr = if (risk > 0) abs(target2 - entry) / risk else 0.0
 
-        // ============ سطوح ============
-        val (supports, resistances) = TechnicalIndicators.findSupportResistance(candles, 50)
+        // ============ سطوح (ترکیب تکنیکال + بینایی) ============
+        val (techSupports, techResistances) = TechnicalIndicators.findSupportResistance(candles, 50)
+
+        val visionSupports = vision.supportLevels.map { it.price }
+        val visionResistances = vision.resistanceLevels.map { it.price }
+
+        val allSupports = (techSupports + visionSupports).distinct().sortedDescending().take(5)
+        val allResistances = (techResistances + visionResistances).distinct().sorted().take(5)
 
         // ============ هشدارها ============
-        if (rr < 2.0) warnings.add("نسبت ریسک به ریوارد کمتر از ۲ — احتیاط")
-        if (trend == TrendType.RANGE) warnings.add("بازار در حالت رنج — سیگنال‌ها ممکنه کاذب باشن")
+        if (rr < 2.0) warnings.add("Risk to reward ratio below 2 - caution")
+        if (trend == TrendType.RANGE) warnings.add("Market in range - signals may be false")
 
-        // اگه الگوها با سیگنال مخالف بودن، هشدار بده
         detectedPatterns.firstOrNull()?.let { p ->
             if (p.direction != 0 && isBuy && p.direction == -1) {
-                warnings.add("الگوی ${p.name} نزولیه ولی سیگنال خرید صادر شده — احتیاط")
+                warnings.add("Pattern ${p.name} is bearish but signal is BUY - caution")
             }
             if (p.direction != 0 && !isBuy && p.direction == 1) {
-                warnings.add("الگوی ${p.name} صعودیه ولی سیگنال فروش صادر شده — احتیاط")
+                warnings.add("Pattern ${p.name} is bullish but signal is SELL - caution")
             }
         }
 
@@ -260,13 +340,15 @@ object SignalEngine {
             target2 = target2,
             target3 = target3,
             riskReward = rr,
-            supportLevels = supports,
-            resistanceLevels = resistances,
+            supportLevels = allSupports,
+            resistanceLevels = allResistances,
             reasons = reasons,
             warnings = warnings,
             timeframe = timeframe,
             indicatorScores = scores,
-            patterns = detectedPatterns
+            patterns = detectedPatterns,
+            visionTrendLines = vision.trendLines,
+            visionDominantTrend = vision.dominantTrend
         )
     }
 
@@ -293,9 +375,18 @@ object SignalEngine {
             val lowerLows = lows.last() < lows[lows.size - 2]
 
             score = when {
-                higherHighs && higherLows -> { reasons.add("ساختار صعودی: سقف و کف بالاتر"); 80 }
-                lowerHighs && lowerLows -> { reasons.add("⚠️ ساختار نزولی: سقف و کف پایین‌تر"); -80 }
-                else -> { reasons.add("ساختار خنثی — بازار بدون جهت مشخص"); 0 }
+                higherHighs && higherLows -> {
+                    reasons.add("Bullish structure: higher highs and higher lows")
+                    80
+                }
+                lowerHighs && lowerLows -> {
+                    reasons.add("Bearish structure: lower highs and lower lows")
+                    -80
+                }
+                else -> {
+                    reasons.add("Neutral structure - no clear direction")
+                    0
+                }
             }
         }
         return score
@@ -315,42 +406,42 @@ object SignalEngine {
 
         if (last.lowerWick > last.body * 2 && last.upperWick < last.body * 0.5 && last.isBullish) {
             score += 40
-            reasons.add("الگوی Hammer — احتمال برگشت صعودی")
+            reasons.add("Hammer pattern - possible bullish reversal")
         }
 
         if (last.upperWick > last.body * 2 && last.lowerWick < last.body * 0.5 && last.isBearish) {
             score -= 40
-            reasons.add("⚠️ الگوی Shooting Star — احتمال برگشت نزولی")
+            reasons.add("Shooting Star pattern - possible bearish reversal")
         }
 
         if (prev.isBearish && last.isBullish &&
             last.open <= prev.close && last.close >= prev.open &&
             last.body > prev.body) {
             score += 50
-            reasons.add("الگوی Bullish Engulfing — سیگنال قوی صعودی")
+            reasons.add("Bullish Engulfing - strong bullish signal")
         }
 
         if (prev.isBullish && last.isBearish &&
             last.open >= prev.close && last.close <= prev.open &&
             last.body > prev.body) {
             score -= 50
-            reasons.add("⚠️ الگوی Bearish Engulfing — سیگنال قوی نزولی")
+            reasons.add("Bearish Engulfing - strong bearish signal")
         }
 
         if (prev2.isBearish && prev.body < prev2.body * 0.5 &&
             last.isBullish && last.close > (prev2.open + prev2.close) / 2) {
             score += 45
-            reasons.add("الگوی Morning Star — برگشت صعودی")
+            reasons.add("Morning Star pattern - bullish reversal")
         }
 
         if (prev2.isBullish && prev.body < prev2.body * 0.5 &&
             last.isBearish && last.close < (prev2.open + prev2.close) / 2) {
             score -= 45
-            reasons.add("⚠️ الگوی Evening Star — برگشت نزولی")
+            reasons.add("Evening Star pattern - bearish reversal")
         }
 
         if (last.body < last.range * 0.1) {
-            warnings.add("کندل Doji — بلاتکلیفی بازار")
+            warnings.add("Doji candle - market indecision")
         }
 
         return score
@@ -359,40 +450,43 @@ object SignalEngine {
     private fun getTimeframeWeights(timeframe: String): Map<String, Double> {
         return when (timeframe) {
             "1m", "5m", "15m", "30m" -> mapOf(
-                "ساختار بازار" to 0.8,
+                "Market Structure" to 0.8,
                 "RSI" to 1.0,
-                "واگرایی" to 0.8,
+                "Divergence" to 0.8,
                 "MACD" to 1.2,
                 "EMA" to 1.0,
                 "ADX" to 0.8,
                 "Stochastic" to 1.5,
-                "بولینگر" to 1.2,
+                "Bollinger" to 1.2,
                 "Price Action" to 1.5,
-                "الگوهای کلاسیک" to 1.0
+                "Patterns" to 1.0,
+                "Vision" to 0.7
             )
             "1H", "4H" -> mapOf(
-                "ساختار بازار" to 1.5,
+                "Market Structure" to 1.5,
                 "RSI" to 1.2,
-                "واگرایی" to 1.3,
+                "Divergence" to 1.3,
                 "MACD" to 1.0,
                 "EMA" to 1.2,
                 "ADX" to 1.0,
                 "Stochastic" to 0.8,
-                "بولینگر" to 0.8,
+                "Bollinger" to 0.8,
                 "Price Action" to 1.0,
-                "الگوهای کلاسیک" to 1.5
+                "Patterns" to 1.5,
+                "Vision" to 1.3
             )
             else -> mapOf(
-                "ساختار بازار" to 2.0,
+                "Market Structure" to 2.0,
                 "RSI" to 1.0,
-                "واگرایی" to 1.5,
+                "Divergence" to 1.5,
                 "MACD" to 1.2,
                 "EMA" to 1.5,
                 "ADX" to 1.5,
                 "Stochastic" to 0.5,
-                "بولینگر" to 0.5,
+                "Bollinger" to 0.5,
                 "Price Action" to 0.8,
-                "الگوهای کلاسیک" to 1.8
+                "Patterns" to 1.8,
+                "Vision" to 1.5
             )
         }
     }
