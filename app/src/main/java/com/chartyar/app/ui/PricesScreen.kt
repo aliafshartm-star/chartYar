@@ -98,7 +98,7 @@ fun PricesScreen(
 
     LaunchedEffect(isOnline) {
         while (isOnline) {
-            delay(30_000)
+            delay(15_000)
             onRefresh()
         }
     }
@@ -110,7 +110,6 @@ fun PricesScreen(
             .padding(horizontal = 16.dp)
             .padding(top = 16.dp)
     ) {
-        // ============ Header ============
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
@@ -141,7 +140,6 @@ fun PricesScreen(
             }
         }
 
-        // ============ Offline Warning ============
         if (!isOnline) {
             Box(
                 modifier = Modifier
@@ -160,7 +158,6 @@ fun PricesScreen(
             Spacer(Modifier.height(12.dp))
         }
 
-        // ============ Search Bar ============
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -181,7 +178,6 @@ fun PricesScreen(
             )
         )
 
-        // ============ Filter Chips ============
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -205,7 +201,6 @@ fun PricesScreen(
             )
         }
 
-        // ============ Content ============
         when {
             isLoading && prices.isEmpty() -> {
                 Box(
@@ -249,7 +244,6 @@ fun PricesScreen(
             }
 
             else -> {
-                // ============ Column Headers ============
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -265,14 +259,14 @@ fun PricesScreen(
                         "آخرین قیمت",
                         color = TextSecondary,
                         fontSize = 11.sp,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1.4f),
                         textAlign = androidx.compose.ui.text.style.TextAlign.End
                     )
                     Text(
                         "24 ساعته",
                         color = TextSecondary,
                         fontSize = 11.sp,
-                        modifier = Modifier.width(90.dp),
+                        modifier = Modifier.width(80.dp),
                         textAlign = androidx.compose.ui.text.style.TextAlign.End
                     )
                 }
@@ -319,7 +313,6 @@ private fun CoinPriceRowWallex(
             .padding(vertical = 12.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Star (small, left)
         Box(
             modifier = Modifier
                 .size(24.dp)
@@ -336,7 +329,6 @@ private fun CoinPriceRowWallex(
 
         Spacer(Modifier.width(4.dp))
 
-        // Coin info (name + subtitle)
         Column(modifier = Modifier.weight(1.2f)) {
             Text(
                 text = coin.symbol.replace("IRT", "").trim(),
@@ -352,9 +344,8 @@ private fun CoinPriceRowWallex(
             )
         }
 
-        // Current price
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1.4f),
             horizontalAlignment = Alignment.End
         ) {
             Text(
@@ -364,19 +355,27 @@ private fun CoinPriceRowWallex(
                 fontSize = 13.sp
             )
             Spacer(Modifier.height(2.dp))
-            Text(
-                text = "تومان",
-                color = TextSecondary,
-                fontSize = 10.sp
-            )
+            if (coin.priceUsd > 0) {
+                Text(
+                    text = "$" + PricesApi.formatPriceUsd(coin.priceUsd),
+                    color = AccentBlue,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            } else {
+                Text(
+                    text = "تومان",
+                    color = TextSecondary,
+                    fontSize = 10.sp
+                )
+            }
         }
 
         Spacer(Modifier.width(8.dp))
 
-        // Change percentage (Pill)
         Box(
             modifier = Modifier
-                .width(76.dp)
+                .width(80.dp)
                 .height(34.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(changeColor.copy(alpha = 0.15f)),
