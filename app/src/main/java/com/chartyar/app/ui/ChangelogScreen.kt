@@ -1,13 +1,27 @@
 package com.chartyar.app.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -15,7 +29,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chartyar.app.ui.theme.*
+import com.chartyar.app.ui.theme.AccentBlue
+import com.chartyar.app.ui.theme.AccentGreen
+import com.chartyar.app.ui.theme.DarkBg
+import com.chartyar.app.ui.theme.DarkSurface
+import com.chartyar.app.ui.theme.Divider as DividerColor
+import com.chartyar.app.ui.theme.TextPrimary
+import com.chartyar.app.ui.theme.TextSecondary
 
 data class ChangelogEntry(
     val version: String,
@@ -36,20 +56,28 @@ fun ChangelogScreen(
                 date = "1403/07/09",
                 isLatest = true,
                 changes = listOf(
-                    "انتشار اولیه چارت یار",
-                    "10+ اندیکاتور تکنیکال",
-                    "11 الگوی کلاسیک",
-                    "تحلیل با 4 صرافی",
-                    "هشدار قیمت با نوتیفیکیشن",
-                    "قیمت لحظه ای 30 ارز",
-                    "اخبار بازار",
-                    "دیکشنری اصطلاحات",
-                    "آموزش تحلیل",
-                    "پشتیبانی از فارسی و انگلیسی",
-                    "حالت آفلاین",
-                    "اشتراک گذاری متنی و تصویری",
-                    "ویجت صفحه اصلی",
-                    "App Shortcuts"
+                    "🚀 استراتژی ترکیبی چند هوش مصنوعی (Multi-AI Strategy)",
+                    "🧠 ترکیب ۳ موتور تحلیلی مستقل برای تأیید سیگنال",
+                    "📊 تحلیل جفت ارز با الگوریتم پیشرفته هوش مصنوعی",
+                    "🎯 تحلیل چند تایم‌فریمی (Multi-Timeframe)",
+                    "⚡ بدون نیاز به آپلود عکس — مستقیم و دقیق",
+                    "💰 قیمت لحظه‌ای ۲۰۰+ ارز به تومان و دلار",
+                    "📈 صفحه جزئیات کامل هر ارز",
+                    "🔔 هشدار قیمت هوشمند (تومان یا دلار)",
+                    "⚡ چک خودکار هشدارها هر ۱۵ ثانیه",
+                    "🏦 بخش صرافی‌ها با کد معرف و تخفیف کارمزد",
+                    "📰 اخبار لحظه‌ای ارز دیجیتال",
+                    "😱 شاخص ترس و طمع (Fear & Greed)",
+                    "🧮 ماشین‌حساب فیوچرز (سود/زیان/لیکویید)",
+                    "⛏ ماشین‌حساب استخراج بیت‌کوین",
+                    "📚 دیکشنری اصطلاحات تریدینگ",
+                    "🎓 درس‌های تحلیل تکنیکال از صفر",
+                    "🕓 تاریخچه تحلیل‌ها برای پیگیری",
+                    "🎨 طراحی لوکس به سبک Wallex",
+                    "🌙 حالت تاریک حرفه‌ای",
+                    "🔒 امنیت بالا — بدون ذخیره اطلاعات شخصی",
+                    "🇮🇷 کاملاً فارسی و بومی‌سازی‌شده",
+                    "📱 App Shortcuts و ویجت صفحه اصلی"
                 )
             )
         )
@@ -67,10 +95,10 @@ fun ChangelogScreen(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, "بازگشت", tint = TextPrimary)
+                Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
             }
             Text(
-                "تغییرات نسخه ها",
+                "تغییرات نسخه‌ها",
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold
@@ -86,7 +114,7 @@ fun ChangelogScreen(
                 modifier = Modifier.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "info", fontSize = 20.sp)
+                Text(text = "📋", fontSize = 20.sp)
                 Spacer(Modifier.width(10.dp))
                 Text(
                     text = "تاریخچه تغییرات اپ از ابتدا تا الان",
@@ -156,26 +184,19 @@ private fun ChangelogCard(entry: ChangelogEntry) {
             }
 
             Spacer(Modifier.height(12.dp))
-            Divider(color = Divider)
+            Divider(color = DividerColor)
             Spacer(Modifier.height(12.dp))
 
-            for (change in entry.changes) {
+            entry.changes.forEach { change ->
                 Row(
                     modifier = Modifier.padding(vertical = 3.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     Text(
-                        text = "•",
-                        color = AccentGreen,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
                         text = change,
                         color = TextPrimary,
                         style = MaterialTheme.typography.bodyMedium,
-                        lineHeight = 20.sp
+                        lineHeight = 22.sp
                     )
                 }
             }
