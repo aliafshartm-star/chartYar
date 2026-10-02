@@ -2,6 +2,7 @@ package com.chartyar.app.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -44,6 +46,8 @@ import androidx.compose.ui.unit.sp
 import com.chartyar.app.analysis.AnalysisResult
 import com.chartyar.app.analysis.DetectedPattern
 import com.chartyar.app.analysis.SignalType
+import com.chartyar.app.analysis.StrategyEngine
+import com.chartyar.app.analysis.StrategyType
 import com.chartyar.app.analysis.TrendType
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.AccentGreen
@@ -52,7 +56,7 @@ import com.chartyar.app.ui.theme.AccentYellow
 import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.DarkCard
 import com.chartyar.app.ui.theme.DarkSurface
-import com.chartyar.app.ui.theme.Divider
+import com.chartyar.app.ui.theme.Divider as DividerColor
 import com.chartyar.app.ui.theme.GradientBlueEnd
 import com.chartyar.app.ui.theme.GradientBlueStart
 import com.chartyar.app.ui.theme.GradientGreenEnd
@@ -68,10 +72,13 @@ import com.chartyar.app.util.ShareImageHelper
 @Composable
 fun ResultScreen(
     result: AnalysisResult,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onChangeStrategy: () -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+
+    val strategyInfo = StrategyEngine.getStrategy(result.strategy)
 
     Column(
         modifier = Modifier
@@ -84,7 +91,7 @@ fun ResultScreen(
         // ============ Header ============
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
         ) {
             IconButton(onClick = onBack) {
                 Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
@@ -113,10 +120,24 @@ fun ResultScreen(
             }
         }
 
+        // ============ Strategy Card ============
+        StrategyHeaderCard(
+            strategyInfo = strategyInfo,
+            onChangeStrategy = onChangeStrategy
+        )
+
+        Spacer(Modifier.height(12.dp))
+
         // ============ Signal Hero Card ============
         SignalHeroCard(result)
 
         Spacer(Modifier.height(16.dp))
+
+        // ============ Multi-AI Votes (only for Multi-AI) ============
+        if (result.strategy == StrategyType.MULTI_AI && result.engineVotes.isNotEmpty()) {
+            EngineVotesCard(result)
+            Spacer(Modifier.height(12.dp))
+        }
 
         // ============ Quick Stats Row ============
         QuickStatsRow(result)
@@ -125,6 +146,12 @@ fun ResultScreen(
 
         // ============ Price Levels Card ============
         PriceLevelsCard(result)
+
+        // ============ Fibonacci Card ============
+        if (result.fibonacciLevels.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            FibonacciCard(result)
+        }
 
         // ============ Patterns Card ============
         if (result.patterns.isNotEmpty()) {
@@ -212,6 +239,162 @@ fun ResultScreen(
         )
 
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+// ============ Strategy Header Card ============
+@Composable
+private fun StrategyHeaderCard(
+    strategyInfo: com.chartyar.app.analysis.StrategyInfo,
+    onChangeStrategy: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(result.strategy.color)
+        ),
+        border = BorderStroke(1.dp, Color(strategyInfo.iconColor).copy(alpha = 0.4f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = strategyInfo.emoji,
+                fontSize = 24.sp
+            )
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "استراتژی: ${strategyInfo.displayName}",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = strategyInfo.shortDescription,
+                    color = TextSecondary,
+                    fontSize = 10.sp
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .background(
+                        color = Color(strategyInfo.iconColor).copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .clickable { onChangeStrategy() }
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.SwapHoriz,
+                        contentDescription = "change",
+                        tint = Color(strategyInfo.iconColor),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "تغییر",
+                        color = Color(strategyInfo.iconColor),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============ Engine Votes Card (Multi-AI) ============
+@Composable
+private fun EngineVotesCard(result: AnalysisResult) {
+    val bullish = result.engineVotes.count { it.vote == 1 }
+    val bearish = result.engineVotes.count { it.vote == -1 }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, DividerColor)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("🤖", fontSize = 20.sp)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "رأی موتورهای هوش مصنوعی",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            result.engineVotes.forEach { vote ->
+                val (color, icon) = when (vote.vote) {
+                    1 -> AccentGreen to "✅"
+                    -1 -> AccentRed to "❌"
+                    else -> TextSecondary to "⬜"
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(icon, fontSize = 14.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = vote.engineName,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                        Text(
+                            text = vote.description,
+                            color = color,
+                            fontSize = 11.sp
+                        )
+                    }
+                    Text(
+                        text = if (vote.score > 0) "+${vote.score}" else "${vote.score}",
+                        color = color,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+            Divider(color = DividerColor)
+            Spacer(Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "نتیجه رأی‌گیری",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+                Text(
+                    text = "$bullish موتور صعودی / $bearish نزولی",
+                    color = if (bullish > bearish) AccentGreen else if (bearish > bullish) AccentRed else AccentYellow,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
+        }
     }
 }
 
@@ -359,7 +542,7 @@ private fun QuickStatsRow(result: AnalysisResult) {
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(14.dp),
             colors = CardDefaults.cardColors(containerColor = DarkSurface),
-            border = BorderStroke(1.dp, Divider)
+            border = BorderStroke(1.dp, DividerColor)
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
                 Text(
@@ -381,7 +564,7 @@ private fun QuickStatsRow(result: AnalysisResult) {
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(14.dp),
             colors = CardDefaults.cardColors(containerColor = DarkSurface),
-            border = BorderStroke(1.dp, Divider)
+            border = BorderStroke(1.dp, DividerColor)
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
                 Text(
@@ -401,6 +584,61 @@ private fun QuickStatsRow(result: AnalysisResult) {
     }
 }
 
+// ============ Fibonacci Card ============
+@Composable
+private fun FibonacciCard(result: AnalysisResult) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, DividerColor)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Text(
+                "سطوح فیبوناچی",
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            )
+            Spacer(Modifier.height(10.dp))
+
+            val sortedLevels = result.fibonacciLevels.entries
+                .sortedByDescending { it.value }
+
+            sortedLevels.forEach { (key, value) ->
+                val isGolden = key == "0.618"
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = key,
+                            color = if (isGolden) AccentYellow else TextSecondary,
+                            fontWeight = if (isGolden) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 12.sp
+                        )
+                        if (isGolden) {
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "⭐",
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+                    Text(
+                        "%.2f".format(value),
+                        color = if (isGolden) AccentYellow else TextPrimary,
+                        fontWeight = if (isGolden) FontWeight.Bold else FontWeight.Normal,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
 // ============ Price Levels Card ============
 @Composable
 private fun PriceLevelsCard(result: AnalysisResult) {
@@ -408,7 +646,7 @@ private fun PriceLevelsCard(result: AnalysisResult) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
+        border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
@@ -421,15 +659,15 @@ private fun PriceLevelsCard(result: AnalysisResult) {
 
             PriceRow("حد ضرر", result.stopLoss, AccentRed)
             Spacer(Modifier.height(4.dp))
-            Divider(color = Divider)
+            Divider(color = DividerColor)
             Spacer(Modifier.height(4.dp))
             PriceRow("هدف اول", result.target1, AccentGreen)
             Spacer(Modifier.height(4.dp))
-            Divider(color = Divider)
+            Divider(color = DividerColor)
             Spacer(Modifier.height(4.dp))
             PriceRow("هدف دوم", result.target2, AccentGreen)
             Spacer(Modifier.height(4.dp))
-            Divider(color = Divider)
+            Divider(color = DividerColor)
             Spacer(Modifier.height(4.dp))
             PriceRow("هدف سوم", result.target3, AccentGreen)
         }
@@ -460,7 +698,7 @@ private fun PatternsCard(patterns: List<DetectedPattern>) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
+        border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -518,7 +756,7 @@ private fun PatternsCard(patterns: List<DetectedPattern>) {
                 }
 
                 if (index < patterns.size - 1) {
-                    Divider(color = Divider)
+                    Divider(color = DividerColor)
                 }
             }
         }
@@ -532,7 +770,7 @@ private fun VisionCard(result: AnalysisResult) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
+        border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
@@ -572,7 +810,7 @@ private fun VisionCard(result: AnalysisResult) {
             }
 
             Spacer(Modifier.height(12.dp))
-            Divider(color = Divider)
+            Divider(color = DividerColor)
             Spacer(Modifier.height(12.dp))
 
             Text(
@@ -621,7 +859,7 @@ private fun ReasonsCard(reasons: List<String>, title: String, accentColor: Color
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
+        border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -656,7 +894,7 @@ private fun LevelsCard(result: AnalysisResult) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
+        border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
@@ -730,7 +968,7 @@ private fun ScoresCard(result: AnalysisResult) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
+        border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
