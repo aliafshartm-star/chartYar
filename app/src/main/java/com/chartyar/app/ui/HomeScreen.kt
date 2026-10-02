@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,7 +40,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -109,7 +110,8 @@ fun HomeScreen(
     onPricesClick: () -> Unit,
     onMultiTfClick: () -> Unit,
     onCalculatorClick: () -> Unit,
-    onMiningClick: () -> Unit
+    onMiningClick: () -> Unit,
+    onExchangesClick: () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -145,36 +147,43 @@ fun HomeScreen(
                     style = MaterialTheme.typography.headlineLarge,
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp
+                    fontSize = 24.sp
                 )
                 Text(
                     text = "تحلیل هوشمند چارت",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
-                    fontSize = 12.sp
+                    fontSize = 11.sp
                 )
             }
-            IconButton(onClick = onPricesClick) {
-                Icon(
-                    imageVector = Icons.Filled.TrendingUp,
-                    contentDescription = "prices",
-                    tint = AccentBlue
-                )
-            }
-            IconButton(onClick = onNewsClick) {
-                Icon(
-                    imageVector = Icons.Filled.Article,
-                    contentDescription = "news",
-                    tint = AccentGreen
-                )
-            }
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = "settings",
-                    tint = TextSecondary
-                )
-            }
+
+            HeaderIconButton(
+                icon = Icons.Filled.TrendingUp,
+                label = "قیمت",
+                tint = AccentBlue,
+                onClick = onPricesClick
+            )
+
+            HeaderIconButton(
+                icon = Icons.Filled.Article,
+                label = "اخبار",
+                tint = AccentGreen,
+                onClick = onNewsClick
+            )
+
+            HeaderIconButton(
+                icon = Icons.Filled.SwapHoriz,
+                label = "صرافی",
+                tint = AccentYellow,
+                onClick = onExchangesClick
+            )
+
+            HeaderIconButton(
+                icon = Icons.Filled.Settings,
+                label = "تنظیمات",
+                tint = TextSecondary,
+                onClick = onSettingsClick
+            )
         }
 
         Spacer(Modifier.height(20.dp))
@@ -271,6 +280,45 @@ fun HomeScreen(
         )
 
         Spacer(Modifier.height(12.dp))
+    }
+}
+
+@Composable
+private fun HeaderIconButton(
+    icon: ImageVector,
+    label: String,
+    tint: Color,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .background(
+                    color = tint.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(10.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = tint,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Spacer(Modifier.height(3.dp))
+        Text(
+            text = label,
+            color = tint,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
