@@ -77,7 +77,6 @@ fun ResultScreen(
 ) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
-
     val strategyInfo = StrategyEngine.getStrategy(result.strategy)
 
     Column(
@@ -88,7 +87,6 @@ fun ResultScreen(
             .padding(horizontal = 16.dp)
             .padding(top = 16.dp, bottom = 20.dp)
     ) {
-        // ============ Header ============
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
@@ -120,72 +118,62 @@ fun ResultScreen(
             }
         }
 
-        // ============ Strategy Card ============
         StrategyHeaderCard(
-            strategyInfo = strategyInfo,
+            strategyEmoji = strategyInfo.emoji,
+            strategyName = strategyInfo.displayName,
+            strategyDescription = strategyInfo.shortDescription,
+            strategyColor = strategyInfo.iconColor,
             onChangeStrategy = onChangeStrategy
         )
 
         Spacer(Modifier.height(12.dp))
 
-        // ============ Signal Hero Card ============
         SignalHeroCard(result)
 
         Spacer(Modifier.height(16.dp))
 
-        // ============ Multi-AI Votes (only for Multi-AI) ============
         if (result.strategy == StrategyType.MULTI_AI && result.engineVotes.isNotEmpty()) {
             EngineVotesCard(result)
             Spacer(Modifier.height(12.dp))
         }
 
-        // ============ Quick Stats Row ============
         QuickStatsRow(result)
 
         Spacer(Modifier.height(16.dp))
 
-        // ============ Price Levels Card ============
         PriceLevelsCard(result)
 
-        // ============ Fibonacci Card ============
         if (result.fibonacciLevels.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
             FibonacciCard(result)
         }
 
-        // ============ Patterns Card ============
         if (result.patterns.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
             PatternsCard(result.patterns)
         }
 
-        // ============ Vision Card ============
         if (result.visionTrendLines.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
             VisionCard(result)
         }
 
-        // ============ Reasons Card ============
         Spacer(Modifier.height(12.dp))
         ReasonsCard(result.reasons, "دلایل تحلیل", AccentGreen)
 
-        // ============ Warnings Card ============
         if (result.warnings.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
             ReasonsCard(result.warnings, "هشدارها", AccentYellow)
         }
 
-        // ============ Support/Resistance Card ============
         Spacer(Modifier.height(12.dp))
         LevelsCard(result)
 
-        // ============ Indicator Scores Card ============
         Spacer(Modifier.height(12.dp))
         ScoresCard(result)
 
         Spacer(Modifier.height(20.dp))
 
-        // ============ Share Buttons ============
         Button(
             onClick = {
                 val text = ShareHelper.buildShareText(result)
@@ -242,19 +230,19 @@ fun ResultScreen(
     }
 }
 
-// ============ Strategy Header Card ============
 @Composable
 private fun StrategyHeaderCard(
-    strategyInfo: com.chartyar.app.analysis.StrategyInfo,
+    strategyEmoji: String,
+    strategyName: String,
+    strategyDescription: String,
+    strategyColor: Long,
     onChangeStrategy: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(result.strategy.color)
-        ),
-        border = BorderStroke(1.dp, Color(strategyInfo.iconColor).copy(alpha = 0.4f))
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, Color(strategyColor).copy(alpha = 0.4f))
     ) {
         Row(
             modifier = Modifier
@@ -263,19 +251,19 @@ private fun StrategyHeaderCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = strategyInfo.emoji,
+                text = strategyEmoji,
                 fontSize = 24.sp
             )
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "استراتژی: ${strategyInfo.displayName}",
+                    text = "استراتژی: $strategyName",
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
                 Text(
-                    text = strategyInfo.shortDescription,
+                    text = strategyDescription,
                     color = TextSecondary,
                     fontSize = 10.sp
                 )
@@ -283,7 +271,7 @@ private fun StrategyHeaderCard(
             Box(
                 modifier = Modifier
                     .background(
-                        color = Color(strategyInfo.iconColor).copy(alpha = 0.2f),
+                        color = Color(strategyColor).copy(alpha = 0.2f),
                         shape = RoundedCornerShape(8.dp)
                     )
                     .clickable { onChangeStrategy() }
@@ -293,13 +281,13 @@ private fun StrategyHeaderCard(
                     Icon(
                         imageVector = Icons.Filled.SwapHoriz,
                         contentDescription = "change",
-                        tint = Color(strategyInfo.iconColor),
+                        tint = Color(strategyColor),
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = "تغییر",
-                        color = Color(strategyInfo.iconColor),
+                        color = Color(strategyColor),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -309,7 +297,6 @@ private fun StrategyHeaderCard(
     }
 }
 
-// ============ Engine Votes Card (Multi-AI) ============
 @Composable
 private fun EngineVotesCard(result: AnalysisResult) {
     val bullish = result.engineVotes.count { it.vote == 1 }
@@ -340,10 +327,15 @@ private fun EngineVotesCard(result: AnalysisResult) {
             Spacer(Modifier.height(12.dp))
 
             result.engineVotes.forEach { vote ->
-                val (color, icon) = when (vote.vote) {
-                    1 -> AccentGreen to "✅"
-                    -1 -> AccentRed to "❌"
-                    else -> TextSecondary to "⬜"
+                val color = when (vote.vote) {
+                    1 -> AccentGreen
+                    -1 -> AccentRed
+                    else -> TextSecondary
+                }
+                val icon = when (vote.vote) {
+                    1 -> "✅"
+                    -1 -> "❌"
+                    else -> "⬜"
                 }
 
                 Row(
@@ -388,8 +380,12 @@ private fun EngineVotesCard(result: AnalysisResult) {
                     fontSize = 12.sp
                 )
                 Text(
-                    text = "$bullish موتور صعودی / $bearish نزولی",
-                    color = if (bullish > bearish) AccentGreen else if (bearish > bullish) AccentRed else AccentYellow,
+                    text = "$bullish صعودی / $bearish نزولی",
+                    color = when {
+                        bullish > bearish -> AccentGreen
+                        bearish > bullish -> AccentRed
+                        else -> AccentYellow
+                    },
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp
                 )
@@ -398,7 +394,6 @@ private fun EngineVotesCard(result: AnalysisResult) {
     }
 }
 
-// ============ Signal Hero Card ============
 @Composable
 private fun SignalHeroCard(result: AnalysisResult) {
     val signalText = when (result.signal) {
@@ -531,7 +526,6 @@ private fun SignalHeroCard(result: AnalysisResult) {
     }
 }
 
-// ============ Quick Stats Row ============
 @Composable
 private fun QuickStatsRow(result: AnalysisResult) {
     Row(
@@ -584,7 +578,6 @@ private fun QuickStatsRow(result: AnalysisResult) {
     }
 }
 
-// ============ Fibonacci Card ============
 @Composable
 private fun FibonacciCard(result: AnalysisResult) {
     Card(
@@ -621,10 +614,7 @@ private fun FibonacciCard(result: AnalysisResult) {
                         )
                         if (isGolden) {
                             Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = "⭐",
-                                fontSize = 11.sp
-                            )
+                            Text(text = "⭐", fontSize = 11.sp)
                         }
                     }
                     Text(
@@ -639,7 +629,6 @@ private fun FibonacciCard(result: AnalysisResult) {
     }
 }
 
-// ============ Price Levels Card ============
 @Composable
 private fun PriceLevelsCard(result: AnalysisResult) {
     Card(
@@ -691,7 +680,6 @@ private fun PriceRow(label: String, value: Double, valueColor: Color) {
     }
 }
 
-// ============ Patterns Card ============
 @Composable
 private fun PatternsCard(patterns: List<DetectedPattern>) {
     Card(
@@ -701,9 +689,12 @@ private fun PatternsCard(patterns: List<DetectedPattern>) {
         border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("الگوهای شناسایی‌شده", fontSize = 15.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
-            }
+            Text(
+                "الگوهای شناسایی‌شده",
+                fontSize = 15.sp,
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(Modifier.height(12.dp))
 
             patterns.forEachIndexed { index, pattern ->
@@ -763,7 +754,6 @@ private fun PatternsCard(patterns: List<DetectedPattern>) {
     }
 }
 
-// ============ Vision Card ============
 @Composable
 private fun VisionCard(result: AnalysisResult) {
     Card(
@@ -852,33 +842,33 @@ private fun VisionCard(result: AnalysisResult) {
     }
 }
 
-// ============ Reasons / Warnings Card ============
 @Composable
 private fun ReasonsCard(reasons: List<String>, title: String, accentColor: Color) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, DividerColor)
+        border = BorderStroke(1.d {
+p, DividerColor)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
+            Row(verticalAlignment = Alignment.C                           enterVertically) {
+                Box val(
                     modifier = Modifier
                         .size(4.dp)
                         .background(accentColor, RoundedCornerShape(2.dp))
                 )
                 Spacer(Modifier.width(8.dp))
-                Text(
+                fraction Text(
                     title,
                     color = accentColor,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Bold =,
                     fontSize = 15.sp
                 )
             }
             Spacer(Modifier.height(12.dp))
             reasons.forEach { reason ->
-                Row(modifier = Modifier.padding(vertical = 4.dp)) {
+                Row(modifier = ( Modifier.padding(vertical = 4.dp)) {
                     Text("•  ", color = accentColor, fontSize = 14.sp)
                     Text(reason, color = TextPrimary, fontSize = 12.sp)
                 }
@@ -887,7 +877,6 @@ private fun ReasonsCard(reasons: List<String>, title: String, accentColor: Color
     }
 }
 
-// ============ Support / Resistance Card ============
 @Composable
 private fun LevelsCard(result: AnalysisResult) {
     Card(
@@ -961,7 +950,6 @@ private fun LevelsCard(result: AnalysisResult) {
     }
 }
 
-// ============ Indicator Scores Card ============
 @Composable
 private fun ScoresCard(result: AnalysisResult) {
     Card(
@@ -993,8 +981,7 @@ private fun ScoresCard(result: AnalysisResult) {
                                 .height(4.dp)
                                 .clip(RoundedCornerShape(2.dp))
                                 .background(DarkCard)
-                        ) {
-                            val fraction = (kotlin.math.abs(score).coerceAtMost(100) / 100f)
+                        )kotlin.math.abs(score).coerceAtMost(100) / 100f)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth(fraction)
