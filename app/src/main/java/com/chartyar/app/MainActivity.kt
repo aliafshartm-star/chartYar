@@ -582,66 +582,65 @@ class MainActivity : ComponentActivity() {
                                 if (!limitManager.consumeAnalysis()) {
                                     openDailyLimitDialog()
                                     refreshLimitStatus()
-                                    return@SymbolSelectorScreen
-                                }
+                                } else {
+                                    refreshLimitStatus()
 
-                                refreshLimitStatus()
-
-                                selectedTimeframe = tf
-                                selectedStrategy = strategy
-                                analyzeProgress = 0f
-                                statusMessage = "..."
-                                errorMessage = ""
-                                currentScreen = "analyzing"
-
-                                lifecycleScope.launch {
-                                    val online = ConnectivityChecker.isOnline(applicationContext)
-                                    isOnline = online
-
-                                    if (!online) {
-                                        errorMessage = NetworkError.NO_INTERNET.message
-                                        currentScreen = "error"
-                                        return@launch
-                                    }
-
-                                    analyzeProgress = 0.3f
+                                    selectedTimeframe = tf
+                                    selectedStrategy = strategy
+                                    analyzeProgress = 0f
                                     statusMessage = "..."
-                                    delay(200)
+                                    errorMessage = ""
+                                    currentScreen = "analyzing"
 
-                                    val dataResult = MarketDataService.getCandles(
-                                        symbol = symbol,
-                                        timeframe = selectedTimeframe,
-                                        cache = cache
-                                    )
+                                    lifecycleScope.launch {
+                                        val online = ConnectivityChecker.isOnline(applicationContext)
+                                        isOnline = online
 
-                                    val sourceName = MarketDataService.sourceLabel(dataResult.source)
-
-                                    if (dataResult.candles != null && dataResult.candles.size >= 50) {
-                                        analyzeProgress = 0.7f
-                                        statusMessage = sourceName
-                                        delay(300)
-                                        analyzeProgress = 0.9f
-                                        statusMessage = "..."
-                                        val result = withContext(Dispatchers.Default) {
-                                            SignalEngine.analyze(
-                                                dataResult.candles,
-                                                selectedTimeframe,
-                                                strategy
-                                            )
+                                        if (!online) {
+                                            errorMessage = NetworkError.NO_INTERNET.message
+                                            currentScreen = "error"
+                                            return@launch
                                         }
-                                        analyzeProgress = 1f
+
+                                        analyzeProgress = 0.3f
+                                        statusMessage = "..."
                                         delay(200)
-                                        analysisResult = result
-                                        if (result != null) {
-                                            if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
-                                            currentScreen = "result"
+
+                                        val dataResult = MarketDataService.getCandles(
+                                            symbol = symbol,
+                                            timeframe = selectedTimeframe,
+                                            cache = cache
+                                        )
+
+                                        val sourceName = MarketDataService.sourceLabel(dataResult.source)
+
+                                        if (dataResult.candles != null && dataResult.candles.size >= 50) {
+                                            analyzeProgress = 0.7f
+                                            statusMessage = sourceName
+                                            delay(300)
+                                            analyzeProgress = 0.9f
+                                            statusMessage = "..."
+                                            val result = withContext(Dispatchers.Default) {
+                                                SignalEngine.analyze(
+                                                    dataResult.candles,
+                                                    selectedTimeframe,
+                                                    strategy
+                                                )
+                                            }
+                                            analyzeProgress = 1f
+                                            delay(200)
+                                            analysisResult = result
+                                            if (result != null) {
+                                                if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                                currentScreen = "result"
+                                            } else {
+                                                errorMessage = NetworkError.DATA_EMPTY.message
+                                                currentScreen = "error"
+                                            }
                                         } else {
                                             errorMessage = NetworkError.DATA_EMPTY.message
                                             currentScreen = "error"
                                         }
-                                    } else {
-                                        errorMessage = NetworkError.DATA_EMPTY.message
-                                        currentScreen = "error"
                                     }
                                 }
                             }
@@ -758,64 +757,63 @@ class MainActivity : ComponentActivity() {
                                 if (!limitManager.consumeAnalysis()) {
                                     openDailyLimitDialog()
                                     refreshLimitStatus()
-                                    return@CoinDetailScreen
-                                }
+                                } else {
+                                    refreshLimitStatus()
 
-                                refreshLimit selectedStatus()
+                                    selectedTimeframe = "4H"
+                                    selectedStrategy = StrategyType.SWING
+                                    analyzeProgress = 0f
+                                    statusMessage = "..."
+                                    errorMessage = ""
+                                    currentScreen = "analyzing"
 
-                                selectedTimeframe = "4H"
-                                selectedStrategy = StrategyType.SWING
-                                analyzeProgress = 0f
-Time                                statusMessage = "..."
-                                errorMessage = ""
-                                currentScreen = "analyzing"
+                                    lifecycleScope.launch {
+                                        val online = ConnectivityChecker.isOnline(applicationContext)
+                                        isOnline = online
 
-                                lifecycleScope.launch {
-                                    val online = ConnectivityChecker.isOnline(applicationContextframe)
-                                    isOnline = online
-
-                                    if (!online) {
-                                        errorMessage = NetworkError.NO_INTERNET.message
-                                        currentScreen = "error"
-                                       ,
- return@launch
-                                    }
-
-                                    analyzeProgress = 0.3f
-                                    delay(200)
-
-                                    val dataResult = MarketDataService.getCandles(
-                                        symbol = symbol,
-                                        timeframe = selectedTime                                               frame,
-                                        cache = cache
-                                    )
-
-                                    val sourceName = MarketDataService.sourceLabel(dataResult.source)
-
-                                    if (dataResult.candles != selected null && dataResult.candles.size >= 50) {
-                                        analyzeProgress = 0.7f
-                                        statusMessage = sourceName
-                                        delay(300)
-                                        analyzeProgress = 0.9f
-                                        val result = withContext(Dispatchers.Default) {
-                                            SignalEngine.analyze(
-                                                dataResult.candles,
-                                               Strategy
-                                            )
+                                        if (!online) {
+                                            errorMessage = NetworkError.NO_INTERNET.message
+                                            currentScreen = "error"
+                                            return@launch
                                         }
-                                        analyzeProgress = 1f
+
+                                        analyzeProgress = 0.3f
                                         delay(200)
-                                        analysisResult = result
-                                        if (result != null) {
-                                            if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
-                                            currentScreen = "result"
+
+                                        val dataResult = MarketDataService.getCandles(
+                                            symbol = symbol,
+                                            timeframe = selectedTimeframe,
+                                            cache = cache
+                                        )
+
+                                        val sourceName = MarketDataService.sourceLabel(dataResult.source)
+
+                                        if (dataResult.candles != null && dataResult.candles.size >= 50) {
+                                            analyzeProgress = 0.7f
+                                            statusMessage = sourceName
+                                            delay(300)
+                                            analyzeProgress = 0.9f
+                                            val result = withContext(Dispatchers.Default) {
+                                                SignalEngine.analyze(
+                                                    dataResult.candles,
+                                                    selectedTimeframe,
+                                                    selectedStrategy
+                                                )
+                                            }
+                                            analyzeProgress = 1f
+                                            delay(200)
+                                            analysisResult = result
+                                            if (result != null) {
+                                                if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                                currentScreen = "result"
+                                            } else {
+                                                errorMessage = NetworkError.DATA_EMPTY.message
+                                                currentScreen = "error"
+                                            }
                                         } else {
                                             errorMessage = NetworkError.DATA_EMPTY.message
                                             currentScreen = "error"
                                         }
-                                    } else {
-                                        errorMessage = NetworkError.DATA_EMPTY.message
-                                        currentScreen = "error"
                                     }
                                 }
                             },
