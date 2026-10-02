@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <cache-path name="camera_cache" path="camera/" />
-    <external-cache-path name="external_camera_cache" path="camera/" />
-    <files-path name="camera_files" path="camera/" />
+
+    <!-- برای اشتراک‌گذاری تصاویر تحلیل -->
+    <cache-path
+        name="shared_images"
+        path="shared_images/" />
+
+    <!-- برای عکس‌های دوربین -->
+    <external-cache-path
+        name="camera_images"
+        path="camera/" />
+
+    <!-- برای فایل‌های موقت -->
+    <cache-path
+        name="temp_files"
+        path="." />
+
+    <!-- برای فایل‌های اشتراک‌گذاری عمومی -->
+    <external-cache-path
+        name="shared_external"
+        path="shared/" />
+
 </paths>
