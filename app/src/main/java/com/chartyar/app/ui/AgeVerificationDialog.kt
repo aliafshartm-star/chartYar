@@ -37,12 +37,12 @@ fun AgeVerificationDialog(
         text = {
             Column {
                 Text(
-                    text = "این اپ مربوط به بازارهای مالی است و برای کاربران زیر 13 سال مناسب نیست.",
+                    text = "این اپ مربوط به بازارهای مالی است و برای کاربران زیر 18 سال مناسب نیست.",
                     color = TextSecondary
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "آیا سن شما 13 سال یا بیشتر است؟",
+                    text = "آیا سن شما 18 سال یا بیشتر است؟",
                     color = TextPrimary,
                     fontWeight = FontWeight.SemiBold
                 )
