@@ -32,7 +32,9 @@ import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -103,6 +105,10 @@ private const val INSTAGRAM_URL = "https://www.instagram.com/chartyar_app"
 
 @Composable
 fun HomeScreen(
+    remainingFree: Int,
+    adCountToday: Int,
+    adsForBonus: Int,
+    isUnlimited: Boolean,
     onUploadClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
@@ -187,7 +193,22 @@ fun HomeScreen(
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(14.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(fadeIn)
+        ) {
+            LimitStatusCard(
+                remainingFree = remainingFree,
+                adCountToday = adCountToday,
+                adsForBonus = adsForBonus,
+                isUnlimited = isUnlimited
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
 
         Box(
             modifier = Modifier
@@ -281,6 +302,153 @@ fun HomeScreen(
         )
 
         Spacer(Modifier.height(12.dp))
+    }
+}
+
+@Composable
+private fun LimitStatusCard(
+    remainingFree: Int,
+    adCountToday: Int,
+    adsForBonus: Int,
+    isUnlimited: Boolean
+) {
+    if (isUnlimited) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = DarkSurface),
+            border = BorderStroke(1.dp, AccentGreen.copy(alpha = 0.5f))
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(GradientGreenStart, GradientGreenEnd)
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("🎁", fontSize = 18.sp)
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "پاداش ویژه فعاله!",
+                        color = AccentGreen,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        text = "بدون محدودیت تحلیل کن",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }
+        return
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, Divider)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .background(
+                            color = AccentBlue.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(10.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Timer,
+                        contentDescription = null,
+                        tint = AccentBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "سهمیه تحلیل امروز",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        text = "$remainingFree از ۳",
+                        color = if (remainingFree > 0) AccentGreen else AccentRed,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = AccentYellow,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = "$adCountToday/$adsForBonus",
+                    color = AccentYellow,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp
+                )
+            }
+
+            if (adCountToday > 0) {
+                Spacer(Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(5.dp)
+                        .background(Divider, RoundedCornerShape(3.dp))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(
+                                fraction = if (adsForBonus > 0) {
+                                    (adCountToday.toFloat() / adsForBonus.toFloat())
+                                        .coerceIn(0f, 1f)
+                                } else 0f
+                            )
+                            .height(5.dp)
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(AccentYellow, Color(0xFFFF8C42))
+                                ),
+                                shape = RoundedCornerShape(3.dp)
+                            )
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = if (adsForBonus - adCountToday > 0) {
+                        "${adsForBonus - adCountToday} تبلیغ دیگه = ۱۲ ساعت نامحدود!"
+                    } else {
+                        "🎉 پاداش فعال شد!"
+                    },
+                    color = AccentYellow,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
     }
 }
 
@@ -495,509 +663,4 @@ private fun MultiTfActionCard(onClick: () -> Unit) {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "🎯", fontSize = 20.sp)
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = stringResource(R.string.home_multi_tf_title),
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 13.sp
-            )
-            Text(
-                text = stringResource(R.string.home_multi_tf_sub),
-                color = TextSecondary,
-                fontSize = 10.sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun CalculatorActionCard(onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(GradientBlueStart, GradientBlueEnd)
-                        ),
-                        shape = RoundedCornerShape(11.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Calculate,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = stringResource(R.string.home_calc_title),
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 13.sp
-            )
-            Text(
-                text = stringResource(R.string.home_calc_sub),
-                color = TextSecondary,
-                fontSize = 10.sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun MiningActionCard(onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(GradientGoldStart, GradientGoldEnd)
-                        ),
-                        shape = RoundedCornerShape(11.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "M", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = stringResource(R.string.home_mining_title),
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 13.sp
-            )
-            Text(
-                text = stringResource(R.string.home_mining_sub),
-                color = TextSecondary,
-                fontSize = 10.sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun HistoryActionCard(onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(GradientGreenStart, GradientGreenEnd)
-                        ),
-                        shape = RoundedCornerShape(11.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Refresh,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = stringResource(R.string.home_history_title),
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 13.sp
-            )
-            Text(
-                text = stringResource(R.string.home_history_sub),
-                color = TextSecondary,
-                fontSize = 10.sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun FearGreedCardWallex() {
-    var data by remember { mutableStateOf<FearGreedData?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-
-    LaunchedEffect(Unit) {
-        isLoading = true
-        val result = withContext(Dispatchers.IO) {
-            FearGreedApi.fetchFearGreed()
-        }
-        data = result
-        isLoading = false
-    }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(30 * 60 * 1000L)
-            val result = withContext(Dispatchers.IO) {
-                FearGreedApi.fetchFearGreed()
-            }
-            if (result != null) data = result
-        }
-    }
-
-    val value = data?.value ?: 0
-    val color = when {
-        value <= 25 -> AccentRed
-        value <= 45 -> Color(0xFFFF8C42)
-        value <= 55 -> AccentYellow
-        value <= 75 -> Color(0xFF7BC97C)
-        else -> AccentGreen
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(110.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        color = AccentBlue,
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else if (data == null) {
-                    Text(
-                        text = "-",
-                        color = TextSecondary,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                } else {
-                    FearGreedArc(value = value, color = color)
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = data!!.value.toString(),
-                            color = TextPrimary,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = data!!.classificationFa,
-                            color = color,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.home_fear_greed_title),
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.home_fear_greed_subtitle),
-                    color = TextSecondary,
-                    fontSize = 11.sp
-                )
-
-                if (data != null && !isLoading) {
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Fear",
-                            color = TextSecondary,
-                            fontSize = 10.sp
-                        )
-                        Text(
-                            text = "Greed",
-                            color = TextSecondary,
-                            fontSize = 10.sp
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(
-                                brush = Brush.horizontalGradient(
-                                    colors = listOf(
-                                        AccentRed,
-                                        Color(0xFFFF8C42),
-                                        AccentYellow,
-                                        Color(0xFF7BC97C),
-                                        AccentGreen
-                                    )
-                                )
-                            )
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FearGreedArc(value: Int, color: Color) {
-    val redColor = AccentRed
-    val orangeColor = Color(0xFFFF8C42)
-    val yellowColor = AccentYellow
-    val lightGreenColor = Color(0xFF7BC97C)
-    val greenColor = AccentGreen
-    val bgColor = DarkCard
-
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val strokeWidth = 10.dp.toPx()
-        val arcSize = Size(
-            size.width - strokeWidth,
-            size.height - strokeWidth
-        )
-        val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
-
-        drawArc(
-            color = bgColor,
-            startAngle = 180f,
-            sweepAngle = 180f,
-            useCenter = false,
-            topLeft = topLeft,
-            size = arcSize,
-            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-        )
-
-        val segments = listOf(
-            Triple(0f, 25f, redColor),
-            Triple(25f, 45f, orangeColor),
-            Triple(45f, 55f, yellowColor),
-            Triple(55f, 75f, lightGreenColor),
-            Triple(75f, 100f, greenColor)
-        )
-        segments.forEach { (start, end, c) ->
-            drawArc(
-                color = c.copy(alpha = 0.35f),
-                startAngle = 180f + (start / 100f) * 180f,
-                sweepAngle = ((end - start) / 100f) * 180f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
-            )
-        }
-
-        val sweep = (value / 100f) * 180f
-        drawArc(
-            color = color,
-            startAngle = 180f,
-            sweepAngle = sweep,
-            useCenter = false,
-            topLeft = topLeft,
-            size = arcSize,
-            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-        )
-
-        val angleRad = Math.toRadians((180f + sweep).toDouble())
-        val radius = arcSize.width / 2
-        val cx = topLeft.x + radius + (radius * kotlin.math.cos(angleRad)).toFloat()
-        val cy = topLeft.y + radius + (radius * kotlin.math.sin(angleRad)).toFloat()
-        drawCircle(color = color, radius = strokeWidth * 0.7f, center = Offset(cx, cy))
-    }
-}
-
-@Composable
-private fun SocialLinksRow() {
-    val context = LocalContext.current
-
-    fun openUrl(url: String) {
-        try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
-        } catch (e: Exception) {
-        }
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.home_social_title),
-                color = TextSecondary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f)
-            )
-
-            SocialIcon(
-                iconRes = R.drawable.ic_telegram,
-                backgroundColor = Color(0xFF229ED9),
-                contentDescription = "telegram",
-                onClick = { openUrl(TELEGRAM_URL) }
-            )
-
-            Spacer(Modifier.width(10.dp))
-
-            SocialIcon(
-                iconRes = R.drawable.ic_instagram,
-                backgroundColor = Color(0xFFE4405F),
-                contentDescription = "instagram",
-                onClick = { openUrl(INSTAGRAM_URL) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun SocialIcon(
-    iconRes: Int,
-    backgroundColor: Color,
-    contentDescription: String,
-    onClick: () -> Unit
-) {
-    val painter: Painter = painterResource(id = iconRes)
-
-    Box(
-        modifier = Modifier
-            .size(38.dp)
-            .background(backgroundColor, CircleShape)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            painter = painter,
-            contentDescription = contentDescription,
-            tint = Color.White,
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
-
-@Composable
-fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val activity = context as? Activity
-
-    var adShown by remember { mutableStateOf(false) }
-
-    AndroidView(
-        factory = { ctx ->
-            BannerContainer(ctx).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            }
-        },
-        update = { container ->
-            if (activity != null && !adShown) {
-                try {
-                    Tapsell.requestBannerAd(
-                        zoneId,
-                        BannerSize.BANNER_320_50,
-                        activity,
-                        object : RequestResultListener {
-                            override fun onSuccess(adId: String) {
-                                adShown = tryShowAd(container, adId)
-                            }
-
-                            override fun onFailure(message: String) {
-                                adShown = false
-                            }
-                        }
-                    )
-                } catch (e: Exception) {
-                    adShown = false
-                }
-            }
-        },
-        modifier = modifier.fillMaxWidth()
-    )
-}
-
-private fun tryShowAd(container: BannerContainer, adId: String): Boolean {
-    val methodNames = listOf(
-        "showAd",
-        "loadAd",
-        "setAd",
-        "setAdId",
-        "show",
-        "displayAd"
-    )
-    for (name in methodNames) {
-        try {
-            val method = container.javaClass.getMethod(name, String::class.java)
-            method.invoke(container, adId)
-            return true
-        } catch (e: NoSuchMethodException) {
-            continue
-        } catch (e: Exception) {
-            continue
-        }
-    }
-    return false
-}
+                Text(text = "🎯", fontSize = 20
