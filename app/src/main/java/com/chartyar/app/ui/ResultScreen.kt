@@ -29,12 +29,12 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -113,7 +113,7 @@ fun ResultScreen(
             }
         }
 
-        // ============ Signal Hero Card (Gradient) ============
+        // ============ Signal Hero Card ============
         SignalHeroCard(result)
 
         Spacer(Modifier.height(16.dp))
@@ -226,10 +226,21 @@ private fun SignalHeroCard(result: AnalysisResult) {
         SignalType.STRONG_SELL -> "فروش قوی"
     }
 
-    val (gradientStart, gradientEnd) = when (result.signal) {
-        SignalType.STRONG_BUY, SignalType.BUY -> GradientGreenStart to GradientGreenEnd
-        SignalType.STRONG_SELL, SignalType.SELL -> GradientRedStart to GradientRedEnd
-        else -> GradientBlueStart to GradientBlueEnd
+    val gradientStart: Color
+    val gradientEnd: Color
+    when (result.signal) {
+        SignalType.STRONG_BUY, SignalType.BUY -> {
+            gradientStart = GradientGreenStart
+            gradientEnd = GradientGreenEnd
+        }
+        SignalType.STRONG_SELL, SignalType.SELL -> {
+            gradientStart = GradientRedStart
+            gradientEnd = GradientRedEnd
+        }
+        else -> {
+            gradientStart = GradientBlueStart
+            gradientEnd = GradientBlueEnd
+        }
     }
 
     val trendText = when (result.trend) {
@@ -337,14 +348,13 @@ private fun SignalHeroCard(result: AnalysisResult) {
     }
 }
 
-// ============ Quick Stats Row (Risk/Reward + Entry) ============
+// ============ Quick Stats Row ============
 @Composable
 private fun QuickStatsRow(result: AnalysisResult) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Risk/Reward card
         Card(
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(14.dp),
@@ -367,7 +377,6 @@ private fun QuickStatsRow(result: AnalysisResult) {
             }
         }
 
-        // Entry card
         Card(
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(14.dp),
@@ -455,14 +464,7 @@ private fun PatternsCard(patterns: List<DetectedPattern>) {
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("🔍", fontSize = 18.sp)
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "الگوهای شناسایی‌شده",
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                )
+                Text("الگوهای شناسایی‌شده", fontSize = 15.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(12.dp))
 
@@ -533,16 +535,12 @@ private fun VisionCard(result: AnalysisResult) {
         border = BorderStroke(1.dp, Divider)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("👁", fontSize = 18.sp)
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "تحلیل بینایی چارت",
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                )
-            }
+            Text(
+                "تحلیل بینایی چارت",
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            )
             Spacer(Modifier.height(10.dp))
 
             val dominantText = when (result.visionDominantTrend) {
@@ -751,7 +749,6 @@ private fun ScoresCard(result: AnalysisResult) {
                     Text(name, color = TextSecondary, fontSize = 12.sp)
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Progress bar
                         Box(
                             modifier = Modifier
                                 .width(60.dp)
