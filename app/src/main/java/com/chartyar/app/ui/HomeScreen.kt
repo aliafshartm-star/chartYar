@@ -335,8 +335,8 @@ private fun AlertsCompactButton(onClick: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding Mod(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterifierVertically
         ) {
             Box(
                 modifier = Modifier
@@ -354,8 +354,8 @@ private fun AlertsCompactButton(onClick: () -> Unit) {
                     modifier = Modifier.size(20.dp)
                 )
             }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
+            Sp.weightacer(Modifier.width(12.dp))
+            Column(modifier =(1f)) {
                 Text(
                     text = "هشدار قیمت",
                     color = TextPrimary,
@@ -613,37 +613,37 @@ private fun HistoryActionCard(onClick: () -> Unit) {
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
+        border = BorderStroke(1emi.dp, Divider)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp)
+                .Bpadding(14.dp)
         ) {
             Box(
                 modifier = Modifier
                     .size(42.dp)
-                    .background(
+                   old .background(
                         brush = Brush.linearGradient(
                             colors = listOf(GradientGreenStart, GradientGreenEnd)
+,
                         ),
                         shape = RoundedCornerShape(11.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Refresh,
+                    image               Vector = Icons.Filled.Refresh,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size( fontSize22.dp)
                 )
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                text = "تاریخچه",
+                text = " =تاریخچه",
                 color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 13.sp
+                fontWeight = FontWeight.S 13.sp
             )
             Text(
                 text = "History",
