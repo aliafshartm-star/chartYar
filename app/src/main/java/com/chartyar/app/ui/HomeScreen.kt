@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -67,7 +68,8 @@ fun HomeScreen(
     onAlertsClick: () -> Unit,
     onNewsClick: () -> Unit,
     onPricesClick: () -> Unit,
-    onMultiTfClick: () -> Unit
+    onMultiTfClick: () -> Unit,
+    onCalculatorClick: () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -142,6 +144,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(24.dp))
 
+        // ============ کارت شروع تحلیل ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -152,6 +155,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(14.dp))
 
+        // ============ کارت Multi-TF ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -162,6 +166,18 @@ fun HomeScreen(
 
         Spacer(Modifier.height(14.dp))
 
+        // ============ کارت ماشین حساب فیوچرز ============
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(fadeIn)
+        ) {
+            CalculatorCard(onClick = onCalculatorClick)
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // ============ دکمه تاریخچه ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -186,6 +202,7 @@ fun HomeScreen(
 
         Spacer(Modifier.weight(1f))
 
+        // ============ کارت شاخص ترس و طمع ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -196,6 +213,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(12.dp))
 
+        // ============ ردیف شبکه‌های اجتماعی ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -224,6 +242,63 @@ fun HomeScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
+    }
+}
+
+// ============ کارت ماشین حساب فیوچرز ============
+@Composable
+private fun CalculatorCard(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        color = AccentYellow.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Calculate,
+                    contentDescription = null,
+                    tint = AccentYellow,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "ماشین حساب فیوچرز",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "سود و زیان معامله رو حساب کن",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            Icon(
+                imageVector = Icons.Filled.ArrowForward,
+                contentDescription = null,
+                tint = AccentBlue,
+                modifier = Modifier.size(22.dp)
+            )
+        }
     }
 }
 
@@ -446,7 +521,7 @@ private fun SocialIcon(
     }
 }
 
-// ============ بنر تبلیغاتی تپسل (با try-catch کامل) ============
+// ============ بنر تبلیغاتی تپسل ============
 @Composable
 fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -470,7 +545,6 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
                         object : RequestResultListener {
                             override fun onSuccess(adId: String) {
                                 try {
-                                    // استفاده از روش رسمی تپسل
                                     val method = container.javaClass.getMethod(
                                         "loadAd",
                                         String::class.java
