@@ -1,8 +1,19 @@
 package com.chartyar.app.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -14,8 +25,31 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -24,7 +58,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chartyar.app.data.NobitexApi
 import com.chartyar.app.data.PriceAlert
-import com.chartyar.app.ui.theme.*
+import com.chartyar.app.ui.theme.AccentBlue
+import com.chartyar.app.ui.theme.AccentGreen
+import com.chartyar.app.ui.theme.AccentRed
+import com.chartyar.app.ui.theme.AccentYellow
+import com.chartyar.app.ui.theme.DarkBg
+import com.chartyar.app.ui.theme.DarkCard
+import com.chartyar.app.ui.theme.DarkSurface
+import com.chartyar.app.ui.theme.Divider as DividerColor
+import com.chartyar.app.ui.theme.TextPrimary
+import com.chartyar.app.ui.theme.TextSecondary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -36,7 +79,7 @@ import java.util.Locale
 fun AlertScreen(
     alerts: List<PriceAlert>,
     onBack: () -> Unit,
-    onCreateAlert: (String, Double, String, String) -> Unit,
+    onCreateAlert: (String, Double, String, String, String) -> Unit,
     onDeleteAlert: (Long) -> Unit,
     onToggleActive: (Long, Boolean) -> Unit,
     onResetAlert: (Long) -> Unit
@@ -82,7 +125,7 @@ fun AlertScreen(
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "هشدار قیمت بسازید تا وقتی قیمت به هدف رسید، نوتیفیکیشن بگیرید. هر بار که اپ باز می‌شه، قیمت‌ها چک می‌شن.",
+                    "هشدار قیمت بسازید تا وقتی قیمت به هدف رسید، نوتیفیکیشن بگیرید. می‌تونید قیمت رو به تومان یا دلار وارد کنید.",
                     color = TextSecondary,
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 20.sp
@@ -130,8 +173,8 @@ fun AlertScreen(
     if (showCreateDialog) {
         CreateAlertDialog(
             onDismiss = { showCreateDialog = false },
-            onCreate = { symbol, price, condition, note ->
-                onCreateAlert(symbol, price, condition, note)
+            onCreate = { symbol, price, condition, note, currency ->
+                onCreateAlert(symbol, price, condition, note, currency)
                 showCreateDialog = false
             }
         )
@@ -146,6 +189,7 @@ private fun AlertCard(
     onReset: () -> Unit
 ) {
     val conditionText = if (alert.condition == "ABOVE") "بالاتر از" else "پایین‌تر از"
+    val currencyLabel = if (alert.currency == "USD") "دلار" else "تومان"
     val statusColor = when {
         alert.isTriggered -> AccentYellow
         !alert.isActive -> TextSecondary
@@ -176,7 +220,7 @@ private fun AlertCard(
                     )
                     Spacer(Modifier.height(3.dp))
                     Text(
-                        "$conditionText ${"%.2f".format(alert.targetPrice)}",
+                        "$conditionText ${"%.2f".format(alert.targetPrice)} $currencyLabel",
                         color = TextSecondary,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -207,7 +251,7 @@ private fun AlertCard(
             }
 
             Spacer(Modifier.height(8.dp))
-            Divider(color = Divider)
+            Divider(color = DividerColor)
             Spacer(Modifier.height(8.dp))
 
             Row(
@@ -250,16 +294,16 @@ private fun AlertCard(
 @Composable
 private fun CreateAlertDialog(
     onDismiss: () -> Unit,
-    onCreate: (String, Double, String, String) -> Unit
+    onCreate: (String, Double, String, String, String) -> Unit
 ) {
     var selectedSymbol by remember { mutableStateOf("BTCUSDT") }
     var priceText by remember { mutableStateOf("") }
     var condition by remember { mutableStateOf("ABOVE") }
+    var currency by remember { mutableStateOf("TOMAN") }
     var note by remember { mutableStateOf("") }
     var symbolExpanded by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // ============ دریافت لیست ارزها از نوبیتکس ============
     var allSymbols by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var isLoadingSymbols by remember { mutableStateOf(true) }
 
@@ -284,7 +328,6 @@ private fun CreateAlertDialog(
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
-                // انتخاب ارز
                 Text(
                     "ارز",
                     color = TextPrimary,
@@ -308,7 +351,7 @@ private fun CreateAlertDialog(
                             focusedTextColor = TextPrimary,
                             unfocusedTextColor = TextPrimary,
                             focusedBorderColor = AccentBlue,
-                            unfocusedBorderColor = Divider
+                            unfocusedBorderColor = DividerColor
                         )
                     )
                     ExposedDropdownMenu(
@@ -343,7 +386,33 @@ private fun CreateAlertDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                // نوع شرط
+                Text(
+                    "واحد قیمت",
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ConditionChip(
+                        text = "تومان",
+                        selected = currency == "TOMAN",
+                        onClick = { currency = "TOMAN" },
+                        modifier = Modifier.weight(1f)
+                    )
+                    ConditionChip(
+                        text = "دلار",
+                        selected = currency == "USD",
+                        onClick = { currency = "USD" },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+
                 Text(
                     "شرط",
                     color = TextPrimary,
@@ -371,7 +440,6 @@ private fun CreateAlertDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                // قیمت هدف
                 Text(
                     "قیمت هدف",
                     color = TextPrimary,
@@ -385,7 +453,12 @@ private fun CreateAlertDialog(
                         priceText = it
                         errorMessage = null
                     },
-                    placeholder = { Text("مثلاً 70000", color = TextSecondary) },
+                    placeholder = {
+                        Text(
+                            if (currency == "USD") "مثلاً 95000" else "مثلاً 9500000000",
+                            color = TextSecondary
+                        )
+                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -393,13 +466,21 @@ private fun CreateAlertDialog(
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary,
                         focusedBorderColor = AccentBlue,
-                        unfocusedBorderColor = Divider
+                        unfocusedBorderColor = DividerColor
                     )
                 )
 
+                if (currency == "USD") {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "قیمت دلاری به‌صورت خودکار به تومان تبدیل می‌شه.",
+                        color = AccentBlue,
+                        fontSize = 11.sp
+                    )
+                }
+
                 Spacer(Modifier.height(12.dp))
 
-                // یادداشت
                 Text(
                     "یادداشت (اختیاری)",
                     color = TextPrimary,
@@ -417,7 +498,7 @@ private fun CreateAlertDialog(
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary,
                         focusedBorderColor = AccentBlue,
-                        unfocusedBorderColor = Divider
+                        unfocusedBorderColor = DividerColor
                     )
                 )
 
@@ -439,11 +520,12 @@ private fun CreateAlertDialog(
                         errorMessage = "قیمت معتبر وارد کنید"
                         return@Button
                     }
-                    if (price > 100_000_000) {
+                    val maxPrice = if (currency == "USD") 10_000_000.0 else 1_000_000_000_000.0
+                    if (price > maxPrice) {
                         errorMessage = "قیمت خیلی بالاست"
                         return@Button
                     }
-                    onCreate(selectedSymbol, price, condition, note)
+                    onCreate(selectedSymbol, price, condition, note, currency)
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AccentGreen,
@@ -476,7 +558,7 @@ private fun ConditionChip(
             containerColor = if (selected) AccentBlue.copy(alpha = 0.2f) else DarkCard
         ),
         border = if (selected) {
-            androidx.compose.foundation.BorderStroke(1.dp, AccentBlue)
+            BorderStroke(1.dp, AccentBlue)
         } else null
     ) {
         Box(
