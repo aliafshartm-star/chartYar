@@ -1,8 +1,8 @@
 name: Build APK
 
 on:
-  push:
-    branches: [ main ]
+  on:
+  workflow_dispatch:
   workflow_dispatch:
 
 permissions:
