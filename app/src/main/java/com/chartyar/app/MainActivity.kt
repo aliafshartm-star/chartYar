@@ -1,12 +1,10 @@
 package com.chartyar.app
 
 import android.Manifest
-import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -80,8 +78,6 @@ class MainActivity : ComponentActivity() {
         rateAppManager.recordLaunch()
 
         WorkScheduler.schedule(applicationContext)
-
-        // راه‌اندازی سرویس پایش قیمت
         AlertMonitorService.start(applicationContext)
 
         val shortcutAction = intent?.getStringExtra("shortcut_action")
@@ -243,6 +239,7 @@ class MainActivity : ComponentActivity() {
                         "result" -> currentScreen = "home"
                         "multi_tf" -> currentScreen = "home"
                         "multi_tf_result" -> currentScreen = "multi_tf"
+                        "calculator" -> currentScreen = "home"
                         else -> showExitDialog = true
                     }
                 }
@@ -379,7 +376,11 @@ class MainActivity : ComponentActivity() {
                             onAlertsClick = { currentScreen = "alerts" },
                             onNewsClick = { currentScreen = "news" },
                             onPricesClick = { currentScreen = "prices" },
-                            onMultiTfClick = { currentScreen = "multi_tf" }
+                            onMultiTfClick = { currentScreen = "multi_tf" },
+                            onCalculatorClick = { currentScreen = "calculator" }
+                        )
+                        "calculator" -> PositionCalculatorScreen(
+                            onBack = { currentScreen = "home" }
                         )
                         "upload" -> UploadScreen(
                             onBack = { currentScreen = "home" },
