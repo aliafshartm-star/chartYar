@@ -58,6 +58,7 @@ import com.chartyar.app.ui.AboutScreen
 import com.chartyar.app.ui.AgeVerificationDialog
 import com.chartyar.app.ui.AlertScreen
 import com.chartyar.app.ui.ChangelogScreen
+import com.chartyar.app.ui.CoinDetailScreen
 import com.chartyar.app.ui.DisclaimerScreen
 import com.chartyar.app.ui.EducationScreen
 import com.chartyar.app.ui.ExchangesScreen
@@ -164,6 +165,7 @@ class MainActivity : ComponentActivity() {
                 var showAgeDialog by remember { mutableStateOf(false) }
                 var showTermsUpdateDialog by remember { mutableStateOf(false) }
                 var multiTfResult by remember { mutableStateOf<MultiTimeframeResult?>(null) }
+                var selectedCoin by remember { mutableStateOf<CoinPrice?>(null) }
 
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission()
@@ -275,6 +277,7 @@ class MainActivity : ComponentActivity() {
                         "alerts" -> currentScreen = "home"
                         "news" -> currentScreen = "home"
                         "prices" -> currentScreen = "home"
+                        "coin_detail" -> currentScreen = "prices"
                         "symbol" -> currentScreen = "home"
                         "result" -> currentScreen = "home"
                         "multi_tf" -> currentScreen = "home"
@@ -578,8 +581,72 @@ class MainActivity : ComponentActivity() {
                                     isPricesLoading = false
                                 }
                             },
-                            onCoinClick = { _ ->
-                                currentScreen = "home"
+                            onCoinClick = { symbol ->
+                                val coin = priceItems.firstOrNull { it.symbol == symbol }
+                                selectedCoin = coin
+                                currentScreen = "coin_detail"
+                            }
+                        )
+                        "coin_detail" -> CoinDetailScreen(
+                            coin = selectedCoin,
+                            onBack = { currentScreen = "prices" },
+                            onAnalyze = { symbol ->
+                                selectedTimeframe = "4H"
+                                analyzeProgress = 0f
+                                statusMessage = "..."
+                                errorMessage = ""
+                                currentScreen = "analyzing"
+
+                                lifecycleScope.launch {
+                                    val online = ConnectivityChecker.isOnline(applicationContext)
+                                    isOnline = online
+
+                                    if (!online) {
+                                        errorMessage = NetworkError.NO_INTERNET.message
+                                        currentScreen = "error"
+                                        return@launch
+                                    }
+
+                                    analyzeProgress = 0.3f
+                                    statusMessage = "..."
+                                    delay(200)
+
+                                    val dataResult = MarketDataService.getCandles(
+                                        symbol = symbol,
+                                        timeframe = selectedTimeframe,
+                                        cache = cache
+                                    )
+
+                                    val sourceName = MarketDataService.sourceLabel(dataResult.source)
+
+                                    if (dataResult.candles != null && dataResult.candles.size >= 50) {
+                                        analyzeProgress = 0.7f
+                                        statusMessage = sourceName
+                                        delay(300)
+                                        analyzeProgress = 0.9f
+                                        statusMessage = "..."
+                                        val result = withContext(Dispatchers.Default) {
+                                            SignalEngine.analyze(dataResult.candles, selectedTimeframe)
+                                        }
+                                        analyzeProgress = 1f
+                                        delay(200)
+                                        analysisResult = result
+                                        if (result != null) {
+                                            if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                            currentScreen = "result"
+                                        } else {
+                                            errorMessage = NetworkError.DATA_EMPTY.message
+                                            currentScreen = "error"
+                                        }
+                                    } else {
+                                        errorMessage = NetworkError.DATA_EMPTY.message
+                                        currentScreen = "error"
+                                    }
+                                }
+                            },
+                            onSetAlert = { symbol, price ->
+                                selectedCoin = null
+                                currentScreen = "alerts"
                             }
                         )
                         "settings" -> SettingsScreen(
