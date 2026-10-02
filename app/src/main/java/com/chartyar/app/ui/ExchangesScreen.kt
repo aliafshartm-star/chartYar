@@ -44,8 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.AccentGreen
-import com.chartyar.app.ui.theme.AccentRed
-import com.chartyar.app.ui.theme.AccentYellow
 import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.DarkSurface
 import com.chartyar.app.ui.theme.Divider
@@ -68,45 +66,18 @@ private val exchanges = listOf(
         nameFa = "نوبیتکس",
         nameEn = "Nobitex",
         description = "بزرگ‌ترین صرافی ایرانی",
-        referralUrl = "https://nobitex.ir/register?ref=YOUR_CODE",
-        referralCode = "YOUR_CODE",
+        referralUrl = "https://nobitex.ir/signup/?refcode=5CA6F10",
+        referralCode = "5CA6F10",
         brandColor = AccentBlue
     ),
     Exchange(
-        id = "wallex",
-        nameFa = "والکس",
-        nameEn = "Wallex",
-        description = "صرافی با کارمزد پایین",
-        referralUrl = "https://wallex.ir/signup?ref=YOUR_CODE",
-        referralCode = "YOUR_CODE",
+        id = "kcex",
+        nameFa = "KCEX",
+        nameEn = "KCEX",
+        description = "صرافی بین‌المللی با کارمزد پایین",
+        referralUrl = "https://www.kcex.com/register?inviteCode=0N0V0M",
+        referralCode = "0N0V0M",
         brandColor = AccentGreen
-    ),
-    Exchange(
-        id = "ramzinex",
-        nameFa = "رمزینکس",
-        nameEn = "Ramzinex",
-        description = "صرافی امن و سریع",
-        referralUrl = "https://ramzinex.com/register?ref=YOUR_CODE",
-        referralCode = "YOUR_CODE",
-        brandColor = AccentYellow
-    ),
-    Exchange(
-        id = "bit24",
-        nameFa = "بیت ۲۴",
-        nameEn = "Bit24",
-        description = "خرید و فروش آسان",
-        referralUrl = "https://bit24.cash/signup?ref=YOUR_CODE",
-        referralCode = "YOUR_CODE",
-        brandColor = AccentRed
-    ),
-    Exchange(
-        id = "excoino",
-        nameFa = "اکسکوینو",
-        nameEn = "Excoino",
-        description = "صرافی با پشتیبانی ۲۴/۷",
-        referralUrl = "https://excoino.com/register?ref=YOUR_CODE",
-        referralCode = "YOUR_CODE",
-        brandColor = Color(0xFF8B5CF6)
     )
 )
 
