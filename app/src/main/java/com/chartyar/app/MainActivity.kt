@@ -11,20 +11,91 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
-import com.chartyar.app.analysis.*
+import com.chartyar.app.analysis.AnalysisResult
+import com.chartyar.app.analysis.ImageProcessor
 import com.chartyar.app.analysis.ImageProcessor.CandlePixel
-import com.chartyar.app.data.*
+import com.chartyar.app.analysis.MultiTimeframeResult
+import com.chartyar.app.analysis.OcrHelper
+import com.chartyar.app.analysis.SignalEngine
+import com.chartyar.app.analysis.SignalType
+import com.chartyar.app.analysis.TrendType
+import com.chartyar.app.data.AnalysisHistory
+import com.chartyar.app.data.AnalyticsEvents
+import com.chartyar.app.data.AlertChecker
+import com.chartyar.app.data.AlertHelper
+import com.chartyar.app.data.AppDatabase
+import com.chartyar.app.data.ArzdigitalNewsApi
+import com.chartyar.app.data.CacheManager
+import com.chartyar.app.data.CoinPrice
+import com.chartyar.app.data.ConnectivityChecker
+import com.chartyar.app.data.DataManager
+import com.chartyar.app.data.LegalManager
+import com.chartyar.app.data.LocalAnalytics
+import com.chartyar.app.data.MarketDataService
+import com.chartyar.app.data.NetworkError
+import com.chartyar.app.data.NewsItem
+import com.chartyar.app.data.PrefsManager
+import com.chartyar.app.data.PriceAlert
+import com.chartyar.app.data.PricesApi
+import com.chartyar.app.data.RateAppManager
+import com.chartyar.app.data.UpdateChecker
 import com.chartyar.app.security.RootDetector
-import com.chartyar.app.ui.*
-import com.chartyar.app.ui.theme.*
+import com.chartyar.app.ui.AboutScreen
+import com.chartyar.app.ui.AgeVerificationDialog
+import com.chartyar.app.ui.AlertScreen
+import com.chartyar.app.ui.CalibrationScreen
+import com.chartyar.app.ui.ChangelogScreen
+import com.chartyar.app.ui.DisclaimerScreen
+import com.chartyar.app.ui.EducationScreen
+import com.chartyar.app.ui.ExitDialog
+import com.chartyar.app.ui.GlossaryScreen
+import com.chartyar.app.ui.HistoryScreen
+import com.chartyar.app.ui.HomeScreen
+import com.chartyar.app.ui.MiningCalculatorScreen
+import com.chartyar.app.ui.MultiTfInputScreen
+import com.chartyar.app.ui.MultiTimeframeScreen
+import com.chartyar.app.ui.NewsScreen
+import com.chartyar.app.ui.PositionCalculatorScreen
+import com.chartyar.app.ui.PricesScreen
+import com.chartyar.app.ui.PrivacyPolicyScreen
+import com.chartyar.app.ui.ProgressScreen
+import com.chartyar.app.ui.RateAppDialog
+import com.chartyar.app.ui.ResultScreen
+import com.chartyar.app.ui.SettingsScreen
+import com.chartyar.app.ui.SplashScreen
+import com.chartyar.app.ui.SymbolSelectorScreen
+import com.chartyar.app.ui.TermsScreen
+import com.chartyar.app.ui.TermsVersionDialog
+import com.chartyar.app.ui.TutorialScreen
+import com.chartyar.app.ui.UpdateDialog
+import com.chartyar.app.ui.UploadScreen
+import com.chartyar.app.ui.theme.AccentBlue
+import com.chartyar.app.ui.theme.ChartYarTheme
+import com.chartyar.app.ui.theme.DarkBg
+import com.chartyar.app.ui.theme.DarkSurface
+import com.chartyar.app.ui.theme.TextPrimary
+import com.chartyar.app.ui.theme.TextSecondary
 import com.chartyar.app.util.CameraHelper
 import com.chartyar.app.util.NotificationHelper
 import com.chartyar.app.work.AlertMonitorService
@@ -98,7 +169,7 @@ class MainActivity : ComponentActivity() {
                 var currentScreen by remember { mutableStateOf("home") }
                 var selectedTimeframe by remember { mutableStateOf("4H") }
                 var analysisResult by remember { mutableStateOf<AnalysisResult?>(null) }
-                var statusMessage by remember { mutableStateOf("در حال پردازش...") }
+                var statusMessage by remember { mutableStateOf("...") }
                 var analyzeProgress by remember { mutableStateOf(0f) }
                 var errorMessage by remember { mutableStateOf("") }
                 var detectedHigh by remember { mutableStateOf<Double?>(null) }
@@ -239,7 +310,7 @@ class MainActivity : ComponentActivity() {
                         "result" -> currentScreen = "home"
                         "multi_tf" -> currentScreen = "home"
                         "multi_tf_result" -> currentScreen = "multi_tf"
-                        "calculator" -> currentScreen = "home"
+                        "calculator", "mining" -> currentScreen = "home"
                         else -> showExitDialog = true
                     }
                 }
@@ -377,9 +448,13 @@ class MainActivity : ComponentActivity() {
                             onNewsClick = { currentScreen = "news" },
                             onPricesClick = { currentScreen = "prices" },
                             onMultiTfClick = { currentScreen = "multi_tf" },
-                            onCalculatorClick = { currentScreen = "calculator" }
+                            onCalculatorClick = { currentScreen = "calculator" },
+                            onMiningClick = { currentScreen = "mining" }
                         )
                         "calculator" -> PositionCalculatorScreen(
+                            onBack = { currentScreen = "home" }
+                        )
+                        "mining" -> MiningCalculatorScreen(
                             onBack = { currentScreen = "home" }
                         )
                         "upload" -> UploadScreen(
@@ -413,7 +488,7 @@ class MainActivity : ComponentActivity() {
                             onBack = { currentScreen = "upload" },
                             onSymbolSelected = { symbol ->
                                 analyzeProgress = 0f
-                                statusMessage = "در حال پردازش..."
+                                statusMessage = "..."
                                 errorMessage = ""
                                 currentScreen = "analyzing"
 
@@ -423,7 +498,7 @@ class MainActivity : ComponentActivity() {
 
                                     if (online) {
                                         analyzeProgress = 0.3f
-                                        statusMessage = "بررسی منابع داده..."
+                                        statusMessage = "..."
                                         delay(200)
 
                                         val dataResult = MarketDataService.getCandles(
@@ -436,10 +511,10 @@ class MainActivity : ComponentActivity() {
 
                                         if (dataResult.candles != null && dataResult.candles.size >= 50) {
                                             analyzeProgress = 0.7f
-                                            statusMessage = "داده از $sourceName"
+                                            statusMessage = sourceName
                                             delay(300)
                                             analyzeProgress = 0.9f
-                                            statusMessage = "اجرای تحلیل..."
+                                            statusMessage = "..."
                                             val result = withContext(Dispatchers.Default) {
                                                 SignalEngine.analyze(dataResult.candles, selectedTimeframe)
                                             }
@@ -457,11 +532,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
 
-                                    statusMessage = if (!online) {
-                                        "حالت آفلاین - پردازش تصویر..."
-                                    } else {
-                                        "منابع داده در دسترس نیستن. پردازش تصویر..."
-                                    }
+                                    statusMessage = if (!online) "offline" else "no_data"
                                     analyzeProgress = 0.3f
                                     delay(300)
                                     val uri2 = pendingUri
@@ -471,11 +542,11 @@ class MainActivity : ComponentActivity() {
                                         return@launch
                                     }
                                     analyzeProgress = 0.5f
-                                    statusMessage = "تشخیص کندل ها..."
+                                    statusMessage = "ocr"
                                     delay(200)
                                     val prep = prepareAnalysis(uri2)
                                     analyzeProgress = 0.85f
-                                    statusMessage = "آماده سازی..."
+                                    statusMessage = "..."
                                     delay(300)
                                     analyzeProgress = 1f
                                     delay(200)
@@ -490,7 +561,7 @@ class MainActivity : ComponentActivity() {
                                         pendingChartBottom = prep.chartBottom
                                         currentScreen = "calibration"
                                     } else {
-                                        errorMessage = "نتوانستیم چارت را تشخیص دهیم."
+                                        errorMessage = "chart_not_detected"
                                         currentScreen = "error"
                                     }
                                 }
@@ -513,12 +584,12 @@ class MainActivity : ComponentActivity() {
                             },
                             onConfirm = { high, low ->
                                 currentScreen = "analyzing"
-                                statusMessage = "در حال اجرای تحلیل..."
+                                statusMessage = "..."
                                 analyzeProgress = 0.4f
                                 lifecycleScope.launch {
                                     delay(300)
                                     analyzeProgress = 0.7f
-                                    statusMessage = "اجرای اندیکاتورها..."
+                                    statusMessage = "..."
                                     delay(300)
                                     analyzeProgress = 1f
                                     delay(200)
@@ -528,7 +599,7 @@ class MainActivity : ComponentActivity() {
                                         if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
                                         currentScreen = "result"
                                     } else {
-                                        errorMessage = "تحلیل با خطا مواجه شد."
+                                        errorMessage = "analysis_failed"
                                         currentScreen = "error"
                                     }
                                 }
@@ -697,21 +768,9 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.padding(32.dp)
                             ) {
                                 Text(
-                                    text = if (!isOnline) "حالت آفلاین" else "خطا",
+                                    text = errorMessage,
                                     color = TextPrimary,
                                     style = MaterialTheme.typography.headlineMedium
-                                )
-                                Spacer(Modifier.height(16.dp))
-                                Text(
-                                    text = errorMessage.ifEmpty {
-                                        if (!isOnline) {
-                                            "اتصال اینترنت برقرار نیست."
-                                        } else {
-                                            "لطفا دوباره تلاش کنید."
-                                        }
-                                    },
-                                    color = TextSecondary,
-                                    textAlign = TextAlign.Center
                                 )
                                 Spacer(Modifier.height(24.dp))
                                 Button(
@@ -725,7 +784,7 @@ class MainActivity : ComponentActivity() {
                                         containerColor = AccentBlue,
                                         contentColor = TextPrimary
                                     )
-                                ) { Text("بازگشت به خانه") }
+                                ) { Text("بازگشت") }
                             }
                         }
                     }
@@ -741,7 +800,8 @@ class MainActivity : ComponentActivity() {
             val pricePoints = OcrHelper.extractPriceAxis(bitmap)
             if (pricePoints.size < 2) return@withContext PreparationResult(false)
             val priceRange = OcrHelper.calculatePriceRange(pricePoints) ?: return@withContext PreparationResult(false)
-            val (high, low) = priceRange
+            val high = priceRange.first
+            val low = priceRange.second
             if (high <= low || high / low > 50.0) return@withContext PreparationResult(false)
             val confidence = when {
                 pricePoints.size >= 5 -> 90
@@ -774,16 +834,16 @@ class MainActivity : ComponentActivity() {
     private suspend fun saveToHistory(result: AnalysisResult, timeframe: String) {
         try {
             val signalText = when (result.signal) {
-                SignalType.STRONG_BUY -> "خرید قوی"
-                SignalType.BUY -> "خرید"
-                SignalType.NEUTRAL -> "خنثی"
-                SignalType.SELL -> "فروش"
-                SignalType.STRONG_SELL -> "فروش قوی"
+                SignalType.STRONG_BUY -> "STRONG_BUY"
+                SignalType.BUY -> "BUY"
+                SignalType.NEUTRAL -> "NEUTRAL"
+                SignalType.SELL -> "SELL"
+                SignalType.STRONG_SELL -> "STRONG_SELL"
             }
             val trendText = when (result.trend) {
-                TrendType.UPTREND -> "صعودی"
-                TrendType.DOWNTREND -> "نزولی"
-                TrendType.RANGE -> "رنج"
+                TrendType.UPTREND -> "UP"
+                TrendType.DOWNTREND -> "DOWN"
+                TrendType.RANGE -> "RANGE"
             }
             db.historyDao().insert(
                 AnalysisHistory(
@@ -801,7 +861,6 @@ class MainActivity : ComponentActivity() {
                 )
             )
         } catch (e: Exception) {
-            // silent
         }
     }
 }
