@@ -19,21 +19,35 @@ class PrefsManager(private val context: Context) {
     private val KEY_LANGUAGE = stringPreferencesKey("language")
     private val KEY_THEME = stringPreferencesKey("theme")
     private val KEY_TUTORIAL_SEEN = booleanPreferencesKey("tutorial_seen")
+    private val KEY_DEFAULT_STRATEGY = stringPreferencesKey("default_strategy")
+    private val KEY_HAS_SEEN_FIRST_LAUNCH = booleanPreferencesKey("has_seen_first_launch")
 
     val isDisclaimerAccepted: Flow<Boolean> = context.dataStore.data
         .map { it[KEY_DISCLAIMER_ACCEPTED] ?: false }
+
     val autoSaveHistory: Flow<Boolean> = context.dataStore.data
         .map { it[KEY_AUTO_SAVE_HISTORY] ?: true }
+
     val showWarnings: Flow<Boolean> = context.dataStore.data
         .map { it[KEY_SHOW_WARNINGS] ?: true }
+
     val defaultTimeframe: Flow<String> = context.dataStore.data
         .map { it[KEY_DEFAULT_TIMEFRAME] ?: "4H" }
+
     val language: Flow<String> = context.dataStore.data
         .map { it[KEY_LANGUAGE] ?: "fa" }
+
     val theme: Flow<String> = context.dataStore.data
         .map { it[KEY_THEME] ?: "dark" }
+
     val isTutorialSeen: Flow<Boolean> = context.dataStore.data
         .map { it[KEY_TUTORIAL_SEEN] ?: false }
+
+    val defaultStrategy: Flow<String> = context.dataStore.data
+        .map { it[KEY_DEFAULT_STRATEGY] ?: "SWING" }
+
+    val hasSeenFirstLaunch: Flow<Boolean> = context.dataStore.data
+        .map { it[KEY_HAS_SEEN_FIRST_LAUNCH] ?: false }
 
     suspend fun acceptDisclaimer() {
         context.dataStore.edit { it[KEY_DISCLAIMER_ACCEPTED] = true }
@@ -61,6 +75,14 @@ class PrefsManager(private val context: Context) {
 
     suspend fun setTutorialSeen(value: Boolean) {
         context.dataStore.edit { it[KEY_TUTORIAL_SEEN] = value }
+    }
+
+    suspend fun setDefaultStrategy(value: String) {
+        context.dataStore.edit { it[KEY_DEFAULT_STRATEGY] = value }
+    }
+
+    suspend fun setHasSeenFirstLaunch(value: Boolean) {
+        context.dataStore.edit { it[KEY_HAS_SEEN_FIRST_LAUNCH] = value }
     }
 
     suspend fun resetDisclaimer() {
