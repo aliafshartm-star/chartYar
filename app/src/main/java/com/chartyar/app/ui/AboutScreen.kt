@@ -4,22 +4,49 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chartyar.app.ui.theme.*
+import com.chartyar.app.R
+import com.chartyar.app.ui.theme.AccentBlue
+import com.chartyar.app.ui.theme.DarkBg
+import com.chartyar.app.ui.theme.DarkSurface
+import com.chartyar.app.ui.theme.TextPrimary
+import com.chartyar.app.ui.theme.TextSecondary
+
+private const val TELEGRAM_URL = "https://t.me/chartyar_app"
+private const val INSTAGRAM_URL = "https://www.instagram.com/chartyar_app"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +56,16 @@ fun AboutScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
+    fun openUrl(url: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -36,23 +73,21 @@ fun AboutScreen(
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // هدر
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, "بازگشت", tint = TextPrimary)
+                Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
             }
             Text(
-                "درباره چارت یار",
+                "درباره چارت‌یار",
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold
             )
         }
 
-        // لوگو و نام
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -62,23 +97,17 @@ fun AboutScreen(
                 modifier = Modifier.fillMaxWidth().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = "chart", fontSize = 64.sp)
+                Text(text = "📊", fontSize = 64.sp)
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "چارت یار",
+                    text = "چارت‌یار",
                     color = AccentBlue,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "نسخه 1.0.0",
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = "تحلیل حرفه ای چارت با هوش مصنوعی",
+                    text = "تحلیل حرفه‌ای چارت با هوش مصنوعی",
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodyLarge
@@ -88,14 +117,14 @@ fun AboutScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // اطلاعات
         InfoCard(
             title = "درباره اپ",
             lines = listOf(
-                "چارت یار یک ابزار تحلیل تکنیکال است",
-                "با 10+ اندیکاتور و 11 الگوی کلاسیک",
-                "داده های واقعی از Binance و صرافی های دیگر",
-                "بدون توصیه مالی - فقط کمک به تصمیم گیری"
+                "چارت‌یار یک ابزار تحلیل تکنیکال حرفه‌ای است",
+                "۱۰+ اندیکاتور و ۱۱ الگوی کلاسیک",
+                "داده‌های واقعی و لحظه‌ای از نوبیتکس",
+                "بدون نیاز به آپلود عکس — مستقیم و دقیق",
+                "فقط کمک به تصمیم‌گیری — بدون توصیه مالی"
             )
         )
 
@@ -104,19 +133,24 @@ fun AboutScreen(
         InfoCard(
             title = "امکانات",
             lines = listOf(
-                "RSI، MACD، EMA، Bollinger، Stochastic",
-                "تشخیص الگوهای کلاسیک",
-                "هشدار قیمت با نوتیفیکیشن",
-                "اخبار بازار",
-                "قیمت لحظه ای 30 ارز",
-                "تاریخچه تحلیل ها",
-                "دیکشنری اصطلاحات"
+                "تحلیل جفت ارز با سیگنال دقیق",
+                "چند تایم‌فریمی (Multi-Timeframe)",
+                "قیمت لحظه‌ای ۲۰۰+ ارز (تومان + دلار)",
+                "صفحه جزئیات هر ارز",
+                "هشدار قیمت (تومان یا دلار)",
+                "اخبار لحظه‌ای ارز دیجیتال",
+                "شاخص ترس و طمع",
+                "ماشین‌حساب فیوچرز",
+                "ماشین‌حساب استخراج",
+                "صرافی‌ها با کد معرف (تخفیف کارمزد)",
+                "دیکشنری اصطلاحات تریدینگ",
+                "درس‌های تحلیل تکنیکال",
+                "تاریخچه تحلیل‌ها"
             )
         )
 
         Spacer(Modifier.height(12.dp))
 
-        // تماس
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -124,65 +158,51 @@ fun AboutScreen(
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(
-                    text = "تماس با ما",
+                    text = "ارتباط با ما",
                     color = AccentBlue,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(12.dp))
 
-                ContactRow(
-                    label = "ایمیل پشتیبانی",
-                    value = "support@chartyar.app",
-                    onClick = {
-                        try {
-                            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                data = Uri.parse("mailto:support@chartyar.app")
-                            }
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            // silent
-                        }
-                    }
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                ContactRow(
-                    label = "گیت هاب",
-                    value = "github.com/chartyar",
-                    onClick = {
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                data = Uri.parse("https://github.com/chartyar")
-                            }
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            // silent
-                        }
-                    }
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SocialContactButton(
+                        iconRes = R.drawable.ic_telegram,
+                        label = "تلگرام",
+                        backgroundColor = Color(0xFF229ED9),
+                        onClick = { openUrl(TELEGRAM_URL) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    SocialContactButton(
+                        iconRes = R.drawable.ic_instagram,
+                        label = "اینستاگرام",
+                        backgroundColor = Color(0xFFE4405F),
+                        onClick = { openUrl(INSTAGRAM_URL) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
 
         Spacer(Modifier.height(12.dp))
 
-        // قوانین
         InfoCard(
             title = "قوانین",
             lines = listOf(
                 "استفاده از اپ به معنی پذیرش شرایط است",
-                "تحلیل ها جنبه آموزشی دارند",
+                "تحلیل‌ها جنبه آموزشی دارند",
                 "مسئولیت معاملات بر عهده کاربر است",
-                "اطلاعات شخصی شما جمع آوری نمی شود"
+                "اطلاعات شخصی شما جمع‌آوری نمی‌شود"
             )
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // کپی رایت
         Text(
-            text = "ساخته شده با عشق در ایران",
+            text = "ساخته شده با ❤️ در ایران",
             color = TextSecondary,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyMedium,
@@ -192,7 +212,7 @@ fun AboutScreen(
         Spacer(Modifier.height(4.dp))
 
         Text(
-            text = "تمام حقوق محفوظ است © 1403",
+            text = "تمام حقوق محفوظ است",
             color = TextSecondary,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodySmall,
@@ -231,28 +251,44 @@ private fun InfoCard(title: String, lines: List<String>) {
 }
 
 @Composable
-private fun ContactRow(label: String, value: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+private fun SocialContactButton(
+    iconRes: Int,
+    label: String,
+    backgroundColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val painter: Painter = painterResource(id = iconRes)
+
+    Card(
+        modifier = modifier.clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkBg)
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(backgroundColor, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painter,
+                    contentDescription = label,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(Modifier.width(10.dp))
             Text(
                 text = label,
-                color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = value,
-                color = AccentBlue,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp
             )
         }
-        Text(text = ">", color = AccentBlue, fontSize = 20.sp, fontWeight = FontWeight.Bold)
     }
 }
