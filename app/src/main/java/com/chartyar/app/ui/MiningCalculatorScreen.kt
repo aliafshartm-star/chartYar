@@ -9,12 +9,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -26,11 +28,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +56,9 @@ import com.chartyar.app.ui.theme.Divider
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.ui.theme.TextSecondary
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +71,7 @@ fun MiningCalculatorScreen(onBack: () -> Unit) {
 
     var isLoadingPrice by remember { mutableStateOf(true) }
     var priceError by remember { mutableStateOf(false) }
+    var validationError by remember { mutableStateOf("") }
 
     var dailyIncome by remember { mutableStateOf("") }
     var dailyElectricity by remember { mutableStateOf("") }
@@ -75,19 +82,25 @@ fun MiningCalculatorScreen(onBack: () -> Unit) {
     var hasResult by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
+    suspend fun loadBtcPrice() {
         isLoadingPrice = true
+        priceError = false
         val price = withContext(Dispatchers.IO) {
-            NobitexApi.fetchCurrentPrice("BTCUSDT")
+            NobitexApi.fetchCurrentPrice("BTCRLS")
         }
         if (price != null && price > 0.0) {
-            btcPrice = String.format("%.0f", price)
+            btcPrice = String.format(Locale.US, "%.0f", price)
             priceError = false
         } else {
             priceError = true
         }
         isLoadingPrice = false
+    }
+
+    LaunchedEffect(Unit) {
+        loadBtcPrice()
     }
 
     Column(
@@ -176,11 +189,33 @@ fun MiningCalculatorScreen(onBack: () -> Unit) {
             )
         } else if (priceError) {
             Spacer(Modifier.height(6.dp))
-            Text(
-                text = stringResource(R.string.mining_fetch_failed),
-                color = AccentYellow,
-                style = MaterialTheme.typography.bodySmall
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(R.string.mining_fetch_failed),
+                    color = AccentYellow,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = {
+                    scope.launch { loadBtcPrice() }
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = "retry",
+                        tint = AccentBlue,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.size(4.dp))
+                    Text(
+                        text = "Retry",
+                        color = AccentBlue,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
         }
 
         Spacer(Modifier.height(20.dp))
@@ -193,9 +228,15 @@ fun MiningCalculatorScreen(onBack: () -> Unit) {
                 val fee = poolFee.toDoubleOrNull() ?: 0.0
                 val btc = btcPrice.toDoubleOrNull() ?: 0.0
 
-                if (hr <= 0.0 || pw <= 0.0 || elPrice <= 0.0 || btc <= 0.0) {
-                    hasResult = false
-                } else {
+                validationError = when {
+                    hr <= 0.0 -> "Enter valid hashrate"
+                    pw <= 0.0 -> "Enter valid power"
+                    elPrice <= 0.0 -> "Enter valid electricity price"
+                    btc <= 0.0 -> "BTC price is missing"
+                    else -> ""
+                }
+
+                if (validationError.isEmpty()) {
                     val result = calculateMining(
                         hashrate = hr,
                         power = pw,
@@ -210,6 +251,8 @@ fun MiningCalculatorScreen(onBack: () -> Unit) {
                     yearlyProfit = result.yearlyProfitStr
                     isProfitPositive = result.isPositive
                     hasResult = true
+                } else {
+                    hasResult = false
                 }
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -224,6 +267,24 @@ fun MiningCalculatorScreen(onBack: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
+        }
+
+        if (validationError.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = AccentRed.copy(alpha = 0.15f)
+                )
+            ) {
+                Text(
+                    text = validationError,
+                    color = AccentRed,
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         }
 
         if (hasResult) {
@@ -365,11 +426,21 @@ private fun calculateMining(
     val prefix = if (isPositive) "+" else ""
 
     return MiningResult(
-        dailyIncomeTomanStr = String.format("%.0f T", dailyIncomeToman),
-        dailyElectricityStr = String.format("-%.0f T", dailyElectricityToman),
-        dailyProfitStr = prefix + String.format("%.0f T", dailyProfitToman),
-        monthlyProfitStr = prefix + String.format("%.0f T", monthlyProfitToman),
-        yearlyProfitStr = prefix + String.format("%.0f T", yearlyProfitToman),
+        dailyIncomeTomanStr = formatToman(dailyIncomeToman),
+        dailyElectricityStr = "-" + formatToman(dailyElectricityToman),
+        dailyProfitStr = prefix + formatToman(dailyProfitToman),
+        monthlyProfitStr = prefix + formatToman(monthlyProfitToman),
+        yearlyProfitStr = prefix + formatToman(yearlyProfitToman),
         isPositive = isPositive
     )
+}
+
+private fun formatToman(value: Double): String {
+    val absValue = kotlin.math.abs(value)
+    return when {
+        absValue >= 1_000_000_000 -> String.format(Locale.US, "%,.2f B T", value / 1_000_000_000.0)
+        absValue >= 1_000_000 -> String.format(Locale.US, "%,.2f M T", value / 1_000_000.0)
+        absValue >= 1_000 -> String.format(Locale.US, "%,.1f K T", value / 1_000.0)
+        else -> String.format(Locale.US, "%,.0f T", value)
+    }
 }
