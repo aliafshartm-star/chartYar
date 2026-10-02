@@ -97,7 +97,6 @@ fun CoinDetailScreen(
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // ============ Header ============
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
@@ -121,7 +120,6 @@ fun CoinDetailScreen(
             }
         }
 
-        // ============ Price Card ============
         Card(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             shape = RoundedCornerShape(20.dp),
@@ -161,9 +159,42 @@ fun CoinDetailScreen(
                         fontSize = 13.sp
                     )
 
+                    if (coin.priceUsd > 0) {
+                        Spacer(Modifier.height(12.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = Color.White.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "$",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = PricesApi.formatPriceUsd(coin.priceUsd),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = "دلار",
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    }
+
                     Spacer(Modifier.height(16.dp))
 
-                    // Change indicator
                     Box(
                         modifier = Modifier
                             .background(
@@ -183,7 +214,6 @@ fun CoinDetailScreen(
             }
         }
 
-        // ============ Info Rows ============
         Card(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             shape = RoundedCornerShape(14.dp),
@@ -202,6 +232,19 @@ fun CoinDetailScreen(
                 )
                 Spacer(Modifier.height(12.dp))
                 InfoRow(
+                    label = "قیمت به تومان",
+                    value = PricesApi.formatPrice(coin.price) + " تومان"
+                )
+                if (coin.priceUsd > 0) {
+                    Spacer(Modifier.height(12.dp))
+                    InfoRow(
+                        label = "قیمت به دلار",
+                        value = "$" + PricesApi.formatPriceUsd(coin.priceUsd),
+                        valueColor = AccentBlue
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                InfoRow(
                     label = "تغییرات ۲۴ ساعته",
                     value = "$changeSign${PricesApi.formatPercent(coin.changePercent24h)}",
                     valueColor = changeColor
@@ -209,7 +252,6 @@ fun CoinDetailScreen(
             }
         }
 
-        // ============ Action Buttons ============
         Text(
             "عملیات",
             color = TextPrimary,
