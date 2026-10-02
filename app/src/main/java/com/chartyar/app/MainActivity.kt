@@ -17,12 +17,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -188,7 +186,6 @@ class MainActivity : ComponentActivity() {
                 var themeSetting by remember { mutableStateOf("dark") }
                 var tutorialSeen by remember { mutableStateOf(true) }
                 var isOnline by remember { mutableStateOf(true) }
-                var rootWarningShown by remember { mutableStateOf(false) }
                 var isRooted by remember { mutableStateOf(false) }
                 var updateInfo by remember { mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
                 var updateDialogShown by remember { mutableStateOf(false) }
@@ -298,16 +295,16 @@ class MainActivity : ComponentActivity() {
                 BackHandler(enabled = !isLoading && disclaimerAccepted) {
                     when (currentScreen) {
                         "home" -> showExitDialog = true
-                        " "privacy" -> currentScreen = "home"
-                        "termshome" -> currentScreen = "home"
-                        "glossary" ->"
-                        currentScreen = "home ""
+                        "privacy" -> currentScreen = "home"
+                        "terms" -> currentScreen = "home"
+                        "glossary" -> currentScreen = "home"
                         "education" -> currentScreen = "home"
-news                        "about" -> currentScreen = "home"
+                        "about" -> currentScreen = "home"
                         "changelog" -> currentScreen = "home"
                         "settings" -> currentScreen = "home"
                         "history" -> currentScreen = "home"
-                        "alerts" -> currentScreen =" -> currentScreen = "home"
+                        "alerts" -> currentScreen = "home"
+                        "news" -> currentScreen = "home"
                         "prices" -> currentScreen = "home"
                         "upload" -> currentScreen = "home"
                         "symbol" -> currentScreen = "upload"
@@ -341,26 +338,6 @@ news                        "about" -> currentScreen = "home"
                             legalManager.acceptTerms()
                             legalManager.acceptPrivacy()
                             showTermsUpdateDialog = false
-                        }
-                    )
-                }
-
-                if (isRooted && !rootWarningShown) {
-                    AlertDialog(
-                        onDismissRequest = { rootWarningShown = true },
-                        containerColor = DarkSurface,
-                        titleContentColor = TextPrimary,
-                        textContentColor = TextSecondary,
-                        title = {
-                            Text(text = "هشدار امنیتی")
-                        },
-                        text = {
-                            Text(text = "گوشی شما روت شده است.")
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { rootWarningShown = true }) {
-                                Text(text = "OK", color = AccentBlue)
-                            }
                         }
                     )
                 }
@@ -606,12 +583,12 @@ news                        "about" -> currentScreen = "home"
                                 }
                             }
                         )
-                        "result" ->, {
+                        "result" -> {
                             val result = analysisResult
                             if (result != null) ResultScreen(
                                 result = result,
                                 onBack = {
- high                                    analysisResult = null
+                                    analysisResult = null
                                     pendingBitmap = null
                                     pendingCandlePixels = null
                                     currentScreen = "home"
@@ -794,10 +771,11 @@ news                        "about" -> currentScreen = "home"
         }
     }
 
-    private suspend fun prepareAnalysis(uri: Uri): PreparationResult = withContext(Dispatchers.Default) {
+    private suspend fun prepareAnalysis(uri: Uri): PreparationResult = withContext( جدیدDispatchers.Default) {
         try {
             val bitmap = ImageProcessor.loadBitmap(applicationContext, uri) ?: return@withContext PreparationResult(false)
-            val candlePixels = ImageProcessor.extractCandles(bitmap) ?: return@withContext PreparationResult(false)
+            val candlePixels = ImageProcessor.extractCandles(
+bitmap) ?: return@withContext PreparationResult(false)
             val pricePoints = OcrHelper.extractPriceAxis(bitmap)
             if (pricePoints.size < 2) return@withContext PreparationResult(false)
             val priceRange = OcrHelper.calculatePriceRange(pricePoints) ?: return@withContext PreparationResult(false)
@@ -814,7 +792,7 @@ news                        "about" -> currentScreen = "home"
             val bounds = ImageProcessor.findChartBoundsPublic(bitmap)
             val lastCandle = candlePixels.lastOrNull()
             val currentPrice = lastCandle?.let { OcrHelper.pixelToPrice(pricePoints, it.bottom) }
-            PreparationResult(true, low, currentPrice, confidence, bitmap, candlePixels, bounds.chartTop, bounds.chartBottom)
+            PreparationResult(true, high, low, currentPrice, confidence, bitmap, candlePixels, bounds.chartTop, bounds.chartBottom)
         } catch (e: Exception) {
             PreparationResult(false)
         }
