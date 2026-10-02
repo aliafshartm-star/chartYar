@@ -2,7 +2,7 @@ name: Build APK
 
 on:
   on:
-  workflow_dispatch:
+
   workflow_dispatch:
 
 permissions:
