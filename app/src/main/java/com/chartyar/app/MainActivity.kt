@@ -1,8 +1,6 @@
 package com.chartyar.app
 
 import android.Manifest
-import android.graphics.Bitmap
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -32,10 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.chartyar.app.analysis.AnalysisResult
-import com.chartyar.app.analysis.ImageProcessor
-import com.chartyar.app.analysis.ImageProcessor.CandlePixel
 import com.chartyar.app.analysis.MultiTimeframeResult
-import com.chartyar.app.analysis.OcrHelper
 import com.chartyar.app.analysis.SignalEngine
 import com.chartyar.app.analysis.SignalType
 import com.chartyar.app.analysis.TrendType
@@ -62,10 +57,10 @@ import com.chartyar.app.security.RootDetector
 import com.chartyar.app.ui.AboutScreen
 import com.chartyar.app.ui.AgeVerificationDialog
 import com.chartyar.app.ui.AlertScreen
-import com.chartyar.app.ui.CalibrationScreen
 import com.chartyar.app.ui.ChangelogScreen
 import com.chartyar.app.ui.DisclaimerScreen
 import com.chartyar.app.ui.EducationScreen
+import com.chartyar.app.ui.ExchangesScreen
 import com.chartyar.app.ui.ExitDialog
 import com.chartyar.app.ui.GlossaryScreen
 import com.chartyar.app.ui.HistoryScreen
@@ -87,7 +82,6 @@ import com.chartyar.app.ui.TermsScreen
 import com.chartyar.app.ui.TermsVersionDialog
 import com.chartyar.app.ui.TutorialScreen
 import com.chartyar.app.ui.UpdateDialog
-import com.chartyar.app.ui.UploadScreen
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.ChartYarTheme
 import com.chartyar.app.ui.theme.DarkBg
@@ -102,18 +96,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class PreparationResult(
-    val success: Boolean,
-    val high: Double? = null,
-    val low: Double? = null,
-    val currentPrice: Double? = null,
-    val confidence: Int = 0,
-    val bitmap: Bitmap? = null,
-    val candlePixels: List<CandlePixel>? = null,
-    val chartTop: Int = 0,
-    val chartBottom: Int = 0
-)
-
 class MainActivity : ComponentActivity() {
     private lateinit var prefs: PrefsManager
     private lateinit var db: AppDatabase
@@ -121,11 +103,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var rateAppManager: RateAppManager
     private lateinit var legalManager: LegalManager
     private lateinit var dataManager: DataManager
-    private var pendingBitmap: Bitmap? = null
-    private var pendingCandlePixels: List<CandlePixel>? = null
-    private var pendingChartTop: Int = 0
-    private var pendingChartBottom: Int = 0
-    private var pendingUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -168,10 +145,6 @@ class MainActivity : ComponentActivity() {
                 var statusMessage by remember { mutableStateOf("...") }
                 var analyzeProgress by remember { mutableStateOf(0f) }
                 var errorMessage by remember { mutableStateOf("") }
-                var detectedHigh by remember { mutableStateOf<Double?>(null) }
-                var detectedLow by remember { mutableStateOf<Double?>(null) }
-                var detectedCurrentPrice by remember { mutableStateOf<Double?>(null) }
-                var detectedConfidence by remember { mutableStateOf(0) }
                 var historyItems by remember { mutableStateOf<List<AnalysisHistory>>(emptyList()) }
                 var alertItems by remember { mutableStateOf<List<PriceAlert>>(emptyList()) }
                 var newsItems by remember { mutableStateOf<List<NewsItem>>(emptyList()) }
@@ -216,7 +189,7 @@ class MainActivity : ComponentActivity() {
                         AlertChecker.checkAllAlerts(applicationContext, db, cache)
                     }
 
-                    val rootStatus = withContext(Dispatchers.IO) {
+                    withContext(Dispatchers.IO) {
                         RootDetector.checkRoot(applicationContext)
                     }
 
@@ -272,7 +245,7 @@ class MainActivity : ComponentActivity() {
                     isLoading = false
 
                     when (shortcutAction) {
-                        "new_analysis" -> currentScreen = "upload"
+                        "new_analysis" -> currentScreen = "symbol"
                         "alerts" -> currentScreen = "alerts"
                         "glossary" -> currentScreen = "glossary"
                     }
@@ -291,25 +264,24 @@ class MainActivity : ComponentActivity() {
                 BackHandler(enabled = !isLoading && disclaimerAccepted) {
                     when (currentScreen) {
                         "home" -> showExitDialog = true
-                        "privacy" -> currentScreen = "home"
-                        "terms" -> currentScreen = "home"
-                        "glossary" -> currentScreen = "home"
-                        "education" -> currentScreen = "home"
-                        "about" -> currentScreen = "home"
-                        "changelog" -> currentScreen = "home"
+                        "privacy" -> currentScreen = "settings"
+                        "terms" -> currentScreen = "settings"
+                        "glossary" -> currentScreen = "settings"
+                        "education" -> currentScreen = "settings"
+                        "about" -> currentScreen = "settings"
+                        "changelog" -> currentScreen = "settings"
                         "settings" -> currentScreen = "home"
                         "history" -> currentScreen = "home"
                         "alerts" -> currentScreen = "home"
                         "news" -> currentScreen = "home"
                         "prices" -> currentScreen = "home"
-                        "upload" -> currentScreen = "home"
-                        "symbol" -> currentScreen = "upload"
-                        "calibration" -> currentScreen = "symbol"
+                        "symbol" -> currentScreen = "home"
                         "result" -> currentScreen = "home"
                         "multi_tf" -> currentScreen = "home"
                         "multi_tf_result" -> currentScreen = "multi_tf"
                         "calculator" -> currentScreen = "home"
                         "mining" -> currentScreen = "home"
+                        "exchanges" -> currentScreen = "home"
                         else -> showExitDialog = true
                     }
                 }
@@ -415,7 +387,7 @@ class MainActivity : ComponentActivity() {
                     )
                     else -> when (currentScreen) {
                         "home" -> HomeScreen(
-                            onUploadClick = { currentScreen = "upload" },
+                            onUploadClick = { currentScreen = "symbol" },
                             onHistoryClick = { currentScreen = "history" },
                             onSettingsClick = { currentScreen = "settings" },
                             onAlertsClick = { currentScreen = "alerts" },
@@ -423,7 +395,8 @@ class MainActivity : ComponentActivity() {
                             onPricesClick = { currentScreen = "prices" },
                             onMultiTfClick = { currentScreen = "multi_tf" },
                             onCalculatorClick = { currentScreen = "calculator" },
-                            onMiningClick = { currentScreen = "mining" }
+                            onMiningClick = { currentScreen = "mining" },
+                            onExchangesClick = { currentScreen = "exchanges" }
                         )
                         "calculator" -> PositionCalculatorScreen(
                             onBack = { currentScreen = "home" }
@@ -431,13 +404,8 @@ class MainActivity : ComponentActivity() {
                         "mining" -> MiningCalculatorScreen(
                             onBack = { currentScreen = "home" }
                         )
-                        "upload" -> UploadScreen(
-                            onBack = { currentScreen = "home" },
-                            onAnalyze = { uri, tf ->
-                                pendingUri = uri
-                                selectedTimeframe = tf
-                                currentScreen = "symbol"
-                            }
+                        "exchanges" -> ExchangesScreen(
+                            onBack = { currentScreen = "home" }
                         )
                         "multi_tf" -> MultiTfInputScreen(
                             cache = cache,
@@ -459,8 +427,9 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         "symbol" -> SymbolSelectorScreen(
-                            onBack = { currentScreen = "upload" },
-                            onSymbolSelected = { symbol ->
+                            onBack = { currentScreen = "home" },
+                            onSymbolSelected = { symbol, tf ->
+                                selectedTimeframe = tf
                                 analyzeProgress = 0f
                                 statusMessage = "..."
                                 errorMessage = ""
@@ -470,72 +439,45 @@ class MainActivity : ComponentActivity() {
                                     val online = ConnectivityChecker.isOnline(applicationContext)
                                     isOnline = online
 
-                                    if (online) {
-                                        analyzeProgress = 0.3f
-                                        statusMessage = "..."
-                                        delay(200)
-
-                                        val dataResult = MarketDataService.getCandles(
-                                            symbol = symbol,
-                                            timeframe = selectedTimeframe,
-                                            cache = cache
-                                        )
-
-                                        val sourceName = MarketDataService.sourceLabel(dataResult.source)
-
-                                        if (dataResult.candles != null && dataResult.candles.size >= 50) {
-                                            analyzeProgress = 0.7f
-                                            statusMessage = sourceName
-                                            delay(300)
-                                            analyzeProgress = 0.9f
-                                            statusMessage = "..."
-                                            val result = withContext(Dispatchers.Default) {
-                                                SignalEngine.analyze(dataResult.candles, selectedTimeframe)
-                                            }
-                                            analyzeProgress = 1f
-                                            delay(200)
-                                            analysisResult = result
-                                            if (result != null) {
-                                                if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
-                                                currentScreen = "result"
-                                            } else {
-                                                errorMessage = NetworkError.DATA_EMPTY.message
-                                                currentScreen = "error"
-                                            }
-                                            return@launch
-                                        }
-                                    }
-
-                                    statusMessage = if (!online) "offline" else "no_data"
-                                    analyzeProgress = 0.3f
-                                    delay(300)
-                                    val uri2 = pendingUri
-                                    if (uri2 == null) {
+                                    if (!online) {
                                         errorMessage = NetworkError.NO_INTERNET.message
                                         currentScreen = "error"
                                         return@launch
                                     }
-                                    analyzeProgress = 0.5f
-                                    statusMessage = "ocr"
-                                    delay(200)
-                                    val prep = prepareAnalysis(uri2)
-                                    analyzeProgress = 0.85f
+
+                                    analyzeProgress = 0.3f
                                     statusMessage = "..."
-                                    delay(300)
-                                    analyzeProgress = 1f
                                     delay(200)
-                                    if (prep.success) {
-                                        detectedHigh = prep.high
-                                        detectedLow = prep.low
-                                        detectedCurrentPrice = prep.currentPrice
-                                        detectedConfidence = prep.confidence
-                                        pendingBitmap = prep.bitmap
-                                        pendingCandlePixels = prep.candlePixels
-                                        pendingChartTop = prep.chartTop
-                                        pendingChartBottom = prep.chartBottom
-                                        currentScreen = "calibration"
+
+                                    val dataResult = MarketDataService.getCandles(
+                                        symbol = symbol,
+                                        timeframe = selectedTimeframe,
+                                        cache = cache
+                                    )
+
+                                    val sourceName = MarketDataService.sourceLabel(dataResult.source)
+
+                                    if (dataResult.candles != null && dataResult.candles.size >= 50) {
+                                        analyzeProgress = 0.7f
+                                        statusMessage = sourceName
+                                        delay(300)
+                                        analyzeProgress = 0.9f
+                                        statusMessage = "..."
+                                        val result = withContext(Dispatchers.Default) {
+                                            SignalEngine.analyze(dataResult.candles, selectedTimeframe)
+                                        }
+                                        analyzeProgress = 1f
+                                        delay(200)
+                                        analysisResult = result
+                                        if (result != null) {
+                                            if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                            currentScreen = "result"
+                                        } else {
+                                            errorMessage = NetworkError.DATA_EMPTY.message
+                                            currentScreen = "error"
+                                        }
                                     } else {
-                                        errorMessage = "chart_not_detected"
+                                        errorMessage = NetworkError.DATA_EMPTY.message
                                         currentScreen = "error"
                                     }
                                 }
@@ -546,47 +488,12 @@ class MainActivity : ComponentActivity() {
                             statusMessage = statusMessage,
                             timeframe = selectedTimeframe
                         )
-                        "calibration" -> CalibrationScreen(
-                            detectedHigh = detectedHigh,
-                            detectedLow = detectedLow,
-                            detectedCurrentPrice = detectedCurrentPrice,
-                            confidence = detectedConfidence,
-                            onBack = {
-                                pendingBitmap = null
-                                pendingCandlePixels = null
-                                currentScreen = "symbol"
-                            },
-                            onConfirm = { high, low ->
-                                currentScreen = "analyzing"
-                                statusMessage = "..."
-                                analyzeProgress = 0.4f
-                                lifecycleScope.launch {
-                                    delay(300)
-                                    analyzeProgress = 0.7f
-                                    statusMessage = "..."
-                                    delay(300)
-                                    analyzeProgress = 1f
-                                    delay(200)
-                                    val result = runAnalysis(high, low, selectedTimeframe)
-                                    analysisResult = result
-                                    if (result != null) {
-                                        if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
-                                        currentScreen = "result"
-                                    } else {
-                                        errorMessage = "analysis_failed"
-                                        currentScreen = "error"
-                                    }
-                                }
-                            }
-                        )
                         "result" -> {
                             val result = analysisResult
                             if (result != null) ResultScreen(
                                 result = result,
                                 onBack = {
                                     analysisResult = null
-                                    pendingBitmap = null
-                                    pendingCandlePixels = null
                                     currentScreen = "home"
                                 }
                             ) else currentScreen = "home"
@@ -749,8 +656,6 @@ class MainActivity : ComponentActivity() {
                                 Spacer(Modifier.height(24.dp))
                                 Button(
                                     onClick = {
-                                        pendingBitmap = null
-                                        pendingCandlePixels = null
                                         errorMessage = ""
                                         currentScreen = "home"
                                     },
@@ -766,44 +671,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    private suspend fun prepareAnalysis(uri: Uri): PreparationResult = withContext(Dispatchers.Default) {
-        try {
-            val bitmap = ImageProcessor.loadBitmap(applicationContext, uri) ?: return@withContext PreparationResult(false)
-            val candlePixels = ImageProcessor.extractCandles(bitmap) ?: return@withContext PreparationResult(false)
-            val pricePoints = OcrHelper.extractPriceAxis(bitmap)
-            if (pricePoints.size < 2) return@withContext PreparationResult(false)
-            val priceRange = OcrHelper.calculatePriceRange(pricePoints) ?: return@withContext PreparationResult(false)
-            val high = priceRange.first
-            val low = priceRange.second
-            if (high <= low || high / low > 50.0) return@withContext PreparationResult(false)
-            val confidence = when {
-                pricePoints.size >= 5 -> 90
-                pricePoints.size >= 4 -> 80
-                pricePoints.size >= 3 -> 65
-                pricePoints.size >= 2 -> 50
-                else -> 30
-            }
-            val bounds = ImageProcessor.findChartBoundsPublic(bitmap)
-            val lastCandle = candlePixels.lastOrNull()
-            val currentPrice = lastCandle?.let { OcrHelper.pixelToPrice(pricePoints, it.bottom) }
-            PreparationResult(true, high, low, currentPrice, confidence, bitmap, candlePixels, bounds.chartTop, bounds.chartBottom)
-        } catch (e: Exception) {
-            PreparationResult(false)
-        }
-    }
-
-    private suspend fun runAnalysis(priceHigh: Double, priceLow: Double, timeframe: String): AnalysisResult? =
-        withContext(Dispatchers.Default) {
-            try {
-                val pixels = pendingCandlePixels ?: return@withContext null
-                val candles = ImageProcessor.pixelsToCandles(pixels, pendingChartTop, pendingChartBottom, priceHigh, priceLow)
-                if (candles.size < 20) return@withContext null
-                SignalEngine.analyze(candles, timeframe)
-            } catch (e: Exception) {
-                null
-            }
-        }
 
     private suspend fun saveToHistory(result: AnalysisResult, timeframe: String) {
         try {
