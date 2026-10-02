@@ -608,7 +608,7 @@ private fun SocialIcon(
     }
 }
 
-// ============ Tapsell Banner Ad — بر اساس مستندات رسمی ============
+// ============ Tapsell Banner Ad — با Reflection ============
 @Composable
 fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -634,12 +634,7 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
                         activity,
                         object : RequestResultListener {
                             override fun onSuccess(adId: String) {
-                                try {
-                                    container.loadAd(adId)
-                                    adShown = true
-                                } catch (e: Exception) {
-                                    adShown = false
-                                }
+                                adShown = tryShowAd(container, adId)
                             }
 
                             override fun onFailure(message: String) {
@@ -654,6 +649,29 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
         },
         modifier = modifier.fillMaxWidth()
     )
+}
+
+private fun tryShowAd(container: BannerContainer, adId: String): Boolean {
+    val methodNames = listOf(
+        "showAd",
+        "loadAd",
+        "setAd",
+        "setAdId",
+        "show",
+        "displayAd"
+    )
+    for (name in methodNames) {
+        try {
+            val method = container.javaClass.getMethod(name, String::class.java)
+            method.invoke(container, adId)
+            return true
+        } catch (e: NoSuchMethodException) {
+            continue
+        } catch (e: Exception) {
+            continue
+        }
+    }
+    return false
 }
 
 @Composable
