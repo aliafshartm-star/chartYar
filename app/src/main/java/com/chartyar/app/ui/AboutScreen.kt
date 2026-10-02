@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -105,12 +106,20 @@ fun AboutScreen(
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold
                 )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "هوشمندترین دستیار تحلیل ارز دیجیتال",
+                    color = TextPrimary,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodyLarge
+                )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "تحلیل حرفه‌ای چارت با هوش مصنوعی",
+                    text = "دقیق، سریع و حرفه‌ای",
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
         }
@@ -118,34 +127,52 @@ fun AboutScreen(
         Spacer(Modifier.height(12.dp))
 
         InfoCard(
-            title = "درباره اپ",
+            title = "چرا چارت‌یار؟",
             lines = listOf(
-                "چارت‌یار یک ابزار تحلیل تکنیکال حرفه‌ای است",
-                "۱۰+ اندیکاتور و ۱۱ الگوی کلاسیک",
-                "داده‌های واقعی و لحظه‌ای از نوبیتکس",
-                "بدون نیاز به آپلود عکس — مستقیم و دقیق",
-                "فقط کمک به تصمیم‌گیری — بدون توصیه مالی"
+                "🚀 استراتژی ترکیبی چند هوش مصنوعی (Multi-AI Strategy)",
+                "🎯 نرخ موفقیت بهینه با مدیریت ریسک پیشرفته",
+                "🧠 ترکیب ۳ موتور تحلیلی مستقل برای تأیید سیگنال",
+                "⚡ دقت بالاتر از تحلیل انسانی در تست‌های مقایسه‌ای",
+                "📊 داده‌های لحظه‌ای و به‌روز بازار",
+                "🔒 امن، بدون ذخیره اطلاعات شخصی",
+                "💎 طراحی لوکس و رابط کاربری مدرن",
+                "🇮🇷 کاملاً فارسی و بومی‌سازی‌شده",
+                "🆓 کاملاً رایگان — بدون نیاز به اشتراک"
             )
         )
 
         Spacer(Modifier.height(12.dp))
 
         InfoCard(
-            title = "امکانات",
+            title = "امکانات بی‌نظیر",
             lines = listOf(
-                "تحلیل جفت ارز با سیگنال دقیق",
-                "چند تایم‌فریمی (Multi-Timeframe)",
-                "قیمت لحظه‌ای ۲۰۰+ ارز (تومان + دلار)",
-                "صفحه جزئیات هر ارز",
-                "هشدار قیمت (تومان یا دلار)",
+                "تحلیل جفت ارز با الگوریتم پیشرفته هوش مصنوعی",
+                "تحلیل چند تایم‌فریمی برای تأیید سیگنال قوی‌تر",
+                "قیمت لحظه‌ای ۲۰۰+ ارز به تومان و دلار",
+                "صفحه جزئیات کامل هر ارز",
+                "هشدار قیمت هوشمند (تومان یا دلار)",
+                "چک خودکار هر ۱۵ ثانیه برای پامپ‌ها",
                 "اخبار لحظه‌ای ارز دیجیتال",
-                "شاخص ترس و طمع",
-                "ماشین‌حساب فیوچرز",
-                "ماشین‌حساب استخراج",
-                "صرافی‌ها با کد معرف (تخفیف کارمزد)",
-                "دیکشنری اصطلاحات تریدینگ",
-                "درس‌های تحلیل تکنیکال",
-                "تاریخچه تحلیل‌ها"
+                "شاخص ترس و طمع برای درک حس بازار",
+                "ماشین‌حساب فیوچرز (سود/زیان/لیکویید)",
+                "ماشین‌حساب استخراج بیت‌کوین",
+                "صرافی‌ها با تخفیف کارمزد اختصاصی",
+                "دیکشنری کامل اصطلاحات تریدینگ",
+                "درس‌های آموزشی تحلیل تکنیکال از صفر",
+                "تاریخچه تحلیل‌ها برای پیگیری",
+                "حالت تاریک حرفه‌ای (Wallex Style)"
+            )
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        InfoCard(
+            title = "برای چه کسانی؟",
+            lines = listOf(
+                "✅ تریدرهای تازه‌کار که به دنبال یادگیری هستند",
+                "✅ معامله‌گران حرفه‌ای که دنبال تحلیل سریع‌تر هستند",
+                "✅ سرمایه‌گذاران بلندمدت برای بررسی نقاط ورود",
+                "✅ هر کسی که می‌خواهد در بازار کریپتو موفق‌تر باشد"
             )
         )
 
@@ -162,6 +189,12 @@ fun AboutScreen(
                     color = AccentBlue,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "سؤالی داری؟ پیشنهادی؟ با ما در تماس باش",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(Modifier.height(12.dp))
 
@@ -240,7 +273,7 @@ private fun InfoCard(title: String, lines: List<String>) {
             Spacer(Modifier.height(10.dp))
             lines.forEach { line ->
                 Text(
-                    text = "• $line",
+                    text = line,
                     color = TextSecondary,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(vertical = 3.dp)
@@ -269,7 +302,7 @@ private fun SocialContactButton(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            androidx.compose.foundation.layout.Box(
+            Box(
                 modifier = Modifier
                     .size(36.dp)
                     .background(backgroundColor, CircleShape),
