@@ -1,23 +1,49 @@
 package com.chartyar.app.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chartyar.app.ui.theme.*
+import com.chartyar.app.R
+import com.chartyar.app.ui.theme.AccentBlue
+import com.chartyar.app.ui.theme.DarkBg
+import com.chartyar.app.ui.theme.DarkSurface
+import com.chartyar.app.ui.theme.Divider
+import com.chartyar.app.ui.theme.TextPrimary
+import com.chartyar.app.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 
 data class TutorialPage(
@@ -27,45 +53,46 @@ data class TutorialPage(
     val tips: List<String>
 )
 
-private val tutorialPages = listOf(
-    TutorialPage(
-        emoji = "📸",
-        title = "۱. اسکرین‌شات چارت بگیر",
-        description = "از چارت ارز موردنظرت توی TradingView یا هر پلتفرم دیگه یه اسکرین‌شات بگیر.",
-        tips = listOf(
-            "بهترین حالت: تم دارک TradingView",
-            "مطمئن شو کندل‌ها واضح دیده می‌شن",
-            "محور قیمت سمت راست باید مشخص باشه"
-        )
-    ),
+@Composable
+private fun tutorialPages(): List<TutorialPage> = listOf(
     TutorialPage(
         emoji = "🎯",
-        title = "۲. ارز رو انتخاب کن",
-        description = "توی اپ، تصویر رو آپلود کن و از لیست، ارزی که تحلیلش می‌خوای رو انتخاب کن (مثل BTCUSDT).",
+        title = "۱. جفت ارز رو انتخاب کن",
+        description = "از لیست ارزهای نوبیتکس، ارزی که می‌خوای تحلیلش کنی رو انتخاب کن (مثل BTCUSDT).",
         tips = listOf(
-            "داده واقعی از Binance دریافت می‌شه",
-            "دقت تحلیل ۱۰۰٪ — بدون OCR",
-            "بدون اینترنت هم کار می‌کنه (با OCR)"
+            "داده واقعی از نوبیتکس — بدون تأخیر",
+            "بیش از ۲۰۰ جفت ارز فعال",
+            "جستجوی سریع با نام یا نماد"
         )
     ),
     TutorialPage(
         emoji = "⏱",
-        title = "۳. تایم‌فریم رو انتخاب کن",
-        description = "تایم‌فریم معاملاتت رو انتخاب کن: اسکالپ، سوئینگ یا پوزیشن.",
+        title = "۲. تایم‌فریم رو انتخاب کن",
+        description = "قبل از انتخاب ارز، تایم‌فریم معاملاتت رو انتخاب کن: اسکالپ، سوئینگ یا پوزیشن.",
         tips = listOf(
-            "اسکالپ: 1m, 5m, 15m, 30m",
-            "سوئینگ: 1H, 4H",
-            "پوزیشن: 1D, 1W, 1M"
+            "اسکالپ: 15m",
+            "سوئینگ: 1H و 4H",
+            "پوزیشن: 1D"
         )
     ),
     TutorialPage(
         emoji = "📊",
-        title = "۴. تحلیل حرفه‌ای بگیر",
+        title = "۳. تحلیل حرفه‌ای بگیر",
         description = "اپ ۱۰+ اندیکاتور، ۱۱ الگو و ۴ استایل ترید رو بررسی می‌کنه و سیگنال نهایی رو می‌ده.",
         tips = listOf(
             "نقطه ورود، حد ضرر و ۳ هدف",
             "نسبت ریسک به ریوارد",
             "دلایل تحلیلی کامل + هشدارها"
+        )
+    ),
+    TutorialPage(
+        emoji = "🚀",
+        title = "۴. از همه امکانات استفاده کن",
+        description = "تحلیل چند تایم‌فریمی، ماشین‌حساب فیوچرز، ماشین استخراج، هشدار قیمت و اخبار لحظه‌ای.",
+        tips = listOf(
+            "هشدار خودکار قیمت",
+            "چند تایم‌فریمی برای تأیید سیگنال",
+            "محاسبه سود و لیکویید فیوچرز"
         )
     )
 )
@@ -75,7 +102,8 @@ fun TutorialScreen(
     isFirstTime: Boolean,
     onFinish: () -> Unit
 ) {
-    val pagerState = rememberPagerState(pageCount = { tutorialPages.size })
+    val pages = tutorialPages()
+    val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
 
     Column(
@@ -90,7 +118,7 @@ fun TutorialScreen(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
             ) {
                 IconButton(onClick = onFinish) {
-                    Icon(Icons.Filled.ArrowBack, "بازگشت", tint = TextPrimary)
+                    Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
                 }
                 Text(
                     "راهنمای استفاده",
@@ -125,7 +153,7 @@ fun TutorialScreen(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { page ->
-            TutorialPageContent(tutorialPages[page])
+            TutorialPageContent(pages[page])
         }
 
         Row(
@@ -134,7 +162,7 @@ fun TutorialScreen(
                 .padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.Center
         ) {
-            repeat(tutorialPages.size) { index ->
+            repeat(pages.size) { index ->
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
@@ -169,7 +197,7 @@ fun TutorialScreen(
 
             Button(
                 onClick = {
-                    if (pagerState.currentPage == tutorialPages.size - 1) {
+                    if (pagerState.currentPage == pages.size - 1) {
                         onFinish()
                     } else {
                         scope.launch {
@@ -185,7 +213,7 @@ fun TutorialScreen(
                 )
             ) {
                 Text(
-                    if (pagerState.currentPage == tutorialPages.size - 1) "شروع کن!" else "بعدی",
+                    if (pagerState.currentPage == pages.size - 1) "شروع کن!" else "بعدی",
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleLarge
                 )
