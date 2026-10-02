@@ -219,6 +219,7 @@ class MainActivity : ComponentActivity() {
                     val rootStatus = withContext(Dispatchers.IO) {
                         RootDetector.checkRoot(applicationContext)
                     }
+
                     if (isOnline) {
                         val info = withContext(Dispatchers.IO) {
                             UpdateChecker.checkForUpdate()
@@ -298,13 +299,13 @@ class MainActivity : ComponentActivity() {
                         "changelog" -> currentScreen = "home"
                         "settings" -> currentScreen = "home"
                         "history" -> currentScreen = "home"
-                        "alerts" -> currentScreen = "homehome"
+                        "alerts" -> currentScreen = "home"
                         "news" -> currentScreen = "home"
                         "prices" -> currentScreen = "home"
                         "upload" -> currentScreen = "home"
                         "symbol" -> currentScreen = "upload"
-                        "calibration" -> currentScreen =" -> Home "symbol"
-                       Screen "result" -> currentScreen = "home"
+                        "calibration" -> currentScreen = "symbol"
+                        "result" -> currentScreen = "home"
                         "multi_tf" -> currentScreen = "home"
                         "multi_tf_result" -> currentScreen = "multi_tf"
                         "calculator" -> currentScreen = "home"
@@ -413,7 +414,7 @@ class MainActivity : ComponentActivity() {
                         onBack = { currentScreen = "settings" }
                     )
                     else -> when (currentScreen) {
-                        "(
+                        "home" -> HomeScreen(
                             onUploadClick = { currentScreen = "upload" },
                             onHistoryClick = { currentScreen = "history" },
                             onSettingsClick = { currentScreen = "settings" },
