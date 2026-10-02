@@ -1,6 +1,5 @@
 package com.chartyar.app.data
 
-import android.content.Context
 import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.Insert
@@ -9,20 +8,18 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
-/**
- * مدل هشدار قیمت
- */
 @Entity(tableName = "price_alerts")
 data class PriceAlert(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val symbol: String,
     val targetPrice: Double,
-    val condition: String,      // "ABOVE" یا "BELOW"
+    val condition: String,
     val isActive: Boolean = true,
     val isTriggered: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val triggeredAt: Long = 0L,
-    val note: String = ""
+    val note: String = "",
+    val currency: String = "TOMAN"
 ) {
     fun conditionText(): String {
         return if (condition == "ABOVE") "بالاتر از" else "پایین‌تر از"
@@ -60,46 +57,47 @@ interface PriceAlertDao {
     suspend fun setActive(id: Long, active: Boolean)
 }
 
-/**
- * Helper برای کار با هشدارها
- */
 object AlertHelper {
 
-    /**
-     * ساخت هشدار جدید
-     */
     fun createAlert(
         symbol: String,
         targetPrice: Double,
         condition: String,
-        note: String = ""
+        note: String = "",
+        currency: String = "TOMAN"
     ): PriceAlert {
         return PriceAlert(
             symbol = symbol,
             targetPrice = targetPrice,
             condition = condition,
-            note = note
+            note = note,
+            currency = currency
         )
     }
 
-    /**
-     * چک کن آیا قیمت به هدف رسیده
-     */
-    fun shouldTrigger(alert: PriceAlert, currentPrice: Double): Boolean {
+    fun shouldTrigger(alert: PriceAlert, currentPriceToman: Double): Boolean {
         if (!alert.isActive || alert.isTriggered) return false
 
+        val targetToman = if (alert.currency == "USD") {
+            currentPriceToman * (alert.targetPrice / currentPriceToman)
+        } else {
+            alert.targetPrice
+        }
+
         return when (alert.condition) {
-            "ABOVE" -> currentPrice >= alert.targetPrice
-            "BELOW" -> currentPrice <= alert.targetPrice
+            "ABOVE" -> currentPriceToman >= targetToman
+            "BELOW" -> currentPriceToman <= targetToman
             else -> false
         }
     }
 
-    /**
-     * فاصله تا هدف (درصد)
-     */
-    fun distancePercent(alert: PriceAlert, currentPrice: Double): Double {
-        if (currentPrice == 0.0) return 0.0
-        return ((alert.targetPrice - currentPrice) / currentPrice) * 100.0
+    fun distancePercent(alert: PriceAlert, currentPriceToman: Double): Double {
+        if (currentPriceToman == 0.0) return 0.0
+        val targetToman = if (alert.currency == "USD") {
+            alert.targetPrice
+        } else {
+            alert.targetPrice
+        }
+        return ((targetToman - currentPriceToman) / currentPriceToman) * 100.0
     }
 }
