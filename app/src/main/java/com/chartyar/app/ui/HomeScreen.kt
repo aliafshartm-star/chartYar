@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Calculate
@@ -369,13 +368,13 @@ private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
                     Spacer(Modifier.width(14.dp))
                     Column {
                         Text(
-                            text = "تحلیل چارت",
+                            text = "تحلیل حرفه‌ای",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp
                         )
                         Text(
-                            text = "با هوش مصنوعی و بینایی ماشین",
+                            text = "هوش مصنوعی + اندیکاتورهای پیشرفته",
                             color = Color.White.copy(alpha = 0.8f),
                             fontSize = 12.sp
                         )
@@ -385,7 +384,7 @@ private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
                 Spacer(Modifier.height(16.dp))
 
                 Text(
-                    text = "عکس چارت خود را آپلود کن و تحلیل کامل دریافت کن: سیگنال خرید/فروش، خطوط روند، الگوها و سطوح کلیدی",
+                    text = "جفت ارز خود را انتخاب کنید و در چند ثانیه تحلیل کامل دریافت کنید: سیگنال خرید/فروش، خطوط روند، الگوها و سطوح کلیدی",
                     color = Color.White.copy(alpha = 0.9f),
                     fontSize = 12.sp,
                     lineHeight = 18.sp
@@ -405,15 +404,15 @@ private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
                     )
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Add,
+                        imageVector = Icons.Filled.TrendingUp,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "شروع تحلیل",
+                        text = "انتخاب جفت ارز برای تحلیل",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
+                        fontSize = 14.sp
                     )
                 }
             }
