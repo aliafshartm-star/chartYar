@@ -4,12 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.view.ViewGroup
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -753,6 +748,13 @@ private fun FearGreedCardWallex() {
 
 @Composable
 private fun FearGreedArc(value: Int, color: Color) {
+    val redColor = AccentRed
+    val orangeColor = Color(0xFFFF8C42)
+    val yellowColor = AccentYellow
+    val lightGreenColor = Color(0xFF7BC97C)
+    val greenColor = AccentGreen
+    val bgColor = DarkCard
+
     Canvas(modifier = Modifier.fillMaxSize()) {
         val strokeWidth = 10.dp.toPx()
         val arcSize = Size(
@@ -762,7 +764,7 @@ private fun FearGreedArc(value: Int, color: Color) {
         val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
 
         drawArc(
-            color = DarkCard,
+            color = bgColor,
             startAngle = 180f,
             sweepAngle = 180f,
             useCenter = false,
@@ -772,11 +774,11 @@ private fun FearGreedArc(value: Int, color: Color) {
         )
 
         val segments = listOf(
-            Triple(0f, 25f, AccentRed),
-            Triple(25f, 45f, Color(0xFFFF8C42)),
-            Triple(45f, 55f, AccentYellow),
-            Triple(55f, 75f, Color(0xFF7BC97C)),
-            Triple(75f, 100f, AccentGreen)
+            Triple(0f, 25f, redColor),
+            Triple(25f, 45f, orangeColor),
+            Triple(45f, 55f, yellowColor),
+            Triple(55f, 75f, lightGreenColor),
+            Triple(75f, 100f, greenColor)
         )
         segments.forEach { (start, end, c) ->
             drawArc(
