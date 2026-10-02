@@ -15,12 +15,23 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        // ⚠️ Tapsell App ID
         addManifestPlaceholders(
             mapOf(
                 "TapsellMediationAppKey" to "slnbpalgsemltbefkjhjraafbkdcgkiogfokoemepmtghajtlokddfsdsddlqonmflpspk"
             )
         )
+    }
+
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("KEYSTORE_PATH")
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -31,6 +42,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -83,7 +95,6 @@ dependencies {
 
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
-    // ============ Tapsell SDK — طبق مستندات رسمی ============
     implementation("ir.tapsell:tapsell:1.3.0") {
         exclude(group = "androidx.work", module = "work-runtime")
         exclude(group = "androidx.work", module = "work-runtime-ktx")
