@@ -5,15 +5,8 @@ import com.chartyar.app.util.NotificationHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * بررسی هشدارهای قیمت
- * هر بار که اپ باز می‌شه، قیمت‌ها چک می‌شن
- */
 object AlertChecker {
 
-    /**
-     * بررسی همه هشدارهای فعال
-     */
     suspend fun checkAllAlerts(
         context: Context,
         db: AppDatabase,
@@ -25,6 +18,17 @@ object AlertChecker {
             val activeAlerts = db.alertDao().getActiveAlerts()
             if (activeAlerts.isEmpty()) return@withContext emptyList()
 
+            val needsUsdRate = activeAlerts.any { it.currency == "USD" }
+            val usdtTomanRate = if (needsUsdRate) {
+                try {
+                    PricesApi.fetchUsdtTomanRate()
+                } catch (e: Exception) {
+                    0.0
+                }
+            } else {
+                0.0
+            }
+
             val grouped = activeAlerts.groupBy { it.symbol }
 
             for ((symbol, alerts) in grouped) {
@@ -32,7 +36,7 @@ object AlertChecker {
                     ?: continue
 
                 for (alert in alerts) {
-                    if (AlertHelper.shouldTrigger(alert, currentPrice)) {
+                    if (AlertHelper.shouldTrigger(alert, currentPrice, usdtTomanRate)) {
                         db.alertDao().markTriggered(alert.id, System.currentTimeMillis())
 
                         NotificationHelper.showPriceAlertNotification(
@@ -46,31 +50,30 @@ object AlertChecker {
                 }
             }
         } catch (e: Exception) {
-            // silent fail
         }
 
         triggered
     }
 
-    /**
-     * دریافت قیمت فعلی یک ارز — از نوبیتکس
-     */
     private suspend fun fetchCurrentPrice(
         context: Context,
         symbol: String,
         cache: CacheManager
     ): Double? {
         return try {
-            // اول از Cache
-            val cachedCandles = cache.loadCandles(symbol, "1H")
-            if (cachedCandles != null && cachedCandles.isNotEmpty()) {
-                return cachedCandles.last().close
+            val directPrice = NobitexApi.fetchCurrentPrice(symbol)
+            if (directPrice != null && directPrice > 0) {
+                return directPrice
             }
 
-            // از Nobitex
             val candles = NobitexApi.fetchCandles(symbol, "1H", 5)
             if (candles != null && candles.isNotEmpty()) {
                 return candles.last().close
+            }
+
+            val cachedCandles = cache.loadCandles(symbol, "1H")
+            if (cachedCandles != null && cachedCandles.isNotEmpty()) {
+                return cachedCandles.last().close
             }
 
             null
@@ -79,9 +82,6 @@ object AlertChecker {
         }
     }
 
-    /**
-     * بررسی سریع یک هشدار خاص
-     */
     suspend fun checkSingleAlert(
         context: Context,
         db: AppDatabase,
@@ -95,7 +95,17 @@ object AlertChecker {
             val currentPrice = fetchCurrentPrice(context, alert.symbol, cache)
                 ?: return@withContext false
 
-            if (AlertHelper.shouldTrigger(alert, currentPrice)) {
+            val usdtTomanRate = if (alert.currency == "USD") {
+                try {
+                    PricesApi.fetchUsdtTomanRate()
+                } catch (e: Exception) {
+                    0.0
+                }
+            } else {
+                0.0
+            }
+
+            if (AlertHelper.shouldTrigger(alert, currentPrice, usdtTomanRate)) {
                 db.alertDao().markTriggered(alert.id, System.currentTimeMillis())
                 NotificationHelper.showPriceAlertNotification(context, alert, currentPrice)
                 return@withContext true
@@ -107,9 +117,6 @@ object AlertChecker {
         }
     }
 
-    /**
-     * شمارش هشدارهای فعال
-     */
     suspend fun countActiveAlerts(db: AppDatabase): Int = withContext(Dispatchers.IO) {
         try {
             db.alertDao().getActiveAlerts().size
