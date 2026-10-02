@@ -48,4 +48,38 @@
     <string name="yearly_profit">سود خالص سالانه</string>
     <string name="mining_fetching_price">در حال دریافت قیمت</string>
     <string name="mining_fetch_failed">قیمت دریافت نشد</string>
+
+    <string name="home_app_title">چارت‌یار</string>
+    <string name="home_app_subtitle">تحلیل هوشمند چارت</string>
+    <string name="home_nav_prices">قیمت</string>
+    <string name="home_nav_news">اخبار</string>
+    <string name="home_nav_exchanges">صرافی</string>
+    <string name="home_nav_settings">تنظیمات</string>
+    <string name="home_alerts_title">هشدار قیمت</string>
+    <string name="home_alerts_subtitle">اطلاع از رسیدن قیمت به هدف</string>
+    <string name="home_hero_title">تحلیل حرفه‌ای</string>
+    <string name="home_hero_subtitle">هوش مصنوعی + اندیکاتورهای پیشرفته</string>
+    <string name="home_hero_description">جفت ارز خود را انتخاب کنید و در چند ثانیه تحلیل کامل دریافت کنید: سیگنال خرید/فروش، خطوط روند، الگوها و سطوح کلیدی</string>
+    <string name="home_hero_button">انتخاب جفت ارز برای تحلیل</string>
+    <string name="home_multi_tf_title">چند تایم‌فریمی</string>
+    <string name="home_multi_tf_sub">Multi-TF</string>
+    <string name="home_calc_title">ماشین فیوچرز</string>
+    <string name="home_calc_sub">PnL Calc</string>
+    <string name="home_mining_title">ماشین استخراج</string>
+    <string name="home_mining_sub">Mining</string>
+    <string name="home_history_title">تاریخچه</string>
+    <string name="home_history_sub">History</string>
+    <string name="home_fear_greed_title">شاخص ترس و طمع</string>
+    <string name="home_fear_greed_subtitle">حس کلی بازار کریپتو</string>
+    <string name="home_social_title">ما را دنبال کنید</string>
+    <string name="home_disclaimer">این اپ توصیه مالی نیست | تحلیل صرفاً جهت کمک به تصمیم‌گیری</string>
+    <string name="home_back">بازگشت</string>
+
+    <string name="exchanges_title">صرافی ها</string>
+    <string name="exchanges_subtitle">با ثبت‌نام از طریق لینک‌های زیر، از تخفیف کارمزد و مزایای ویژه بهره‌مند شوید</string>
+    <string name="exchanges_referral_code">کد معرف</string>
+    <string name="exchanges_register">ثبت‌نام در</string>
+    <string name="exchanges_copy_success">کد کپی شد</string>
+    <string name="exchanges_copy_failed">کپی نشد</string>
+    <string name="exchanges_link_failed">لینک باز نشد</string>
 </resources>
