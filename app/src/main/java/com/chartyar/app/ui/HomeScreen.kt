@@ -142,7 +142,6 @@ fun HomeScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // ============ کارت شروع تحلیل ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -153,7 +152,6 @@ fun HomeScreen(
 
         Spacer(Modifier.height(14.dp))
 
-        // ============ کارت Multi-TF ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -164,7 +162,6 @@ fun HomeScreen(
 
         Spacer(Modifier.height(14.dp))
 
-        // ============ دکمه تاریخچه ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -189,7 +186,6 @@ fun HomeScreen(
 
         Spacer(Modifier.weight(1f))
 
-        // ============ کارت شاخص ترس و طمع ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -200,7 +196,6 @@ fun HomeScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // ============ ردیف شبکه‌های اجتماعی ============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -238,7 +233,6 @@ private fun FearGreedCard() {
     var data by remember { mutableStateOf<FearGreedData?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
-    // دریافت داده از API
     LaunchedEffect(Unit) {
         isLoading = true
         val result = withContext(Dispatchers.IO) {
@@ -248,10 +242,9 @@ private fun FearGreedCard() {
         isLoading = false
     }
 
-    // آپدیت خودکار هر ۳۰ دقیقه
     LaunchedEffect(Unit) {
         while (true) {
-            delay(30 * 60 * 1000L) // ۳۰ دقیقه
+            delay(30 * 60 * 1000L)
             val result = withContext(Dispatchers.IO) {
                 FearGreedApi.fetchFearGreed()
             }
@@ -310,7 +303,6 @@ private fun FearGreedCard() {
                         style = MaterialTheme.typography.bodyMedium
                     )
                 } else {
-                    // دایره با عدد
                     Box(
                         modifier = Modifier
                             .size(56.dp)
@@ -331,7 +323,6 @@ private fun FearGreedCard() {
             if (data != null && !isLoading) {
                 Spacer(Modifier.height(12.dp))
 
-                // نوار پیشرفت
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -411,7 +402,6 @@ private fun SocialLinksRow() {
                 modifier = Modifier.weight(1f)
             )
 
-            // تلگرام
             SocialIcon(
                 iconRes = R.drawable.ic_telegram,
                 backgroundColor = Color(0xFF229ED9),
@@ -421,7 +411,6 @@ private fun SocialLinksRow() {
 
             Spacer(Modifier.width(12.dp))
 
-            // اینستاگرام
             SocialIcon(
                 iconRes = R.drawable.ic_instagram,
                 backgroundColor = Color(0xFFE4405F),
@@ -457,7 +446,7 @@ private fun SocialIcon(
     }
 }
 
-// ============ بنر تبلیغاتی تپسل ============
+// ============ بنر تبلیغاتی تپسل (با try-catch کامل) ============
 @Composable
 fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -481,7 +470,12 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
                         object : RequestResultListener {
                             override fun onSuccess(adId: String) {
                                 try {
-                                    container.showAd(adId)
+                                    // استفاده از روش رسمی تپسل
+                                    val method = container.javaClass.getMethod(
+                                        "loadAd",
+                                        String::class.java
+                                    )
+                                    method.invoke(container, adId)
                                 } catch (e: Exception) {
                                     // silent
                                 }
