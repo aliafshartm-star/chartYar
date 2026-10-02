@@ -27,14 +27,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.chartyar.app.analysis.AnalysisResult
 import com.chartyar.app.analysis.MultiTimeframeResult
 import com.chartyar.app.analysis.SignalEngine
 import com.chartyar.app.analysis.SignalType
+import com.chartyar.app.analysis.StrategyEngine
+import com.chartyar.app.analysis.StrategyType
 import com.chartyar.app.analysis.TrendType
 import com.chartyar.app.data.AnalysisHistory
+import com.chartyar.app.data.AnalysisLimitManager
 import com.chartyar.app.data.AlertChecker
 import com.chartyar.app.data.AlertHelper
 import com.chartyar.app.data.AppDatabase
@@ -66,6 +70,8 @@ import com.chartyar.app.ui.ExitDialog
 import com.chartyar.app.ui.GlossaryScreen
 import com.chartyar.app.ui.HistoryScreen
 import com.chartyar.app.ui.HomeScreen
+import com.chartyar.app.ui.LimitDialog
+import com.chartyar.app.ui.LimitDialogType
 import com.chartyar.app.ui.MiningCalculatorScreen
 import com.chartyar.app.ui.MultiTfInputScreen
 import com.chartyar.app.ui.MultiTimeframeScreen
@@ -89,6 +95,7 @@ import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.util.CameraHelper
 import com.chartyar.app.util.NotificationHelper
+import com.chartyar.app.util.RewardedAdHelper
 import com.chartyar.app.work.AlertMonitorService
 import com.chartyar.app.work.WorkScheduler
 import kotlinx.coroutines.Dispatchers
@@ -104,6 +111,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var rateAppManager: RateAppManager
     private lateinit var legalManager: LegalManager
     private lateinit var dataManager: DataManager
+    private lateinit var limitManager: AnalysisLimitManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -113,6 +121,7 @@ class MainActivity : ComponentActivity() {
         rateAppManager = RateAppManager(applicationContext)
         legalManager = LegalManager(applicationContext)
         dataManager = DataManager(applicationContext)
+        limitManager = AnalysisLimitManager(applicationContext)
 
         NotificationHelper.createChannel(applicationContext)
         LocalAnalytics.logEvent(applicationContext, "APP_OPEN")
@@ -136,12 +145,14 @@ class MainActivity : ComponentActivity() {
             val themeFlow = remember { prefs.theme }
             val currentTheme by themeFlow.collectAsState(initial = "dark")
             val isDark = currentTheme == "dark"
+            val context = LocalContext.current
 
             ChartYarTheme(isDark = isDark) {
                 var isLoading by remember { mutableStateOf(true) }
                 var disclaimerAccepted by remember { mutableStateOf(false) }
                 var currentScreen by remember { mutableStateOf("home") }
                 var selectedTimeframe by remember { mutableStateOf("4H") }
+                var selectedStrategy by remember { mutableStateOf(StrategyType.SWING) }
                 var analysisResult by remember { mutableStateOf<AnalysisResult?>(null) }
                 var statusMessage by remember { mutableStateOf("...") }
                 var analyzeProgress by remember { mutableStateOf(0f) }
@@ -167,6 +178,52 @@ class MainActivity : ComponentActivity() {
                 var multiTfResult by remember { mutableStateOf<MultiTimeframeResult?>(null) }
                 var selectedCoin by remember { mutableStateOf<CoinPrice?>(null) }
 
+                var limitStatus by remember { mutableStateOf(limitManager.getStatus()) }
+                var unlockedStrategies by remember { mutableStateOf(limitManager.getUnlockedStrategies()) }
+                var showLimitDialog by remember { mutableStateOf(false) }
+                var limitDialogType by remember { mutableStateOf(LimitDialogType.DAILY_LIMIT) }
+                var lockedStrategyNameForDialog by remember { mutableStateOf("") }
+                var lockedStrategyTypeForDialog by remember { mutableStateOf<StrategyType?>(null) }
+                var isAdLoading by remember { mutableStateOf(false) }
+                var isAdReady by remember { mutableStateOf(false) }
+
+                fun refreshLimitStatus() {
+                    limitStatus = limitManager.getStatus()
+                    unlockedStrategies = limitManager.getUnlockedStrategies()
+                }
+
+                fun loadRewardedAdIfNeeded() {
+                    if (isAdReady) return
+                    isAdLoading = true
+                    RewardedAdHelper.loadRewardedAd(
+                        onLoaded = {
+                            isAdLoading = false
+                            isAdReady = true
+                        },
+                        onFailed = {
+                            isAdLoading = false
+                            isAdReady = false
+                        }
+                    )
+                }
+
+                fun openDailyLimitDialog() {
+                    limitDialogType = LimitDialogType.DAILY_LIMIT
+                    lockedStrategyNameForDialog = ""
+                    lockedStrategyTypeForDialog = null
+                    showLimitDialog = true
+                    loadRewardedAdIfNeeded()
+                }
+
+                fun openLockedStrategyDialog(strategy: StrategyType) {
+                    val info = StrategyEngine.getStrategy(strategy)
+                    limitDialogType = LimitDialogType.LOCKED_STRATEGY
+                    lockedStrategyNameForDialog = info.displayName
+                    lockedStrategyTypeForDialog = strategy
+                    showLimitDialog = true
+                    loadRewardedAdIfNeeded()
+                }
+
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission()
                 ) { }
@@ -184,6 +241,13 @@ class MainActivity : ComponentActivity() {
                     themeSetting = prefs.theme.first()
                     tutorialSeen = prefs.isTutorialSeen.first()
                     selectedTimeframe = defaultTimeframe
+
+                    val savedStrategy = prefs.defaultStrategy.first()
+                    selectedStrategy = try {
+                        StrategyType.valueOf(savedStrategy)
+                    } catch (e: Exception) {
+                        StrategyType.SWING
+                    }
 
                     isOnline = ConnectivityChecker.isOnline(applicationContext)
 
@@ -214,22 +278,8 @@ class MainActivity : ComponentActivity() {
                     } else if (!legalManager.hasAcceptedLatestTerms()) {
                         showTermsUpdateDialog = true
                     }
-                }
 
-                LaunchedEffect(Unit) {
-                    while (true) {
-                        delay(15_000L)
-                        if (disclaimerAccepted) {
-                            val online = ConnectivityChecker.isOnline(applicationContext)
-                            isOnline = online
-                            if (online) {
-                                try {
-                                    AlertChecker.checkAllAlerts(applicationContext, db, cache)
-                                } catch (e: Exception) {
-                                }
-                            }
-                        }
-                    }
+                    refreshLimitStatus()
                 }
 
                 LaunchedEffect(currentScreen) {
@@ -252,6 +302,22 @@ class MainActivity : ComponentActivity() {
                         val fetched = withContext(Dispatchers.IO) { PricesApi.fetchPrices() }
                         if (fetched != null) priceItems = fetched
                         isPricesLoading = false
+                    }
+                }
+
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        delay(15_000L)
+                        if (disclaimerAccepted) {
+                            val online = ConnectivityChecker.isOnline(applicationContext)
+                            isOnline = online
+                            if (online) {
+                                try {
+                                    AlertChecker.checkAllAlerts(applicationContext, db, cache)
+                                } catch (e: Exception) {
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -313,9 +379,7 @@ class MainActivity : ComponentActivity() {
                             legalManager.acceptPrivacy()
                             showAgeDialog = false
                         },
-                        onDecline = {
-                            finish()
-                        }
+                        onDecline = { finish() }
                     )
                 }
 
@@ -346,9 +410,7 @@ class MainActivity : ComponentActivity() {
                             rateAppManager.markDontAsk()
                             showRateDialog = false
                         },
-                        onLater = {
-                            showRateDialog = false
-                        }
+                        onLater = { showRateDialog = false }
                     )
                 }
 
@@ -358,8 +420,57 @@ class MainActivity : ComponentActivity() {
                             showExitDialog = false
                             finish()
                         },
+                        onDismiss = { showExitDialog = false }
+                    )
+                }
+
+                if (showLimitDialog) {
+                    LimitDialog(
+                        type = limitDialogType,
+                        strategyName = lockedStrategyNameForDialog,
+                        adsCount = limitStatus.adCountToday,
+                        adsForBonus = AnalysisLimitManager.ADS_FOR_BONUS,
+                        isAdLoading = isAdLoading,
+                        isAdReady = isAdReady,
+                        onWatchAd = {
+                            RewardedAdHelper.showRewardedAd(
+                                activity = this@MainActivity,
+                                onRewarded = {
+                                    val result = limitManager.onAdWatched()
+
+                                    if (result.analysesGiven > 0) {
+                                        refreshLimitStatus()
+                                    }
+
+                                    if (limitDialogType == LimitDialogType.LOCKED_STRATEGY) {
+                                        lockedStrategyTypeForDialog?.let { strategy ->
+                                            limitManager.unlockStrategy(strategy.name)
+                                            unlockedStrategies = limitManager.getUnlockedStrategies()
+                                        }
+                                    }
+
+                                    if (result.bonusActivated) {
+                                        refreshLimitStatus()
+                                    }
+
+                                    isAdReady = false
+                                    showLimitDialog = false
+                                },
+                                onClosed = {
+                                    isAdReady = false
+                                    if (limitManager.getStatus().canAnalyze ||
+                                        limitManager.isStrategyUnlocked(selectedStrategy.name)) {
+                                        showLimitDialog = false
+                                    }
+                                },
+                                onFailed = {
+                                    isAdReady = false
+                                }
+                            )
+                        },
                         onDismiss = {
-                            showExitDialog = false
+                            showLimitDialog = false
+                            isAdReady = false
                         }
                     )
                 }
@@ -446,9 +557,36 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         "symbol" -> SymbolSelectorScreen(
+                            strategies = StrategyEngine.allStrategies,
+                            selectedStrategy = selectedStrategy,
+                            defaultTimeframe = defaultTimeframe,
+                            lockedStrategies = StrategyEngine.allStrategies
+                                .filter { !unlockedStrategies.contains(it.type.name) }
+                                .map { it.type }
+                                .toSet(),
+                            onStrategyChange = { newStrategy ->
+                                val isUnlocked = unlockedStrategies.contains(newStrategy.name)
+                                if (isUnlocked) {
+                                    selectedStrategy = newStrategy
+                                    lifecycleScope.launch {
+                                        prefs.setDefaultStrategy(newStrategy.name)
+                                    }
+                                } else {
+                                    openLockedStrategyDialog(newStrategy)
+                                }
+                            },
                             onBack = { currentScreen = "home" },
-                            onSymbolSelected = { symbol, tf ->
+                            onSymbolSelected = { symbol, tf, strategy ->
+                                if (!limitManager.consumeAnalysis()) {
+                                    openDailyLimitDialog()
+                                    refreshLimitStatus()
+                                    return@SymbolSelectorScreen
+                                }
+
+                                refreshLimitStatus()
+
                                 selectedTimeframe = tf
+                                selectedStrategy = strategy
                                 analyzeProgress = 0f
                                 statusMessage = "..."
                                 errorMessage = ""
@@ -483,7 +621,11 @@ class MainActivity : ComponentActivity() {
                                         analyzeProgress = 0.9f
                                         statusMessage = "..."
                                         val result = withContext(Dispatchers.Default) {
-                                            SignalEngine.analyze(dataResult.candles, selectedTimeframe)
+                                            SignalEngine.analyze(
+                                                dataResult.candles,
+                                                selectedTimeframe,
+                                                strategy
+                                            )
                                         }
                                         analyzeProgress = 1f
                                         delay(200)
@@ -514,6 +656,10 @@ class MainActivity : ComponentActivity() {
                                 onBack = {
                                     analysisResult = null
                                     currentScreen = "home"
+                                },
+                                onChangeStrategy = {
+                                    analysisResult = null
+                                    currentScreen = "symbol"
                                 }
                             ) else currentScreen = "home"
                         }
@@ -607,7 +753,16 @@ class MainActivity : ComponentActivity() {
                             coin = selectedCoin,
                             onBack = { currentScreen = "prices" },
                             onAnalyze = { symbol ->
+                                if (!limitManager.consumeAnalysis()) {
+                                    openDailyLimitDialog()
+                                    refreshLimitStatus()
+                                    return@CoinDetailScreen
+                                }
+
+                                refreshLimitStatus()
+
                                 selectedTimeframe = "4H"
+                                selectedStrategy = StrategyType.SWING
                                 analyzeProgress = 0f
                                 statusMessage = "..."
                                 errorMessage = ""
@@ -624,7 +779,6 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                     analyzeProgress = 0.3f
-                                    statusMessage = "..."
                                     delay(200)
 
                                     val dataResult = MarketDataService.getCandles(
@@ -640,9 +794,12 @@ class MainActivity : ComponentActivity() {
                                         statusMessage = sourceName
                                         delay(300)
                                         analyzeProgress = 0.9f
-                                        statusMessage = "..."
                                         val result = withContext(Dispatchers.Default) {
-                                            SignalEngine.analyze(dataResult.candles, selectedTimeframe)
+                                            SignalEngine.analyze(
+                                                dataResult.candles,
+                                                selectedTimeframe,
+                                                selectedStrategy
+                                            )
                                         }
                                         analyzeProgress = 1f
                                         delay(200)
@@ -660,7 +817,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             },
-                            onSetAlert = { symbol, price ->
+                            onSetAlert = { _, _ ->
                                 selectedCoin = null
                                 currentScreen = "alerts"
                             }
@@ -680,27 +837,19 @@ class MainActivity : ComponentActivity() {
                             onShowTerms = { currentScreen = "terms" },
                             onAutoSaveChange = { v ->
                                 autoSaveHistory = v
-                                lifecycleScope.launch {
-                                    prefs.setAutoSaveHistory(v)
-                                }
+                                lifecycleScope.launch { prefs.setAutoSaveHistory(v) }
                             },
                             onShowWarningsChange = { v ->
                                 showWarnings = v
-                                lifecycleScope.launch {
-                                    prefs.setShowWarnings(v)
-                                }
+                                lifecycleScope.launch { prefs.setShowWarnings(v) }
                             },
                             onDefaultTimeframeChange = { v ->
                                 defaultTimeframe = v
-                                lifecycleScope.launch {
-                                    prefs.setDefaultTimeframe(v)
-                                }
+                                lifecycleScope.launch { prefs.setDefaultTimeframe(v) }
                             },
                             onThemeChange = { v ->
                                 themeSetting = v
-                                lifecycleScope.launch {
-                                    prefs.setTheme(v)
-                                }
+                                lifecycleScope.launch { prefs.setTheme(v) }
                             },
                             onResetDisclaimer = {
                                 lifecycleScope.launch {
