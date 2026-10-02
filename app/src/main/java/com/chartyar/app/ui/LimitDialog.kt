@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
@@ -30,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.AccentGreen
+import com.chartyar.app.ui.theme.AccentRed
 import com.chartyar.app.ui.theme.AccentYellow
 import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.DarkCard
@@ -44,11 +47,21 @@ import com.chartyar.app.ui.theme.DarkSurface
 import com.chartyar.app.ui.theme.Divider
 import com.chartyar.app.ui.theme.GradientBlueEnd
 import com.chartyar.app.ui.theme.GradientBlueStart
+import com.chartyar.app.ui.theme.GradientPurpleEnd
+import com.chartyar.app.ui.theme.GradientPurpleStart
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.ui.theme.TextSecondary
 
+enum class LimitDialogType {
+    DAILY_LIMIT,
+    LOCKED_STRATEGY
+}
+
 @Composable
 fun LimitDialog(
+    type: LimitDialogType,
+    strategyName: String = "",
+    strategyEmoji: String = "",
     adsCount: Int,
     adsForBonus: Int,
     isAdLoading: Boolean,
@@ -70,7 +83,6 @@ fun LimitDialog(
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -86,30 +98,42 @@ fun LimitDialog(
                     }
                 }
 
-                // Icon circle
+                val icon: ImageVector = when (type) {
+                    LimitDialogType.DAILY_LIMIT -> Icons.Filled.Timer
+                    LimitDialogType.LOCKED_STRATEGY -> Icons.Filled.Lock
+                }
+
+                val gradient: List<Color> = when (type) {
+                    LimitDialogType.DAILY_LIMIT -> listOf(GradientBlueStart, GradientBlueEnd)
+                    LimitDialogType.LOCKED_STRATEGY -> listOf(GradientPurpleStart, GradientPurpleEnd)
+                }
+
                 Box(
                     modifier = Modifier
                         .size(80.dp)
                         .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(GradientBlueStart, GradientBlueEnd)
-                            ),
+                            brush = Brush.linearGradient(colors = gradient),
                             shape = RoundedCornerShape(40.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Timer,
+                        imageVector = icon,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier.size(40.dp)
                     )
                 }
 
                 Spacer(Modifier.height(16.dp))
 
+                val title = when (type) {
+                    LimitDialogType.DAILY_LIMIT -> "سهمیه تحلیل‌های امروز تموم شد"
+                    LimitDialogType.LOCKED_STRATEGY -> "استراتژی $strategyName قفله"
+                }
+
                 Text(
-                    text = "سهمیه تحلیل‌های امروز تموم شد",
+                    text = title,
                     color = TextPrimary,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
@@ -118,8 +142,15 @@ fun LimitDialog(
 
                 Spacer(Modifier.height(8.dp))
 
+                val subtitle = when (type) {
+                    LimitDialogType.DAILY_LIMIT ->
+                        "با تماشای یک ویدیو کوتاه، ۲ تحلیل دیگه دریافت کن"
+                    LimitDialogType.LOCKED_STRATEGY ->
+                        "برای استفاده از استراتژی $strategyName، یک ویدیو تماشا کن و ۲ تحلیل بگیر"
+                }
+
                 Text(
-                    text = "با تماشای یک ویدیو کوتاه، ۲ تحلیل دیگه دریافت کن",
+                    text = subtitle,
                     color = TextSecondary,
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center,
@@ -128,125 +159,79 @@ fun LimitDialog(
 
                 Spacer(Modifier.height(20.dp))
 
-                // Loyalty reward progress
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = DarkBg)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Star,
-                                contentDescription = null,
-                                tint = AccentYellow,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = "پاداش وفاداری",
-                                color = TextPrimary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp
-                            )
-                        }
-
-                        Spacer(Modifier.height(4.dp))
-
-                        Text(
-                            text = "$adsCount از $adsForBonus تبلیغ",
-                            color = TextSecondary,
-                            fontSize = 11.sp
-                        )
-
-                        Spacer(Modifier.height(8.dp))
-
-                        // Progress bar
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .background(
-                                    color = Divider,
-                                    shape = RoundedCornerShape(3.dp)
-                                )
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(
-                                        fraction = if (adsForBonus > 0) {
-                                            (adsCount.toFloat() / adsForBonus.toFloat())
-                                                .coerceIn(0f, 1f)
-                                        } else 0f
-                                    )
-                                    .height(6.dp)
-                                    .background(
-                                        brush = Brush.horizontalGradient(
-                                            colors = listOf(AccentYellow, Color(0xFFFF8C42))
-                                        ),
-                                        shape = RoundedCornerShape(3.dp)
-                                    )
-                            )
-                        }
-
-                        Spacer(Modifier.height(6.dp))
-
-                        Text(
-                            text = if (adsCount >= adsForBonus) {
-                                "پاداش فعال شد!"
-                            } else {
-                                "${adsForBonus - adsCount} تبلیغ دیگه = ۱۲ ساعت نامحدود!"
-                            },
-                            color = AccentYellow,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+                LoyaltyCard(
+                    adsCount = adsCount,
+                    adsForBonus = adsForBonus
+                )
 
                 Spacer(Modifier.height(20.dp))
 
-                // Watch Ad Button
+                val isWatchEnabled = !isAdLoading && isAdReady
+                val buttonText = when {
+                    isAdLoading -> "در حال بارگذاری تبلیغ..."
+                    !isAdReady -> "تبلیغی موجود نیست"
+                    else -> "تماشای ویدیو و دریافت ۲ تحلیل"
+                }
+
+                val buttonColor = if (isWatchEnabled) AccentGreen else DarkCard
+                val buttonTextColor = if (isWatchEnabled) Color.White else TextSecondary
+
                 Button(
                     onClick = onWatchAd,
-                    enabled = !isAdLoading && isAdReady,
+                    enabled = isWatchEnabled,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentGreen,
-                        contentColor = Color.White,
+                        containerColor = buttonColor,
+                        contentColor = buttonTextColor,
                         disabledContainerColor = DarkCard,
                         disabledContentColor = TextSecondary
                     )
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
+                    if (isWatchEnabled) {
+                        Icon(
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    } else if (!isAdLoading) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
                     Text(
-                        text = when {
-                            isAdLoading -> "در حال بارگذاری..."
-                            !isAdReady -> "تبلیغ آماده نیست"
-                            else -> "تماشای ویدیو و دریافت ۲ تحلیل"
-                        },
+                        text = buttonText,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
+                        fontSize = 14.sp
                     )
                 }
 
-                Spacer(Modifier.height(8.dp))
+                if (isAdReady && !isAdLoading) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "تبلیغ آماده است",
+                        color = AccentGreen,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                } else if (!isAdLoading && !isAdReady) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "لطفاً چند لحظه دیگه دوباره امتحان کن",
+                        color = AccentYellow,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
 
-                // Reset time
+                Spacer(Modifier.height(10.dp))
+
                 Text(
                     text = "سهمیه جدید: فردا صبح زود",
                     color = TextSecondary,
@@ -264,6 +249,91 @@ fun LimitDialog(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LoyaltyCard(
+    adsCount: Int,
+    adsForBonus: Int
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkBg)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = AccentYellow,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "پاداش وفاداری",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "$adsCount / $adsForBonus",
+                    color = AccentYellow,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .background(
+                        color = Divider,
+                        shape = RoundedCornerShape(3.dp)
+                    )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(
+                            fraction = if (adsForBonus > 0) {
+                                (adsCount.toFloat() / adsForBonus.toFloat())
+                                    .coerceIn(0f, 1f)
+                            } else 0f
+                        )
+                        .height(6.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(AccentYellow, Color(0xFFFF8C42))
+                            ),
+                            shape = RoundedCornerShape(3.dp)
+                        )
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = if (adsCount >= adsForBonus) {
+                    "🎉 پاداش فعال شد! ۱۲ ساعت نامحدود"
+                } else {
+                    "${adsForBonus - adsCount} تبلیغ دیگه = ۱۲ ساعت نامحدود!"
+                },
+                color = if (adsCount >= adsForBonus) AccentGreen else AccentYellow,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
