@@ -1,8 +1,20 @@
 package com.chartyar.app.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,10 +23,26 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -22,7 +50,15 @@ import androidx.compose.ui.unit.sp
 import com.chartyar.app.data.CoinPrice
 import com.chartyar.app.data.PricesApi
 import com.chartyar.app.data.WatchlistManager
-import com.chartyar.app.ui.theme.*
+import com.chartyar.app.ui.theme.AccentBlue
+import com.chartyar.app.ui.theme.AccentGreen
+import com.chartyar.app.ui.theme.AccentRed
+import com.chartyar.app.ui.theme.AccentYellow
+import com.chartyar.app.ui.theme.DarkBg
+import com.chartyar.app.ui.theme.DarkSurface
+import com.chartyar.app.ui.theme.Divider
+import com.chartyar.app.ui.theme.TextPrimary
+import com.chartyar.app.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,7 +96,6 @@ fun PricesScreen(
         result
     }
 
-    // آپدیت خودکار
     LaunchedEffect(isOnline) {
         while (isOnline) {
             delay(30_000)
@@ -72,88 +107,70 @@ fun PricesScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBg)
-            .padding(16.dp)
+            .padding(horizontal = 16.dp)
+            .padding(top = 16.dp)
     ) {
-        // هدر
+        // ============ Header ============
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, "بازگشت", tint = TextPrimary)
+                Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
             }
-            Text(
-                "قیمت لحظه‌ای",
-                style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
-            )
-            if (isOnline) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "🔄 خودکار",
-                    color = AccentGreen,
-                    style = MaterialTheme.typography.bodySmall,
+                    "بازار ارز دیجیتال",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
+                Text(
+                    "قیمت‌های لحظه‌ای نوبیتکس",
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+            }
+            if (isOnline) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(AccentGreen, RoundedCornerShape(50))
+                )
+            }
+        }
+
+        // ============ Offline Warning ============
+        if (!isOnline) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AccentYellow.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                    .padding(14.dp)
+                    .padding(bottom = 12.dp)
+            ) {
+                Text(
+                    "اتصال اینترنت برقرار نیست",
+                    color = AccentYellow,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
+            Spacer(Modifier.height(12.dp))
         }
 
-        // حالت آفلاین
-        if (!isOnline) {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = AccentYellow.copy(alpha = 0.15f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("📶", fontSize = 22.sp)
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        "اتصال اینترنت برقرار نیست.",
-                        color = AccentYellow,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-        }
-
-        // فیلتر Watchlist
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            FilterChip(
-                selected = showOnlyWatchlist,
-                onClick = { showOnlyWatchlist = !showOnlyWatchlist },
-                label = {
-                    Text(
-                        "⭐ علاقه‌مندی‌ها (${watchlistManager.size()})",
-                        color = if (showOnlyWatchlist) TextPrimary else TextSecondary
-                    )
-                },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = AccentYellow.copy(alpha = 0.2f),
-                    containerColor = DarkSurface
-                )
-            )
-        }
-
-        // جستجو
+        // ============ Search Bar ============
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("جستجو...", color = TextSecondary) },
+            placeholder = { Text("جستجو...", color = TextSecondary, fontSize = 13.sp) },
             leadingIcon = {
-                Icon(Icons.Filled.Search, contentDescription = null, tint = TextSecondary)
+                Icon(Icons.Filled.Search, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(20.dp))
             },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = TextPrimary,
                 unfocusedTextColor = TextPrimary,
@@ -164,7 +181,31 @@ fun PricesScreen(
             )
         )
 
-        // محتوا
+        // ============ Filter Chips ============
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = showOnlyWatchlist,
+                onClick = { showOnlyWatchlist = !showOnlyWatchlist },
+                label = {
+                    Text(
+                        "علاقه‌مندی‌ها (${watchlistManager.size()})",
+                        color = if (showOnlyWatchlist) TextPrimary else TextSecondary,
+                        fontSize = 12.sp
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = AccentYellow.copy(alpha = 0.2f),
+                    containerColor = DarkSurface
+                )
+            )
+        }
+
+        // ============ Content ============
         when {
             isLoading && prices.isEmpty() -> {
                 Box(
@@ -203,28 +244,48 @@ fun PricesScreen(
                             color = TextSecondary,
                             style = MaterialTheme.typography.bodyLarge
                         )
-                        if (showOnlyWatchlist && watchlistManager.isEmpty()) {
-                            Spacer(Modifier.height(6.dp))
-                            Text(
-                                "روی ستاره ارزها بزن",
-                                color = TextSecondary,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
                     }
                 }
             }
 
             else -> {
+                // ============ Column Headers ============
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        "ارز / ارزش بازار",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        modifier = Modifier.weight(1.2f)
+                    )
+                    Text(
+                        "آخرین قیمت",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        modifier = Modifier.weight(1f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End
+                    )
+                    Text(
+                        "24 ساعته",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        modifier = Modifier.width(90.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End
+                    )
+                }
+
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
+                    contentPadding = PaddingValues(bottom = 20.dp)
                 ) {
                     items(filtered, key = { it.symbol }) { coin ->
                         val isFavorite = remember(watchlistVersion) {
                             watchlistManager.contains(coin.symbol)
                         }
-
-                        CoinPriceRow(
+                        CoinPriceRowWallex(
                             coin = coin,
                             isFavorite = isFavorite,
                             onClick = { onCoinClick(coin.symbol) },
@@ -241,79 +302,92 @@ fun PricesScreen(
 }
 
 @Composable
-private fun CoinPriceRow(
+private fun CoinPriceRowWallex(
     coin: CoinPrice,
     isFavorite: Boolean,
     onClick: () -> Unit,
     onFavoriteToggle: () -> Unit
 ) {
-    val changeColor = if (coin.isUp) AccentGreen else AccentRed
-    val arrow = if (coin.isUp) "▲" else "▼"
+    val isUp = coin.isUp
+    val changeColor = if (isUp) AccentGreen else AccentRed
+    val changeSign = if (isUp) "+" else ""
 
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+            .clickable { onClick() }
+            .padding(vertical = 12.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        // Star (small, left)
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 6.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .size(24.dp)
+                .clickable { onFavoriteToggle() },
+            contentAlignment = Alignment.Center
         ) {
-            // ستاره
-            IconButton(
-                onClick = onFavoriteToggle,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-                    contentDescription = "علاقه‌مندی",
-                    tint = if (isFavorite) AccentYellow else TextSecondary,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
+            Icon(
+                imageVector = if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+                contentDescription = "fav",
+                tint = if (isFavorite) AccentYellow else TextSecondary.copy(alpha = 0.5f),
+                modifier = Modifier.size(16.dp)
+            )
+        }
 
-            Spacer(Modifier.width(4.dp))
+        Spacer(Modifier.width(4.dp))
 
-            // نام و نماد
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    coin.name,
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    coin.symbol.replace("IRT", "/تومان"),
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+        // Coin info (name + subtitle)
+        Column(modifier = Modifier.weight(1.2f)) {
+            Text(
+                text = coin.symbol.replace("IRT", "").trim(),
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "تومان",
+                color = TextSecondary,
+                fontSize = 10.sp
+            )
+        }
 
-            // قیمت و تغییر
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    PricesApi.formatPrice(coin.price) + " تومان",
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(arrow, color = changeColor, fontSize = 10.sp)
-                    Spacer(Modifier.width(3.dp))
-                    Text(
-                        PricesApi.formatPercent(coin.changePercent24h),
-                        color = changeColor,
-                        fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
+        // Current price
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.End
+        ) {
+            Text(
+                text = PricesApi.formatPrice(coin.price),
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.sp
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "تومان",
+                color = TextSecondary,
+                fontSize = 10.sp
+            )
+        }
+
+        Spacer(Modifier.width(8.dp))
+
+        // Change percentage (Pill)
+        Box(
+            modifier = Modifier
+                .width(76.dp)
+                .height(34.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(changeColor.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "$changeSign${PricesApi.formatPercent(coin.changePercent24h).replace("%", "")}%",
+                color = changeColor,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp
+            )
         }
     }
 }
