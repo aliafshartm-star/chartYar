@@ -75,13 +75,25 @@ object AlertHelper {
         )
     }
 
-    fun shouldTrigger(alert: PriceAlert, currentPriceToman: Double): Boolean {
+    /**
+     * چک کن آیا قیمت به هدف رسیده
+     * currentPriceToman = قیمت فعلی به تومان
+     * targetPrice = قیمت هدف (اگه currency=USD، به دلار)
+     * currency = TOMAN یا USD
+     */
+    fun shouldTrigger(
+        alert: PriceAlert,
+        currentPriceToman: Double,
+        usdtTomanRate: Double = 0.0
+    ): Boolean {
         if (!alert.isActive || alert.isTriggered) return false
 
-        val targetToman = if (alert.currency == "USD") {
-            currentPriceToman * (alert.targetPrice / currentPriceToman)
-        } else {
-            alert.targetPrice
+        val targetToman: Double = when (alert.currency) {
+            "USD" -> {
+                if (usdtTomanRate <= 0.0) return false
+                alert.targetPrice * usdtTomanRate
+            }
+            else -> alert.targetPrice
         }
 
         return when (alert.condition) {
@@ -91,13 +103,24 @@ object AlertHelper {
         }
     }
 
-    fun distancePercent(alert: PriceAlert, currentPriceToman: Double): Double {
+    /**
+     * فاصله تا هدف (درصد)
+     */
+    fun distancePercent(
+        alert: PriceAlert,
+        currentPriceToman: Double,
+        usdtTomanRate: Double = 0.0
+    ): Double {
         if (currentPriceToman == 0.0) return 0.0
-        val targetToman = if (alert.currency == "USD") {
-            alert.targetPrice
-        } else {
-            alert.targetPrice
+
+        val targetToman: Double = when (alert.currency) {
+            "USD" -> {
+                if (usdtTomanRate <= 0.0) return 0.0
+                alert.targetPrice * usdtTomanRate
+            }
+            else -> alert.targetPrice
         }
+
         return ((targetToman - currentPriceToman) / currentPriceToman) * 100.0
     }
 }
