@@ -44,13 +44,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chartyar.app.R
-import com.chartyar.app.ui.theme.AccentBlue
-import com.chartyar.app.ui.theme.AccentGreen
-import com.chartyar.app.ui.theme.DarkBg
-import com.chartyar.app.ui.theme.DarkSurface
-import com.chartyar.app.ui.theme.Divider
-import com.chartyar.app.ui.theme.TextPrimary
-import com.chartyar.app.ui.theme.TextSecondary
 
 data class Exchange(
     val id: String,
@@ -62,6 +55,9 @@ data class Exchange(
     val brandColor: Color
 )
 
+private val nobitexBlue = Color(0xFF2962FF)
+private val kcexGreen = Color(0xFF00C896)
+
 private val exchanges = listOf(
     Exchange(
         id = "nobitex",
@@ -70,7 +66,7 @@ private val exchanges = listOf(
         description = "بزرگ‌ترین صرافی ایرانی",
         referralUrl = "https://nobitex.ir/signup/?refcode=5CA6F10",
         referralCode = "5CA6F10",
-        brandColor = AccentBlue
+        brandColor = nobitexBlue
     ),
     Exchange(
         id = "kcex",
@@ -79,7 +75,7 @@ private val exchanges = listOf(
         description = "صرافی بین‌المللی با کارمزد پایین",
         referralUrl = "https://www.kcex.com/register?inviteCode=0N0V0M",
         referralCode = "0N0V0M",
-        brandColor = AccentGreen
+        brandColor = kcexGreen
     )
 )
 
@@ -111,11 +107,16 @@ fun ExchangesScreen(onBack: () -> Unit) {
     val linkFailedMsg = stringResource(R.string.exchanges_link_failed)
     val copySuccessMsg = stringResource(R.string.exchanges_copy_success)
     val copyFailedMsg = stringResource(R.string.exchanges_copy_failed)
+    val darkBg = Color(0xFF000000)
+    val darkSurface = Color(0xFF121212)
+    val dividerColor = Color(0xFF1F1F1F)
+    val textPrimary = Color(0xFFFFFFFF)
+    val textSecondary = Color(0xFF8B8B8B)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBg)
+            .background(darkBg)
             .padding(16.dp)
     ) {
         Row(
@@ -123,12 +124,12 @@ fun ExchangesScreen(onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
+                Icon(Icons.Filled.ArrowBack, "back", tint = textPrimary)
             }
             Text(
                 stringResource(R.string.exchanges_title),
                 style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary,
+                color = textPrimary,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -136,11 +137,11 @@ fun ExchangesScreen(onBack: () -> Unit) {
         Card(
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurface)
+            colors = CardDefaults.cardColors(containerColor = darkSurface)
         ) {
             Text(
                 stringResource(R.string.exchanges_subtitle),
-                color = TextSecondary,
+                color = textSecondary,
                 modifier = Modifier.padding(14.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 lineHeight = 20.sp
@@ -153,6 +154,11 @@ fun ExchangesScreen(onBack: () -> Unit) {
             items(exchanges) { exchange ->
                 ExchangeCard(
                     exchange = exchange,
+                    darkBg = darkBg,
+                    darkSurface = darkSurface,
+                    dividerColor = dividerColor,
+                    textPrimary = textPrimary,
+                    textSecondary = textSecondary,
                     onOpen = {
                         openExchangeUrl(context, exchange.referralUrl, linkFailedMsg)
                     },
@@ -168,14 +174,19 @@ fun ExchangesScreen(onBack: () -> Unit) {
 @Composable
 private fun ExchangeCard(
     exchange: Exchange,
+    darkBg: Color,
+    darkSurface: Color,
+    dividerColor: Color,
+    textPrimary: Color,
+    textSecondary: Color,
     onOpen: () -> Unit,
     onCopy: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
+        colors = CardDefaults.cardColors(containerColor = darkSurface),
+        border = BorderStroke(1.dp, dividerColor)
     ) {
         Column(
             modifier = Modifier
@@ -207,13 +218,13 @@ private fun ExchangeCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         exchange.nameFa,
-                        color = TextPrimary,
+                        color = textPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
                     Text(
                         exchange.description,
-                        color = TextSecondary,
+                        color = textSecondary,
                         fontSize = 11.sp
                     )
                 }
@@ -225,7 +236,7 @@ private fun ExchangeCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        color = DarkBg,
+                        color = darkBg,
                         shape = RoundedCornerShape(10.dp)
                     )
                     .padding(10.dp),
@@ -234,12 +245,12 @@ private fun ExchangeCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         stringResource(R.string.exchanges_referral_code),
-                        color = TextSecondary,
+                        color = textSecondary,
                         fontSize = 10.sp
                     )
                     Text(
                         exchange.referralCode,
-                        color = TextPrimary,
+                        color = textPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )
@@ -262,7 +273,7 @@ private fun ExchangeCard(
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = exchange.brandColor,
-                    contentColor = TextPrimary
+                    contentColor = textPrimary
                 )
             ) {
                 Icon(
