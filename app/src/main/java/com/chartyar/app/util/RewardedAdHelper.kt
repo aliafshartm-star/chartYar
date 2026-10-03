@@ -5,7 +5,7 @@ import android.util.Log
 import ir.tapsell.mediation.Tapsell
 import ir.tapsell.mediation.ad.request.RequestResultListener
 import ir.tapsell.mediation.ad.show.AdShowCompletionState
-import ir.tapsell.mediation.ad.show.AdShowListener
+import ir.tapsell.mediation.ad.show.AdStateListener
 
 object RewardedAdHelper {
 
@@ -74,7 +74,7 @@ object RewardedAdHelper {
         Tapsell.showRewardedAd(
             adId,
             activity,
-            object : AdShowListener {
+            object : AdStateListener.Rewarded {
                 override fun onAdImpression() {
                     Log.d(TAG, "Ad impression")
                 }
