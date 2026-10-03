@@ -95,11 +95,11 @@ dependencies {
 
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
-    implementation("ir.tapsell.mediation:tapsell:1.4.1") {
+    implementation("ir.tapsell.mediation:tapsell:1.4.0-alpha03") {
         exclude(group = "androidx.work", module = "work-runtime")
         exclude(group = "androidx.work", module = "work-runtime-ktx")
     }
-    implementation("ir.tapsell.mediation.adapter:legacy:1.4.1") {
+    implementation("ir.tapsell.mediation.adapter:legacy:1.4.0-alpha03") {
         exclude(group = "androidx.work", module = "work-runtime")
         exclude(group = "androidx.work", module = "work-runtime-ktx")
     }
