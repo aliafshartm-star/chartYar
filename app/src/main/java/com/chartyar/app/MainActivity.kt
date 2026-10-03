@@ -94,7 +94,6 @@ import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.util.CameraHelper
 import com.chartyar.app.util.NotificationHelper
-import com.chartyar.app.util.RewardedAdHelper
 import com.chartyar.app.work.AlertMonitorService
 import com.chartyar.app.work.WorkScheduler
 import kotlinx.coroutines.Dispatchers
@@ -181,45 +180,23 @@ class MainActivity : ComponentActivity() {
                 var showLimitDialog by remember { mutableStateOf(false) }
                 var limitDialogType by remember { mutableStateOf(LimitDialogType.DAILY_LIMIT) }
                 var lockedStrategyNameForDialog by remember { mutableStateOf("") }
-                var lockedStrategyTypeForDialog by remember { mutableStateOf<StrategyType?>(null) }
-                var isAdLoading by remember { mutableStateOf(false) }
-                var isAdReady by remember { mutableStateOf(false) }
 
                 fun refreshLimitStatus() {
                     limitStatus = limitManager.getStatus()
                     unlockedStrategies = limitManager.getUnlockedStrategies()
                 }
 
-                fun loadRewardedAdIfNeeded() {
-                    if (isAdReady) return
-                    isAdLoading = true
-                    RewardedAdHelper.loadRewardedAd(
-                        onLoaded = {
-                            isAdLoading = false
-                            isAdReady = true
-                        },
-                        onFailed = {
-                            isAdLoading = false
-                            isAdReady = false
-                        }
-                    )
-                }
-
                 fun openDailyLimitDialog() {
                     limitDialogType = LimitDialogType.DAILY_LIMIT
                     lockedStrategyNameForDialog = ""
-                    lockedStrategyTypeForDialog = null
                     showLimitDialog = true
-                    loadRewardedAdIfNeeded()
                 }
 
                 fun openLockedStrategyDialog(strategy: StrategyType) {
                     val info = StrategyEngine.getStrategy(strategy)
                     limitDialogType = LimitDialogType.LOCKED_STRATEGY
                     lockedStrategyNameForDialog = info.displayName
-                    lockedStrategyTypeForDialog = strategy
                     showLimitDialog = true
-                    loadRewardedAdIfNeeded()
                 }
 
                 val permissionLauncher = rememberLauncherForActivityResult(
@@ -428,47 +405,8 @@ class MainActivity : ComponentActivity() {
                         strategyName = lockedStrategyNameForDialog,
                         adsCount = limitStatus.adCountToday,
                         adsForBonus = AnalysisLimitManager.ADS_FOR_BONUS,
-                        isAdLoading = isAdLoading,
-                        isAdReady = isAdReady,
-                        onWatchAd = {
-                            RewardedAdHelper.showRewardedAd(
-                                activity = this@MainActivity,
-                                onRewarded = {
-                                    val result = limitManager.onAdWatched()
-
-                                    if (result.analysesGiven > 0) {
-                                        refreshLimitStatus()
-                                    }
-
-                                    if (limitDialogType == LimitDialogType.LOCKED_STRATEGY) {
-                                        lockedStrategyTypeForDialog?.let { strategy ->
-                                            limitManager.unlockStrategy(strategy.name)
-                                            unlockedStrategies = limitManager.getUnlockedStrategies()
-                                        }
-                                    }
-
-                                    if (result.bonusActivated) {
-                                        refreshLimitStatus()
-                                    }
-
-                                    isAdReady = false
-                                    showLimitDialog = false
-                                },
-                                onClosed = {
-                                    isAdReady = false
-                                    if (limitManager.getStatus().canAnalyze ||
-                                        limitManager.isStrategyUnlocked(selectedStrategy.name)) {
-                                        showLimitDialog = false
-                                    }
-                                },
-                                onFailed = {
-                                    isAdReady = false
-                                }
-                            )
-                        },
                         onDismiss = {
                             showLimitDialog = false
-                            isAdReady = false
                         }
                     )
                 }
