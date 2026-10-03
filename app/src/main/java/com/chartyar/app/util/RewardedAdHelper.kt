@@ -2,10 +2,10 @@ package com.chartyar.app.util
 
 import android.app.Activity
 import android.util.Log
-import ir.tapsell.mediation.AdStateListener
 import ir.tapsell.mediation.Tapsell
 import ir.tapsell.mediation.ad.request.RequestResultListener
 import ir.tapsell.mediation.ad.show.AdShowCompletionState
+import ir.tapsell.mediation.ad.show.AdShowListener
 
 object RewardedAdHelper {
 
@@ -39,14 +39,14 @@ object RewardedAdHelper {
             REWARDED_ZONE_ID,
             object : RequestResultListener {
                 override fun onSuccess(adId: String) {
-                    Log.d(TAG, "Rewarded ad loaded successfully: $adId")
+                    Log.d(TAG, "Rewarded ad loaded: $adId")
                     loadedAdId = adId
                     isLoading = false
                     onLoaded()
                 }
 
                 override fun onFailure(message: String) {
-                    Log.e(TAG, "Failed to load rewarded ad: $message")
+                    Log.e(TAG, "Failed to load: $message")
                     loadedAdId = null
                     isLoading = false
                     onFailed(message)
@@ -64,7 +64,7 @@ object RewardedAdHelper {
         val adId = loadedAdId
 
         if (adId == null) {
-            Log.e(TAG, "No ad loaded. Call loadRewardedAd() first.")
+            Log.e(TAG, "No ad loaded")
             onFailed("No ad loaded")
             return
         }
@@ -74,9 +74,9 @@ object RewardedAdHelper {
         Tapsell.showRewardedAd(
             adId,
             activity,
-            object : AdStateListener.Rewarded {
+            object : AdShowListener {
                 override fun onAdImpression() {
-                    Log.d(TAG, "Ad impression recorded")
+                    Log.d(TAG, "Ad impression")
                 }
 
                 override fun onAdClicked() {
@@ -84,18 +84,18 @@ object RewardedAdHelper {
                 }
 
                 override fun onAdClosed(completionState: AdShowCompletionState) {
-                    Log.d(TAG, "Ad closed with state: $completionState")
+                    Log.d(TAG, "Ad closed: $completionState")
                     loadedAdId = null
                     onClosed()
                 }
 
                 override fun onRewarded() {
-                    Log.d(TAG, "User earned reward!")
+                    Log.d(TAG, "User rewarded!")
                     onRewarded()
                 }
 
                 override fun onAdFailed(message: String) {
-                    Log.e(TAG, "Ad show failed: $message")
+                    Log.e(TAG, "Ad failed: $message")
                     loadedAdId = null
                     onFailed(message)
                 }
