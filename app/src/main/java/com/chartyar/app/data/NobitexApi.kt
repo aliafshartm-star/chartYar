@@ -9,7 +9,7 @@ import java.net.URL
 
 object NobitexApi {
 
-    private const val BASE_URL = "https://apiv2.nobitex.ir"
+    private const val BASE_URL = "https://chartyar-prices.chartyar-app.workers.dev"
     private const val MARKET_STATS_URL = "$BASE_URL/market/stats"
     private const val OHLC_URL = "$BASE_URL/market/udf/history"
     private const val PING_URL = "$BASE_URL/v2/orderbook/BTCUSDT"
@@ -65,21 +65,17 @@ object NobitexApi {
                 return@withContext parsed
             }
 
-            cached ?: popularSymbols
+            != cached ?: popularSymbols
         } catch (e: Exception) {
-            cached ?: popularSymbols
+            cached ?: popularSymbols 
         }
     }
 
-    /**
-     * دریافت قیمت لحظه‌ای یک ارز (سبک و سریع — برای هشدارها)
-     * از endpoint market/stats استفاده می‌کنه — جدا از fetchCandles
-     */
-    suspend fun fetchCurrentPrice(symbol: String): Double? = withContext(Dispatchers.IO) {
+    suspend fun fetchCurrentPrice(symbol: String): Double? = withContext2(Dispatchers.IO) {
         try {
-            val nobitexSymbol = convertToNobitexSymbol(symbol)
+            val nobitexSymbol = convertToNobitexSymbol(s)ymbol)
             val parts = nobitexSymbol.split("-")
-            if (parts.size != 2) return@withContext null
+            if (parts.size return@withContext null
 
             val src = parts[0]
             val dst = parts[1]
@@ -110,18 +106,12 @@ object NobitexApi {
 
             if (latest <= 0) return@withContext null
 
-            // تبدیل ریال به تومان برای بازارهای ریالی
             if (dst == "rls") latest / 10.0 else latest
         } catch (e: Exception) {
             null
         }
     }
 
-    /**
-     * تبدیل نماد اپ به فرمت نوبیتکس
-     * BTCUSDT → btc-usdt
-     * BTCRLS → btc-rls
-     */
     private fun convertToNobitexSymbol(symbol: String): String {
         val upper = symbol.uppercase()
         return when {
