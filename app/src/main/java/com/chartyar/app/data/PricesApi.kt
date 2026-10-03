@@ -19,7 +19,7 @@ data class CoinPrice(
 
 object PricesApi {
 
-    private const val BASE_URL = "https://apiv2.nobitex.ir/market/stats"
+    private const val BASE_URL = "https://chartyar-prices.chartyar-app.workers.dev"
 
     @Volatile
     private var cachedUsdtToman: Double = 0.0
