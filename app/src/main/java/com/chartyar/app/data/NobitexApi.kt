@@ -23,16 +23,16 @@ object NobitexApi {
     private const val CACHE_DURATION_MS = 24 * 60 * 60 * 1000L
 
     val popularSymbols = listOf(
-        "BTCUSDT" to "بیت‌کوین (BTC)",
-        "ETHUSDT" to "اتریوم (ETH)",
-        "BNBUSDT" to "بایننس کوین (BNB)",
-        "SOLUSDT" to "سولانا (SOL)",
-        "XRPUSDT" to "ریپل (XRP)",
-        "ADAUSDT" to "کاردانو (ADA)",
-        "DOGEUSDT" to "دوج‌کوین (DOGE)",
-        "TRXUSDT" to "ترون (TRX)",
-        "LTCUSDT" to "لایت‌کوین (LTC)",
-        "LINKUSDT" to "چین‌لینک (LINK)"
+        "BTCUSDT" to "BTC",
+        "ETHUSDT" to "ETH",
+        "BNBUSDT" to "BNB",
+        "SOLUSDT" to "SOL",
+        "XRPUSDT" to "XRP",
+        "ADAUSDT" to "ADA",
+        "DOGEUSDT" to "DOGE",
+        "TRXUSDT" to "TRX",
+        "LTCUSDT" to "LTC",
+        "LINKUSDT" to "LINK"
     )
 
     suspend fun fetchAllSymbols(): List<Pair<String, String>> = withContext(Dispatchers.IO) {
@@ -65,17 +65,17 @@ object NobitexApi {
                 return@withContext parsed
             }
 
-            != cached ?: popularSymbols
+            cached ?: popularSymbols
         } catch (e: Exception) {
-            cached ?: popularSymbols 
+            cached ?: popularSymbols
         }
     }
 
-    suspend fun fetchCurrentPrice(symbol: String): Double? = withContext2(Dispatchers.IO) {
+    suspend fun fetchCurrentPrice(symbol: String): Double? = withContext(Dispatchers.IO) {
         try {
-            val nobitexSymbol = convertToNobitexSymbol(s)ymbol)
+            val nobitexSymbol = convertToNobitexSymbol(symbol)
             val parts = nobitexSymbol.split("-")
-            if (parts.size return@withContext null
+            if (parts.size != 2) return@withContext null
 
             val src = parts[0]
             val dst = parts[1]
@@ -187,7 +187,7 @@ object NobitexApi {
 
                 val symbolFormat = key.replace("-", "").uppercase()
                 val baseAsset = key.substringBefore("-").uppercase()
-                val displayName = "$baseAsset ($symbolFormat)"
+                val displayName = baseAsset
 
                 result.add(symbolFormat to displayName)
             }
