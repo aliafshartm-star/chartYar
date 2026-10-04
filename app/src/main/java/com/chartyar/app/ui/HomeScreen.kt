@@ -27,11 +27,9 @@ import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.OpenInNew
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -112,6 +110,8 @@ fun HomeScreen(
     onMiningClick: () -> Unit,
     onExchangesClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -144,7 +144,7 @@ fun HomeScreen(
         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
             LatestAnalysesSection(
                 onViewAll = onNewsClick,
-                onItemClick = { url -> openExternalUrl(LocalContext.current, url) }
+                onItemClick = { url -> openExternalUrl(context, url) }
             )
         }
 
