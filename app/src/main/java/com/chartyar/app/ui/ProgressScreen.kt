@@ -41,14 +41,14 @@ fun ProgressScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "⚙️",
+            text = "📊",
             fontSize = 64.sp
         )
 
         Spacer(Modifier.height(24.dp))
 
         Text(
-            text = "در حال تحلیل چارت",
+            text = "لطفاً صبر کنید...",
             color = TextPrimary,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
@@ -58,9 +58,17 @@ fun ProgressScreen(
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = "تایم‌فریم: $timeframe",
+            text = "در حال تحلیل بازار",
             color = AccentBlue,
             style = MaterialTheme.typography.bodyLarge
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            text = "تایم‌فریم: $timeframe",
+            color = TextSecondary,
+            style = MaterialTheme.typography.bodyMedium
         )
 
         Spacer(Modifier.height(40.dp))
@@ -110,11 +118,11 @@ fun ProgressScreen(
 @Composable
 private fun ProgressSteps(progress: Float) {
     val steps = listOf(
-        0.2f to "بارگذاری تصویر",
-        0.4f to "تشخیص کندل‌ها",
-        0.6f to "خوندن قیمت‌ها",
-        0.8f to "اجرای اندیکاتورها",
-        1.0f to "تشخیص الگوها"
+        0.2f to "دریافت کندل‌ها",
+        0.4f to "محاسبه اندیکاتورها",
+        0.6f to "تحلیل روند",
+        0.8f to "بررسی الگوها",
+        1.0f to "آماده‌سازی نتیجه"
     )
 
     Column(
