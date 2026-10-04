@@ -1,9 +1,7 @@
 package com.chartyar.app.analysis
 
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.sqrt
 
 /**
  * ۱۰ اندیکاتور پیشرفته برای استراتژی PRO
@@ -29,8 +27,8 @@ object AdvancedIndicators {
     ): Ichimoku? {
         if (candles.size < senkouPeriod) return null
 
-        fun highLow(period: Int, offset: Int = 0): Pair<Double, Double>? {
-            val end = candles.size - offset
+        fun highLow(period: Int): Pair<Double, Double>? {
+            val end = candles.size
             val start = end - period
             if (start < 0) return null
             var high = Double.MIN_VALUE
@@ -135,7 +133,8 @@ object AdvancedIndicators {
                         af = min(af + step, maxStep)
                     }
                     newSar = min(newSar, prev.low)
-                    newSar = min(newSar, candles[max(0, i - 2)].low)
+                    val idx = max(0, i - 2)
+                    newSar = min(newSar, candles[idx].low)
                 }
             } else {
                 if (curr.high > newSar) {
@@ -149,7 +148,8 @@ object AdvancedIndicators {
                         af = min(af + step, maxStep)
                     }
                     newSar = max(newSar, prev.high)
-                    newSar = max(newSar, candles[max(0, i - 2)].high)
+                    val idx = max(0, i - 2)
+                    newSar = max(newSar, candles[idx].high)
                 }
             }
 
@@ -204,8 +204,8 @@ object AdvancedIndicators {
         val atrList = TechnicalIndicators.atr(candles, period)
         if (atrList.isEmpty()) return null
 
-        var upperBand: Double
-        var lowerBand: Double
+        var upperBand = 0.0
+        var lowerBand = 0.0
         var trend = 1
         var supertrendValue = 0.0
 
@@ -216,10 +216,10 @@ object AdvancedIndicators {
             val basicUpper = hl2 + multiplier * atr
             val basicLower = hl2 - multiplier * atr
 
-            upperBand = basicUpper
-            lowerBand = basicLower
-
-            if (i > period) {
+            if (i == period) {
+                upperBand = basicUpper
+                lowerBand = basicLower
+            } else {
                 upperBand = if (basicUpper < upperBand || candles[i - 1].close > upperBand)
                     basicUpper else upperBand
                 lowerBand = if (basicLower > lowerBand || candles[i - 1].close < lowerBand)
@@ -257,15 +257,19 @@ object AdvancedIndicators {
         val atr = TechnicalIndicators.atr(candles, period)
 
         val upper = mutableListOf<Double>()
+        val middle = mutableListOf<Double>()
         val lower = mutableListOf<Double>()
 
         for (i in ema.indices) {
+            val e = ema[i]
+            if (e == null) continue
             val a = atr.getOrNull(i) ?: 0.0
-            upper.add(ema[i] + multiplier * a)
-            lower.add(ema[i] - multiplier * a)
+            middle.add(e)
+            upper.add(e + multiplier * a)
+            lower.add(e - multiplier * a)
         }
 
-        return Keltner(upper, ema, lower)
+        return Keltner(upper, middle, lower)
     }
 
     // ============================================================
@@ -340,8 +344,9 @@ object AdvancedIndicators {
         val bearPower = mutableListOf<Double>()
 
         for (i in ema.indices) {
-            bullPower.add(candles[i].high - ema[i])
-            bearPower.add(candles[i].low - ema[i])
+            val e = ema[i] ?: continue
+            bullPower.add(candles[i].high - e)
+            bearPower.add(candles[i].low - e)
         }
 
         return ElderRay(bullPower, bearPower)
@@ -351,9 +356,6 @@ object AdvancedIndicators {
     // امتیازدهی برای استراتژی PRO
     // ============================================================
 
-    /**
-     * امتیاز Ichimoku: مقایسه قیمت با ابرها
-     */
     fun scoreIchimoku(ichimoku: Ichimoku, currentPrice: Double): Pair<Int, String> {
         var score = 0
         val reasons = mutableListOf<String>()
@@ -377,9 +379,6 @@ object AdvancedIndicators {
         return score to reasons.joinToString(", ")
     }
 
-    /**
-     * امتیاز OBV: شیب OBV
-     */
     fun scoreObv(obvList: List<Double>, period: Int = 20): Int {
         if (obvList.size < period) return 0
         val recent = obvList.takeLast(period)
@@ -398,9 +397,6 @@ object AdvancedIndicators {
         }
     }
 
-    /**
-     * امتیاز MFI
-     */
     fun scoreMfi(mfiList: List<Double>): Int {
         val mfi = mfiList.lastOrNull() ?: return 0
         return when {
@@ -412,9 +408,6 @@ object AdvancedIndicators {
         }
     }
 
-    /**
-     * امتیاز PSAR
-     */
     fun scorePsar(psarList: List<Double>, candles: List<Candle>): Int {
         if (psarList.isEmpty() || candles.size < psarList.size) return 0
         val lastPsar = psarList.last()
@@ -434,9 +427,6 @@ object AdvancedIndicators {
         }
     }
 
-    /**
-     * امتیاز Aroon
-     */
     fun scoreAroon(aroon: Aroon): Int {
         return when {
             aroon.up > 70 && aroon.down < 30 -> 45
@@ -447,31 +437,23 @@ object AdvancedIndicators {
         }
     }
 
-    /**
-     * امتیاز Supertrend
-     */
     fun scoreSupertrend(st: Supertrend): Int {
         return if (st.trend == 1) 50 else -50
     }
 
-    /**
-     * امتیاز Keltner
-     */
     fun scoreKeltner(k: Keltner, currentPrice: Double): Int {
-        if (k.upper.isEmpty() || k.lower.isEmpty()) return 0
+        if (k.upper.isEmpty() || k.lower.isEmpty() || k.middle.isEmpty()) return 0
         val upper = k.upper.last()
         val lower = k.lower.last()
+        val middle = k.middle.last()
         return when {
             currentPrice > upper -> -30
             currentPrice < lower -> 30
-            currentPrice > k.middle.last() -> 15
+            currentPrice > middle -> 15
             else -> -15
         }
     }
 
-    /**
-     * امتیاز Donchian
-     */
     fun scoreDonchian(d: Donchian, currentPrice: Double): Int {
         if (d.upper.isEmpty() || d.lower.isEmpty()) return 0
         val upper = d.upper.last()
@@ -488,9 +470,6 @@ object AdvancedIndicators {
         }
     }
 
-    /**
-     * امتیاز Elder Ray
-     */
     fun scoreElderRay(er: ElderRay): Int {
         val bull = er.bullPower.lastOrNull() ?: return 0
         val bear = er.bearPower.lastOrNull() ?: return 0
@@ -502,9 +481,6 @@ object AdvancedIndicators {
         }
     }
 
-    /**
-     * محاسبه فاصله قیمت از Pivot Points (نزدیک‌ترین سطح)
-     */
     fun nearestPivotLevel(pp: PivotPoints, price: Double): Pair<String, Double> {
         val levels = listOf(
             "R3" to pp.r3,
@@ -515,13 +491,10 @@ object AdvancedIndicators {
             "S2" to pp.s2,
             "S3" to pp.s3
         )
-        val nearest = levels.minByOrNull { abs(it.second - price) } ?: ("PP" to pp.pp)
+        val nearest = levels.minByOrNull { kotlin.math.abs(it.second - price) } ?: ("PP" to pp.pp)
         return nearest
     }
 
-    /**
-     * میانگین وزن‌دار — برای ترکیب امتیازهای جدید
-     */
     fun weightedScore(entries: Map<String, Pair<Int, Double>>): Int {
         var total = 0.0
         var weightSum = 0.0
