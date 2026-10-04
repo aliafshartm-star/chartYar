@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Button
@@ -23,6 +24,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +60,9 @@ fun LimitDialog(
     strategyName: String = "",
     adsSinceReward: Int,
     adsPerReward: Int,
+    strategyAdsWatched: Int = 0,
+    strategyAdsRequired: Int = 0,
+    onWatchAd: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -133,8 +138,13 @@ fun LimitDialog(
 
                 Spacer(Modifier.height(8.dp))
 
+                val subtitle = when (type) {
+                    LimitDialogType.DAILY_LIMIT -> "با تماشای تبلیغ، تحلیل رایگان بگیر"
+                    LimitDialogType.LOCKED_STRATEGY -> "با تماشای تبلیغ، این استراتژی رو باز کن"
+                }
+
                 Text(
-                    text = "با تماشای تبلیغ، تحلیل رایگان بگیر",
+                    text = subtitle,
                     color = TextSecondary,
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center,
@@ -143,100 +153,141 @@ fun LimitDialog(
 
                 Spacer(Modifier.height(20.dp))
 
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = DarkBg)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Filled.Star,
-                                contentDescription = null,
-                                tint = AccentYellow,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = "پاداش تبلیغات",
-                                color = TextPrimary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp
-                            )
-                            Spacer(Modifier.weight(1f))
-                            Text(
-                                text = "$adsSinceReward / $adsPerReward",
-                                color = AccentYellow,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
-
-                        Spacer(Modifier.height(8.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .background(Divider, RoundedCornerShape(3.dp))
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(
-                                        fraction = if (adsPerReward > 0) {
-                                            (adsSinceReward.toFloat() / adsPerReward.toFloat())
-                                                .coerceIn(0f, 1f)
-                                        } else 0f
-                                    )
-                                    .height(6.dp)
-                                    .background(
-                                        brush = Brush.horizontalGradient(
-                                            colors = listOf(AccentYellow, Color(0xFFFF8C42))
-                                        ),
-                                        shape = RoundedCornerShape(3.dp)
-                                    )
-                            )
-                        }
-
-                        Spacer(Modifier.height(8.dp))
-
-                        Text(
-                            text = if (adsSinceReward >= adsPerReward) {
-                                "🎉 پاداش آماده! ۳ تحلیل رایگان بگیر"
-                            } else {
-                                "${adsPerReward - adsSinceReward} تبلیغ دیگه = ۳ تحلیل رایگان"
-                            },
-                            color = if (adsSinceReward >= adsPerReward) AccentGreen else AccentYellow,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                // Progress card
+                if (type == LimitDialogType.DAILY_LIMIT) {
+                    AdProgressCard(
+                        current = adsSinceReward,
+                        required = adsPerReward,
+                        rewardText = "۳ تحلیل رایگان",
+                        title = "پاداش تبلیغات"
+                    )
+                } else {
+                    AdProgressCard(
+                        current = strategyAdsWatched,
+                        required = strategyAdsRequired,
+                        rewardText = "باز شدن استراتژی $strategyName",
+                        title = "پیشرفت باز کردن"
+                    )
                 }
 
                 Spacer(Modifier.height(20.dp))
 
+                // Watch ad button
                 Button(
-                    onClick = onDismiss,
+                    onClick = onWatchAd,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
+                        .height(52.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentBlue,
+                        containerColor = AccentGreen,
                         contentColor = Color.White
                     )
                 ) {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "متوجه شدم",
+                        text = "تماشای تبلیغ",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
                 }
+
+                Spacer(Modifier.height(8.dp))
+
+                TextButton(onClick = onDismiss) {
+                    Text(
+                        text = "بعداً",
+                        color = TextSecondary,
+                        fontSize = 14.sp
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun AdProgressCard(
+    current: Int,
+    required: Int,
+    rewardText: String,
+    title: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkBg)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = AccentYellow,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = title,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "$current / $required",
+                    color = AccentYellow,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .background(Divider, RoundedCornerShape(3.dp))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(
+                            fraction = if (required > 0) {
+                                (current.toFloat() / required.toFloat()).coerceIn(0f, 1f)
+                            } else 0f
+                        )
+                        .height(6.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(AccentYellow, Color(0xFFFF8C42))
+                            ),
+                            shape = RoundedCornerShape(3.dp)
+                        )
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = if (current >= required) {
+                    "🎉 پاداش آماده! $rewardText"
+                } else {
+                    "${required - current} تبلیغ دیگه = $rewardText"
+                },
+                color = if (current >= required) AccentGreen else AccentYellow,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
