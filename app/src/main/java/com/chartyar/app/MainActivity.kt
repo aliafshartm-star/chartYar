@@ -66,12 +66,14 @@ import com.chartyar.app.ui.DisclaimerScreen
 import com.chartyar.app.ui.EducationScreen
 import com.chartyar.app.ui.ExchangesScreen
 import com.chartyar.app.ui.ExitDialog
+import com.chartyar.app.ui.FearGreedScreen
 import com.chartyar.app.ui.GlossaryScreen
 import com.chartyar.app.ui.HistoryScreen
 import com.chartyar.app.ui.HomeScreen
 import com.chartyar.app.ui.LatestAnalysesScreen
 import com.chartyar.app.ui.LimitDialog
 import com.chartyar.app.ui.LimitDialogType
+import com.chartyar.app.ui.MarketIndicesScreen
 import com.chartyar.app.ui.MiningCalculatorScreen
 import com.chartyar.app.ui.MultiTfInputScreen
 import com.chartyar.app.ui.MultiTimeframeScreen
@@ -347,6 +349,8 @@ class MainActivity : ComponentActivity() {
                         "exchanges" -> currentScreen = "home"
                         "trending" -> currentScreen = "home"
                         "analyses" -> currentScreen = "home"
+                        "market_indices" -> currentScreen = "home"
+                        "fear_greed" -> currentScreen = "home"
                         else -> showExitDialog = true
                     }
                 }
@@ -472,12 +476,18 @@ class MainActivity : ComponentActivity() {
                                         onHistoryClick = { currentScreen = "history" },
                                         onSettingsClick = { currentScreen = "settings" },
                                         onAlertsClick = { currentScreen = "alerts" },
-                                        onNewsClick = { currentScreen = "news" },
+                                        onNewsClick = { currentScreen = "market_indices" },
                                         onPricesClick = { currentScreen = "prices" },
-                                        onMultiTfClick = { currentScreen = "multi_tf" },
+                                        onMultiTfClick = { currentScreen = "fear_greed" },
                                         onCalculatorClick = { currentScreen = "calculator" },
                                         onMiningClick = { currentScreen = "mining" },
                                         onExchangesClick = { currentScreen = "exchanges" }
+                                    )
+                                    "market_indices" -> MarketIndicesScreen(
+                                        onBack = { currentScreen = "home" }
+                                    )
+                                    "fear_greed" -> FearGreedScreen(
+                                        onBack = { currentScreen = "home" }
                                     )
                                     "trending" -> TrendingCoinsScreen(
                                         onBack = { currentScreen = "home" },
@@ -559,7 +569,7 @@ class MainActivity : ComponentActivity() {
                                                     }
 
                                                     analyzeProgress = 0.3f
-                                                    statusMessage = "..."
+                                                    statusMessage = "در حال دریافت کندل‌ها"
                                                     delay(200)
 
                                                     val dataResult = MarketDataService.getCandles(
@@ -568,14 +578,16 @@ class MainActivity : ComponentActivity() {
                                                         cache = cache
                                                     )
 
-                                                    val sourceName = MarketDataService.sourceLabel(dataResult.source)
+                                                    analyzeProgress = 0.5f
+                                                    statusMessage = "در حال محاسبه اندیکاتورها"
+                                                    delay(300)
 
                                                     if (dataResult.candles != null && dataResult.candles.size >= 50) {
                                                         analyzeProgress = 0.7f
-                                                        statusMessage = sourceName
+                                                        statusMessage = "در حال تحلیل روند"
                                                         delay(300)
                                                         analyzeProgress = 0.9f
-                                                        statusMessage = "..."
+                                                        statusMessage = "در حال بررسی الگوها"
                                                         val result = withContext(Dispatchers.Default) {
                                                             SignalEngine.analyze(
                                                                 dataResult.candles,
@@ -584,6 +596,7 @@ class MainActivity : ComponentActivity() {
                                                             )
                                                         }
                                                         analyzeProgress = 1f
+                                                        statusMessage = "در حال آماده‌سازی نتیجه"
                                                         delay(200)
                                                         analysisResult = result
                                                         if (result != null) {
@@ -734,6 +747,7 @@ class MainActivity : ComponentActivity() {
                                                     }
 
                                                     analyzeProgress = 0.3f
+                                                    statusMessage = "در حال دریافت کندل‌ها"
                                                     delay(200)
 
                                                     val dataResult = MarketDataService.getCandles(
@@ -742,13 +756,16 @@ class MainActivity : ComponentActivity() {
                                                         cache = cache
                                                     )
 
-                                                    val sourceName = MarketDataService.sourceLabel(dataResult.source)
+                                                    analyzeProgress = 0.5f
+                                                    statusMessage = "در حال محاسبه اندیکاتورها"
+                                                    delay(300)
 
                                                     if (dataResult.candles != null && dataResult.candles.size >= 50) {
                                                         analyzeProgress = 0.7f
-                                                        statusMessage = sourceName
+                                                        statusMessage = "در حال تحلیل روند"
                                                         delay(300)
                                                         analyzeProgress = 0.9f
+                                                        statusMessage = "در حال بررسی الگوها"
                                                         val result = withContext(Dispatchers.Default) {
                                                             SignalEngine.analyze(
                                                                 dataResult.candles,
@@ -757,6 +774,7 @@ class MainActivity : ComponentActivity() {
                                                             )
                                                         }
                                                         analyzeProgress = 1f
+                                                        statusMessage = "در حال آماده‌سازی نتیجه"
                                                         delay(200)
                                                         analysisResult = result
                                                         if (result != null) {
