@@ -87,6 +87,7 @@
     <string name="bottom_nav_trending">پرطرفدار</string>
     <string name="bottom_nav_exchanges">صرافی‌ها</string>
     <string name="bottom_nav_analyses">تحلیل‌ها</string>
+    <string name="bottom_nav_strategy">استراتژی</string>
 
     <string name="home_icon_futures">فیوچرز</string>
     <string name="home_icon_profit">ماشین سود</string>
@@ -121,4 +122,7 @@
     <string name="index_defi_tvl_desc">ارزش قفل‌شده در پروتکل‌های DeFi</string>
 
     <string name="fear_greed_screen_title">شاخص ترس و طمع</string>
+
+    <string name="strategy_title">استراتژی‌های تحلیل</string>
+    <string name="strategy_subtitle">روش تحلیل خود را انتخاب کنید</string>
 </resources>
