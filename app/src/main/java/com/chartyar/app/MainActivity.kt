@@ -88,6 +88,7 @@ import com.chartyar.app.ui.SettingsScreen
 import com.chartyar.app.ui.SplashScreen
 import com.chartyar.app.ui.StrategyScreen
 import com.chartyar.app.ui.SymbolSelectorScreen
+import com.chartyar.app.ui.TelegramGateScreen
 import com.chartyar.app.ui.TermsScreen
 import com.chartyar.app.ui.TrendingCoinsScreen
 import com.chartyar.app.ui.TutorialScreen
@@ -99,6 +100,7 @@ import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.util.CameraHelper
 import com.chartyar.app.util.NotificationHelper
+import com.chartyar.app.util.RewardedAdHelper
 import com.chartyar.app.work.AlertMonitorService
 import com.chartyar.app.work.WorkScheduler
 import kotlinx.coroutines.Dispatchers
@@ -106,6 +108,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private const val TAPSELL_REWARDED_ZONE_ID = "6ac034978e1ca215ec56dc0f"
 
 class MainActivity : ComponentActivity() {
     private lateinit var prefs: PrefsManager
@@ -154,6 +158,7 @@ class MainActivity : ComponentActivity() {
                 var disclaimerAccepted by remember { mutableStateOf(false) }
                 var termsAccepted by remember { mutableStateOf(false) }
                 var ageConfirmed by remember { mutableStateOf(false) }
+                var telegramGatePassed by remember { mutableStateOf(false) }
                 var currentScreen by remember { mutableStateOf("home") }
                 var selectedTimeframe by remember { mutableStateOf("4H") }
                 var selectedStrategy by remember { mutableStateOf(StrategyType.SWING) }
@@ -185,15 +190,19 @@ class MainActivity : ComponentActivity() {
                 var showLimitDialog by remember { mutableStateOf(false) }
                 var limitDialogType by remember { mutableStateOf(LimitDialogType.DAILY_LIMIT) }
                 var lockedStrategyNameForDialog by remember { mutableStateOf("") }
+                var lockedStrategyTypeForDialog by remember { mutableStateOf<StrategyType?>(null) }
+                var strategyRefreshTick by remember { mutableStateOf(0) }
 
                 fun refreshLimitStatus() {
                     limitStatus = limitManager.getStatus()
                     unlockedStrategies = limitManager.getUnlockedStrategies()
+                    strategyRefreshTick++
                 }
 
                 fun openDailyLimitDialog() {
                     limitDialogType = LimitDialogType.DAILY_LIMIT
                     lockedStrategyNameForDialog = ""
+                    lockedStrategyTypeForDialog = null
                     showLimitDialog = true
                 }
 
@@ -201,6 +210,7 @@ class MainActivity : ComponentActivity() {
                     val info = StrategyEngine.getStrategy(strategy)
                     limitDialogType = LimitDialogType.LOCKED_STRATEGY
                     lockedStrategyNameForDialog = info.displayName
+                    lockedStrategyTypeForDialog = strategy
                     showLimitDialog = true
                 }
 
@@ -220,6 +230,7 @@ class MainActivity : ComponentActivity() {
                     defaultTimeframe = prefs.defaultTimeframe.first()
                     themeSetting = prefs.theme.first()
                     tutorialSeen = prefs.isTutorialSeen.first()
+                    telegramGatePassed = prefs.isTelegramGatePassed.first()
                     selectedTimeframe = defaultTimeframe
 
                     val savedStrategy = prefs.defaultStrategy.first()
@@ -322,7 +333,10 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                BackHandler(enabled = !isLoading && disclaimerAccepted && termsAccepted && ageConfirmed) {
+                BackHandler(
+                    enabled = !isLoading && disclaimerAccepted && termsAccepted &&
+                            ageConfirmed && telegramGatePassed
+                ) {
                     when (currentScreen) {
                         "home" -> showExitDialog = true
                         "privacy" -> currentScreen = "settings"
@@ -384,11 +398,66 @@ class MainActivity : ComponentActivity() {
                 }
 
                 if (showLimitDialog) {
+                    val strategyAdsWatched = lockedStrategyTypeForDialog?.let {
+                        limitManager.getStrategyAdsProgress(it.name)
+                    } ?: 0
+
+                    val strategyAdsRequired = lockedStrategyTypeForDialog?.let {
+                        limitManager.getStrategyUnlockCost(it.name)
+                    } ?: 0
+
                     LimitDialog(
                         type = limitDialogType,
                         strategyName = lockedStrategyNameForDialog,
                         adsSinceReward = limitStatus.adsSinceReward,
                         adsPerReward = AnalysisLimitManager.ADS_PER_REWARD,
+                        strategyAdsWatched = strategyAdsWatched,
+                        strategyAdsRequired = strategyAdsRequired,
+                        onWatchAd = {
+                            // بستن دیالوگ + پخش تبلیغ
+                            val isLockedStrategyFlow =
+                                limitDialogType == LimitDialogType.LOCKED_STRATEGY &&
+                                        lockedStrategyTypeForDialog != null
+
+                            showLimitDialog = false
+
+                            RewardedAdHelper.showRewardedAd(
+                                activity = this@MainActivity,
+                                zoneId = TAPSELL_REWARDED_ZONE_ID,
+                                onReward = {
+                                    runOnUiThread {
+                                        if (isLockedStrategyFlow) {
+                                            // تلاش برای باز کردن استراتژی
+                                            val strategy = lockedStrategyTypeForDialog
+                                            if (strategy != null) {
+                                                val unlocked = limitManager.onStrategyUnlockAdWatched(strategy.name)
+                                                refreshLimitStatus()
+
+                                                if (unlocked) {
+                                                    // استراتژی باز شد
+                                                    selectedStrategy = strategy
+                                                    lifecycleScope.launch {
+                                                        prefs.setDefaultStrategy(strategy.name)
+                                                    }
+                                                } else {
+                                                    // هنوز تبلیغ بیشتر لازمه
+                                                    openLockedStrategyDialog(strategy)
+                                                }
+                                            }
+                                        } else {
+                                            // تبلیغ برای سهمیه تحلیل
+                                            limitManager.onAdWatched()
+                                            refreshLimitStatus()
+                                        }
+                                    }
+                                },
+                                onFailed = { msg ->
+                                    runOnUiThread {
+                                        errorMessage = "تبلیغ نمایش داده نشد: $msg"
+                                    }
+                                }
+                            )
+                        },
                         onDismiss = {
                             showLimitDialog = false
                         }
@@ -425,6 +494,17 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch {
                                 legalManager.confirmAge()
                                 ageConfirmed = true
+                            }
+                        },
+                        onDecline = { finish() }
+                    )
+
+                    !telegramGatePassed -> TelegramGateScreen(
+                        onConfirm = {
+                            lifecycleScope.launch {
+                                prefs.setTelegramGatePassed(true)
+                                telegramGatePassed = true
+                                if (!tutorialSeen) currentScreen = "tutorial"
                             }
                         },
                         onDecline = { finish() }
@@ -477,12 +557,27 @@ class MainActivity : ComponentActivity() {
                                         onMiningClick = { currentScreen = "mining" },
                                         onExchangesClick = { currentScreen = "exchanges" }
                                     )
-                                    "strategy" -> StrategyScreen(
-                                        onStrategyClick = { strategyType ->
-                                            selectedStrategy = strategyType
-                                            currentScreen = "symbol"
-                                        }
-                                    )
+                                    "strategy" -> {
+                                        // trigger refresh
+                                        val _refresh = strategyRefreshTick
+                                        StrategyScreen(
+                                            unlockedStrategies = unlockedStrategies,
+                                            strategyAdProgress = { strategyName ->
+                                                val cost = limitManager.getStrategyUnlockCost(strategyName)
+                                                val watched = limitManager.getStrategyAdsProgress(strategyName)
+                                                watched to cost
+                                            },
+                                            onStrategyClick = { strategyType ->
+                                                val isUnlocked = unlockedStrategies.contains(strategyType.name)
+                                                if (isUnlocked) {
+                                                    selectedStrategy = strategyType
+                                                    currentScreen = "symbol"
+                                                } else {
+                                                    openLockedStrategyDialog(strategyType)
+                                                }
+                                            }
+                                        )
+                                    }
                                     "market_indices" -> MarketIndicesScreen(
                                         onBack = { currentScreen = "home" }
                                     )
