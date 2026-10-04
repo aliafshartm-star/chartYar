@@ -31,7 +31,7 @@ fun RateAppDialog(
         textContentColor = TextSecondary,
         title = {
             Text(
-                text = "از چارت یار راضی هستی؟",
+                text = "از ViaChart راضی هستی؟",
                 fontWeight = FontWeight.Bold
             )
         },
@@ -43,8 +43,8 @@ fun RateAppDialog(
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "5 ستاره",
-                    fontSize = 24.sp,
+                    text = "⭐⭐⭐⭐⭐",
+                    fontSize = 20.sp,
                     color = AccentGreen
                 )
             }
