@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -63,15 +65,14 @@ fun TrendingCoinsScreen(
 ) {
     var coins by remember { mutableStateOf<List<CoinPrice>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var refreshKey by remember { mutableStateOf(0) }
 
-    suspend fun load() {
+    LaunchedEffect(refreshKey) {
         isLoading = true
         val fetched = withContext(Dispatchers.IO) { PricesApi.fetchPrices() }
         if (fetched != null) coins = fetched
         isLoading = false
     }
-
-    LaunchedEffect(Unit) { load() }
 
     Column(
         modifier = Modifier
@@ -100,23 +101,19 @@ fun TrendingCoinsScreen(
                     fontSize = 11.sp
                 )
             }
-            IconButton(onClick = {
-                isLoading = true
-                coins = emptyList()
-            }) {
+            IconButton(onClick = { refreshKey++ }) {
                 Icon(Icons.Filled.Refresh, null, tint = TextPrimary)
             }
         }
 
-        if (isLoading) {
-            Box(
+        when {
+            isLoading -> Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = GradientBlueStart)
             }
-        } else if (coins.isEmpty()) {
-            Box(
+            coins.isEmpty() -> Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
@@ -126,13 +123,9 @@ fun TrendingCoinsScreen(
                     fontSize = 14.sp
                 )
             }
-        } else {
-            LazyColumn(
+            else -> LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 12.dp,
-                    vertical = 8.dp
-                ),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(coins, key = { it.symbol }) { coin ->
@@ -198,7 +191,7 @@ private fun TrendingCoinRow(coin: CoinPrice, onClick: () -> Unit) {
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = formatPrice(coin.priceToman),
+                    text = PricesApi.formatPrice(coin.price),
                     color = TextPrimary,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp
@@ -206,14 +199,14 @@ private fun TrendingCoinRow(coin: CoinPrice, onClick: () -> Unit) {
                 Spacer(Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Filled.TrendingUp,
+                        if (isPositive) Icons.Filled.TrendingUp else Icons.Filled.TrendingDown,
                         null,
                         tint = changeColor,
                         modifier = Modifier.size(12.dp)
                     )
                     Spacer(Modifier.width(3.dp))
                     Text(
-                        text = "${if (isPositive) "+" else ""}${formatPercent(coin.changePercent24h)}%",
+                        text = PricesApi.formatPercent(coin.changePercent24h),
                         color = changeColor,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold
@@ -222,17 +215,4 @@ private fun TrendingCoinRow(coin: CoinPrice, onClick: () -> Unit) {
             }
         }
     }
-}
-
-private fun formatPrice(price: Double): String {
-    return when {
-        price >= 1_000_000_000 -> String.format("%.2fB", price / 1_000_000_000)
-        price >= 1_000_000 -> String.format("%.2fM", price / 1_000_000)
-        price >= 1_000 -> String.format("%,.0f", price)
-        else -> String.format("%.2f", price)
-    }
-}
-
-private fun formatPercent(value: Double): String {
-    return String.format("%.2f", value)
 }
