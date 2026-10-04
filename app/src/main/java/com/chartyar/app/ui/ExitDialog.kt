@@ -30,7 +30,7 @@ fun ExitDialog(
         },
         text = {
             Text(
-                text = "مطمئنی میخوای از چارت یار خارج بشی؟"
+                text = "مطمئنی میخوای از ViaChart خارج بشی؟"
             )
         },
         confirmButton = {
