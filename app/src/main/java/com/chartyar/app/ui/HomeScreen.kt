@@ -23,8 +23,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Settings
@@ -130,7 +131,7 @@ fun HomeScreen(
 
         IconShortcutsRow(
             onCalculatorClick = onCalculatorClick,
-            onMiningClick = onMiningClick,
+            onHistoryClick = onHistoryClick,
             onNewsClick = onNewsClick,
             onPricesClick = onPricesClick,
             onMultiTfClick = onMultiTfClick
@@ -253,7 +254,7 @@ private fun HeaderRoundIcon(
 @Composable
 private fun IconShortcutsRow(
     onCalculatorClick: () -> Unit,
-    onMiningClick: () -> Unit,
+    onHistoryClick: () -> Unit,
     onNewsClick: () -> Unit,
     onPricesClick: () -> Unit,
     onMultiTfClick: () -> Unit
@@ -271,14 +272,14 @@ private fun IconShortcutsRow(
             onClick = onCalculatorClick
         )
         ShortcutIcon(
-            icon = Icons.Filled.TrendingUp,
-            label = stringResource(R.string.home_icon_profit),
+            icon = Icons.Filled.History,
+            label = stringResource(R.string.home_history_title),
             gradient = listOf(GradientGoldStart, GradientGoldEnd),
-            onClick = onMiningClick
+            onClick = onHistoryClick
         )
         ShortcutIcon(
-            icon = Icons.Filled.Article,
-            label = stringResource(R.string.home_icon_news),
+            icon = Icons.Filled.Insights,
+            label = stringResource(R.string.home_icon_market),
             gradient = listOf(GradientGreenStart, GradientGreenEnd),
             onClick = onNewsClick
         )
