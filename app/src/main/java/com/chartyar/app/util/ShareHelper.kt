@@ -11,7 +11,7 @@ object ShareHelper {
     fun buildShareText(result: AnalysisResult): String {
         val sb = StringBuilder()
 
-        sb.appendLine("📊 تحلیل چارت‌یار")
+        sb.appendLine("📊 تحلیل ViaChart")
         sb.appendLine("━━━━━━━━━━━━━━━━━━━━━")
         sb.appendLine()
 
@@ -114,8 +114,8 @@ object ShareHelper {
         }
 
         sb.appendLine("━━━━━━━━━━━━━━━━━━━━━")
-        sb.appendLine("📱 اپ چارت‌یار")
-        sb.appendLine("https://t.me/chartyar_app")
+        sb.appendLine("📱 اپ ViaChart")
+        sb.appendLine("https://t.me/viachart_app")
         sb.appendLine()
         sb.appendLine("⚠️ این تحلیل توصیه سرمایه‌گذاری نیست.")
 
