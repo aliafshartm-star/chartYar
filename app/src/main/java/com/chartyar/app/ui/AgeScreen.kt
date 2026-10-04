@@ -2,6 +2,7 @@ package com.chartyar.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Text
@@ -35,9 +38,8 @@ import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.AccentRed
 import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.DarkSurface
-import com.chartyar.app.ui.theme.GradientBlueEnd
+import com.chartyar.app.ui.theme.GradientBlueStart
 import com.chartyar.app.ui.theme.GradientPurpleEnd
-import com.chartyar.app.ui.theme.GradientPurpleStart
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.ui.theme.TextSecondary
 
@@ -57,7 +59,7 @@ fun AgeScreen(
     ) {
         Spacer(Modifier.weight(1f))
 
-        androidx.compose.foundation.layout.Box(
+        Box(
             modifier = Modifier
                 .size(120.dp)
                 .background(
@@ -93,10 +95,10 @@ fun AgeScreen(
 
         Spacer(Modifier.height(32.dp))
 
-        androidx.compose.material3.Card(
+        Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = androidx.compose.material3.CardDefaults.cardColors(
+            colors = CardDefaults.cardColors(
                 containerColor = DarkSurface
             )
         ) {
