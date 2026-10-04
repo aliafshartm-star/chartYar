@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">چارت‌یار</string>
+    <string name="app_name">ViaChart</string>
 
     <string name="shortcut_new_analysis">تحلیل جدید</string>
     <string name="shortcut_new_analysis_long">شروع تحلیل چارت جدید</string>
@@ -49,7 +49,7 @@
     <string name="mining_fetching_price">در حال دریافت قیمت</string>
     <string name="mining_fetch_failed">قیمت دریافت نشد</string>
 
-    <string name="home_app_title">چارت‌یار</string>
+    <string name="home_app_title">ViaChart</string>
     <string name="home_app_subtitle">تحلیل هوشمند چارت</string>
     <string name="home_nav_prices">قیمت</string>
     <string name="home_nav_news">اخبار</string>
