@@ -79,9 +79,9 @@ fun PrivacyPolicyScreen(
         Spacer(Modifier.height(12.dp))
 
         SectionCard("۳. استفاده از اینترنت") {
-            BulletText("داده‌های قیمت و کندل از Binance API دریافت می‌شود")
+            BulletText("داده‌های قیمت و کندل از نوبیتکس و کوین‌گکو دریافت می‌شود")
             BulletText("این اتصال فقط برای تحلیل دقیق‌تر انجام می‌شود")
-            BulletText("هیچ داده‌ای از شما به Binance ارسال نمی‌شود")
+            BulletText("هیچ داده‌ای از شما به این سرویس‌ها ارسال نمی‌شود")
             BulletText("در صورت عدم دسترسی به اینترنت، تحلیل آفلاین انجام می‌شود")
         }
 
@@ -121,7 +121,7 @@ fun PrivacyPolicyScreen(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "📧 support@chartyar.app",
+                "📧 support@viachart.app",
                 color = AccentBlue,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold
@@ -142,7 +142,7 @@ fun PrivacyPolicyScreen(
         Spacer(Modifier.height(24.dp))
 
         Text(
-            "با استفاده از چارت‌یار، شما این سیاست حریم خصوصی را می‌پذیرید.",
+            "با استفاده از ViaChart، شما این سیاست حریم خصوصی را می‌پذیرید.",
             color = AccentBlue,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
