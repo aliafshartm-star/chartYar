@@ -12,7 +12,7 @@ class LegalManager(private val context: Context) {
     companion object {
         const val CURRENT_TERMS_VERSION = 1
         const val CURRENT_PRIVACY_VERSION = 1
-        const val MIN_AGE = 13
+        const val MIN_AGE = 18
 
         private const val KEY_TERMS_VERSION = "terms_version"
         private const val KEY_PRIVACY_VERSION = "privacy_version"
