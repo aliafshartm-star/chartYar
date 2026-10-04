@@ -56,8 +56,8 @@ enum class LimitDialogType {
 fun LimitDialog(
     type: LimitDialogType,
     strategyName: String = "",
-    adsCount: Int,
-    adsForBonus: Int,
+    adsSinceReward: Int,
+    adsPerReward: Int,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -134,7 +134,7 @@ fun LimitDialog(
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    text = "سهمیه تحلیل جدید: فردا صبح زود",
+                    text = "با تماشای تبلیغ، تحلیل رایگان بگیر",
                     color = TextSecondary,
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center,
@@ -162,14 +162,14 @@ fun LimitDialog(
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = "پاداش وفاداری",
+                                text = "پاداش تبلیغات",
                                 color = TextPrimary,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 13.sp
                             )
                             Spacer(Modifier.weight(1f))
                             Text(
-                                text = "$adsCount / $adsForBonus",
+                                text = "$adsSinceReward / $adsPerReward",
                                 color = AccentYellow,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
@@ -187,8 +187,8 @@ fun LimitDialog(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth(
-                                        fraction = if (adsForBonus > 0) {
-                                            (adsCount.toFloat() / adsForBonus.toFloat())
+                                        fraction = if (adsPerReward > 0) {
+                                            (adsSinceReward.toFloat() / adsPerReward.toFloat())
                                                 .coerceIn(0f, 1f)
                                         } else 0f
                                     )
@@ -205,12 +205,12 @@ fun LimitDialog(
                         Spacer(Modifier.height(8.dp))
 
                         Text(
-                            text = if (adsCount >= adsForBonus) {
-                                "🎉 پاداش فعال شد!"
+                            text = if (adsSinceReward >= adsPerReward) {
+                                "🎉 پاداش آماده! ۳ تحلیل رایگان بگیر"
                             } else {
-                                "${adsForBonus - adsCount} تبلیغ دیگه = ۱۲ ساعت نامحدود!"
+                                "${adsPerReward - adsSinceReward} تبلیغ دیگه = ۳ تحلیل رایگان"
                             },
-                            color = if (adsCount >= adsForBonus) AccentGreen else AccentYellow,
+                            color = if (adsSinceReward >= adsPerReward) AccentGreen else AccentYellow,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium
                         )
