@@ -21,6 +21,7 @@ class PrefsManager(private val context: Context) {
     private val KEY_TUTORIAL_SEEN = booleanPreferencesKey("tutorial_seen")
     private val KEY_DEFAULT_STRATEGY = stringPreferencesKey("default_strategy")
     private val KEY_HAS_SEEN_FIRST_LAUNCH = booleanPreferencesKey("has_seen_first_launch")
+    private val KEY_TELEGRAM_GATE_PASSED = booleanPreferencesKey("telegram_gate_passed")
 
     val isDisclaimerAccepted: Flow<Boolean> = context.dataStore.data
         .map { it[KEY_DISCLAIMER_ACCEPTED] ?: false }
@@ -48,6 +49,9 @@ class PrefsManager(private val context: Context) {
 
     val hasSeenFirstLaunch: Flow<Boolean> = context.dataStore.data
         .map { it[KEY_HAS_SEEN_FIRST_LAUNCH] ?: false }
+
+    val isTelegramGatePassed: Flow<Boolean> = context.dataStore.data
+        .map { it[KEY_TELEGRAM_GATE_PASSED] ?: false }
 
     suspend fun acceptDisclaimer() {
         context.dataStore.edit { it[KEY_DISCLAIMER_ACCEPTED] = true }
@@ -85,11 +89,19 @@ class PrefsManager(private val context: Context) {
         context.dataStore.edit { it[KEY_HAS_SEEN_FIRST_LAUNCH] = value }
     }
 
+    suspend fun setTelegramGatePassed(value: Boolean) {
+        context.dataStore.edit { it[KEY_TELEGRAM_GATE_PASSED] = value }
+    }
+
     suspend fun resetDisclaimer() {
         context.dataStore.edit { it[KEY_DISCLAIMER_ACCEPTED] = false }
     }
 
     suspend fun resetTutorial() {
         context.dataStore.edit { it[KEY_TUTORIAL_SEEN] = false }
+    }
+
+    suspend fun resetTelegramGate() {
+        context.dataStore.edit { it[KEY_TELEGRAM_GATE_PASSED] = false }
     }
 }
