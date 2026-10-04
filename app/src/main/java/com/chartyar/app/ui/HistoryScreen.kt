@@ -446,6 +446,7 @@ private fun SmallStat(label: String, value: Double, color: Color) {
     }
 }
 
+@Composable
 private fun signalColor(signalText: String): Color {
     return when {
         signalText.contains("STRONG_BUY") || signalText.contains("BUY") -> AccentGreen
