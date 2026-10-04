@@ -69,6 +69,7 @@ import com.chartyar.app.ui.ExitDialog
 import com.chartyar.app.ui.GlossaryScreen
 import com.chartyar.app.ui.HistoryScreen
 import com.chartyar.app.ui.HomeScreen
+import com.chartyar.app.ui.LatestAnalysesScreen
 import com.chartyar.app.ui.LimitDialog
 import com.chartyar.app.ui.LimitDialogType
 import com.chartyar.app.ui.MiningCalculatorScreen
@@ -86,8 +87,10 @@ import com.chartyar.app.ui.SplashScreen
 import com.chartyar.app.ui.SymbolSelectorScreen
 import com.chartyar.app.ui.TermsScreen
 import com.chartyar.app.ui.TermsVersionDialog
+import com.chartyar.app.ui.TrendingCoinsScreen
 import com.chartyar.app.ui.TutorialScreen
 import com.chartyar.app.ui.UpdateDialog
+import com.chartyar.app.ui.ViaChartBottomBar
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.ChartYarTheme
 import com.chartyar.app.ui.theme.DarkBg
@@ -342,6 +345,8 @@ class MainActivity : ComponentActivity() {
                         "calculator" -> currentScreen = "home"
                         "mining" -> currentScreen = "home"
                         "exchanges" -> currentScreen = "home"
+                        "trending" -> currentScreen = "home"
+                        "analyses" -> currentScreen = "home"
                         else -> showExitDialog = true
                     }
                 }
@@ -451,389 +456,415 @@ class MainActivity : ComponentActivity() {
                     currentScreen == "changelog" -> ChangelogScreen(
                         onBack = { currentScreen = "settings" }
                     )
-                    else -> when (currentScreen) {
-                        "home" -> HomeScreen(
-                            remainingFree = limitStatus.remainingFree,
-                            adCountToday = limitStatus.adCountToday,
-                            adsForBonus = AnalysisLimitManager.ADS_FOR_BONUS,
-                            isUnlimited = limitStatus.isUnlimited,
-                            onUploadClick = { currentScreen = "symbol" },
-                            onHistoryClick = { currentScreen = "history" },
-                            onSettingsClick = { currentScreen = "settings" },
-                            onAlertsClick = { currentScreen = "alerts" },
-                            onNewsClick = { currentScreen = "news" },
-                            onPricesClick = { currentScreen = "prices" },
-                            onMultiTfClick = { currentScreen = "multi_tf" },
-                            onCalculatorClick = { currentScreen = "calculator" },
-                            onMiningClick = { currentScreen = "mining" },
-                            onExchangesClick = { currentScreen = "exchanges" }
-                        )
-                        "calculator" -> PositionCalculatorScreen(
-                            onBack = { currentScreen = "home" }
-                        )
-                        "mining" -> MiningCalculatorScreen(
-                            onBack = { currentScreen = "home" }
-                        )
-                        "exchanges" -> ExchangesScreen(
-                            onBack = { currentScreen = "home" }
-                        )
-                        "multi_tf" -> MultiTfInputScreen(
-                            cache = cache,
-                            onBack = { currentScreen = "home" },
-                            onResult = { res ->
-                                multiTfResult = res
-                                currentScreen = "multi_tf_result"
-                            }
-                        )
-                        "multi_tf_result" -> {
-                            val r = multiTfResult
-                            if (r != null) {
-                                MultiTimeframeScreen(
-                                    result = r,
-                                    onBack = { currentScreen = "multi_tf" }
-                                )
-                            } else {
-                                currentScreen = "multi_tf"
-                            }
-                        }
-                        "symbol" -> SymbolSelectorScreen(
-                            strategies = StrategyEngine.allStrategies,
-                            selectedStrategy = selectedStrategy,
-                            defaultTimeframe = defaultTimeframe,
-                            lockedStrategies = StrategyEngine.allStrategies
-                                .filter { !unlockedStrategies.contains(it.type.name) }
-                                .map { it.type }
-                                .toSet(),
-                            onStrategyChange = { newStrategy ->
-                                val isUnlocked = unlockedStrategies.contains(newStrategy.name)
-                                if (isUnlocked) {
-                                    selectedStrategy = newStrategy
-                                    lifecycleScope.launch {
-                                        prefs.setDefaultStrategy(newStrategy.name)
-                                    }
-                                } else {
-                                    openLockedStrategyDialog(newStrategy)
-                                }
-                            },
-                            onBack = { currentScreen = "home" },
-                            onSymbolSelected = { symbol, tf, strategy ->
-                                if (!limitManager.consumeAnalysis()) {
-                                    openDailyLimitDialog()
-                                    refreshLimitStatus()
-                                } else {
-                                    refreshLimitStatus()
+                    else -> {
+                        val mainTabs = setOf("home", "trending", "exchanges", "analyses")
+                        val showBottomBar = currentScreen in mainTabs
 
-                                    selectedTimeframe = tf
-                                    selectedStrategy = strategy
-                                    analyzeProgress = 0f
-                                    statusMessage = "..."
-                                    errorMessage = ""
-                                    currentScreen = "analyzing"
-
-                                    lifecycleScope.launch {
-                                        val online = ConnectivityChecker.isOnline(applicationContext)
-                                        isOnline = online
-
-                                        if (!online) {
-                                            errorMessage = NetworkError.NO_INTERNET.message
-                                            currentScreen = "error"
-                                            return@launch
-                                        }
-
-                                        analyzeProgress = 0.3f
-                                        statusMessage = "..."
-                                        delay(200)
-
-                                        val dataResult = MarketDataService.getCandles(
-                                            symbol = symbol,
-                                            timeframe = selectedTimeframe,
-                                            cache = cache
-                                        )
-
-                                        val sourceName = MarketDataService.sourceLabel(dataResult.source)
-
-                                        if (dataResult.candles != null && dataResult.candles.size >= 50) {
-                                            analyzeProgress = 0.7f
-                                            statusMessage = sourceName
-                                            delay(300)
-                                            analyzeProgress = 0.9f
-                                            statusMessage = "..."
-                                            val result = withContext(Dispatchers.Default) {
-                                                SignalEngine.analyze(
-                                                    dataResult.candles,
-                                                    selectedTimeframe,
-                                                    strategy
-                                                )
-                                            }
-                                            analyzeProgress = 1f
-                                            delay(200)
-                                            analysisResult = result
-                                            if (result != null) {
-                                                if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
-                                                currentScreen = "result"
-                                            } else {
-                                                errorMessage = NetworkError.DATA_EMPTY.message
-                                                currentScreen = "error"
-                                            }
-                                        } else {
-                                            errorMessage = NetworkError.DATA_EMPTY.message
-                                            currentScreen = "error"
-                                        }
-                                    }
-                                }
-                            }
-                        )
-                        "analyzing" -> ProgressScreen(
-                            progress = analyzeProgress,
-                            statusMessage = statusMessage,
-                            timeframe = selectedTimeframe
-                        )
-                        "result" -> {
-                            val result = analysisResult
-                            if (result != null) ResultScreen(
-                                result = result,
-                                onBack = {
-                                    analysisResult = null
-                                    currentScreen = "home"
-                                },
-                                onChangeStrategy = {
-                                    analysisResult = null
-                                    currentScreen = "symbol"
-                                }
-                            ) else currentScreen = "home"
-                        }
-                        "history" -> HistoryScreen(
-                            items = historyItems,
-                            onBack = { currentScreen = "home" },
-                            onDelete = { id ->
-                                lifecycleScope.launch {
-                                    db.historyDao().deleteById(id)
-                                    historyItems = db.historyDao().getAll().first()
-                                }
-                            },
-                            onClearAll = {
-                                lifecycleScope.launch {
-                                    db.historyDao().clearAll()
-                                    historyItems = emptyList()
-                                }
-                            }
-                        )
-                        "alerts" -> AlertScreen(
-                            alerts = alertItems,
-                            onBack = { currentScreen = "home" },
-                            onCreateAlert = { symbol, price, condition, note, currency ->
-                                lifecycleScope.launch {
-                                    db.alertDao().insert(
-                                        AlertHelper.createAlert(symbol, price, condition, note, currency)
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                when (currentScreen) {
+                                    "home" -> HomeScreen(
+                                        remainingFree = limitStatus.remainingFree,
+                                        adCountToday = limitStatus.adCountToday,
+                                        adsForBonus = AnalysisLimitManager.ADS_FOR_BONUS,
+                                        isUnlimited = limitStatus.isUnlimited,
+                                        onUploadClick = { currentScreen = "symbol" },
+                                        onHistoryClick = { currentScreen = "history" },
+                                        onSettingsClick = { currentScreen = "settings" },
+                                        onAlertsClick = { currentScreen = "alerts" },
+                                        onNewsClick = { currentScreen = "news" },
+                                        onPricesClick = { currentScreen = "prices" },
+                                        onMultiTfClick = { currentScreen = "multi_tf" },
+                                        onCalculatorClick = { currentScreen = "calculator" },
+                                        onMiningClick = { currentScreen = "mining" },
+                                        onExchangesClick = { currentScreen = "exchanges" }
                                     )
-                                    alertItems = db.alertDao().getAll().first()
-                                }
-                            },
-                            onDeleteAlert = { id ->
-                                lifecycleScope.launch {
-                                    db.alertDao().deleteById(id)
-                                    alertItems = db.alertDao().getAll().first()
-                                }
-                            },
-                            onToggleActive = { id, active ->
-                                lifecycleScope.launch {
-                                    db.alertDao().setActive(id, active)
-                                    alertItems = db.alertDao().getAll().first()
-                                }
-                            },
-                            onResetAlert = { id ->
-                                lifecycleScope.launch {
-                                    val alert = db.alertDao().getById(id)
-                                    if (alert != null) {
-                                        db.alertDao().update(
-                                            alert.copy(isTriggered = false, triggeredAt = 0L)
-                                        )
-                                        alertItems = db.alertDao().getAll().first()
-                                    }
-                                }
-                            }
-                        )
-                        "news" -> NewsScreen(
-                            news = newsItems,
-                            isLoading = isNewsLoading,
-                            isOnline = isOnline,
-                            onBack = { currentScreen = "home" },
-                            onRefresh = {
-                                lifecycleScope.launch {
-                                    isNewsLoading = true
-                                    val fetched = withContext(Dispatchers.IO) {
-                                        ArzdigitalNewsApi.fetchNews(30)
-                                    }
-                                    if (fetched != null) newsItems = fetched
-                                    isNewsLoading = false
-                                }
-                            }
-                        )
-                        "prices" -> PricesScreen(
-                            prices = priceItems,
-                            isLoading = isPricesLoading,
-                            isOnline = isOnline,
-                            onBack = { currentScreen = "home" },
-                            onRefresh = {
-                                lifecycleScope.launch {
-                                    isPricesLoading = true
-                                    val fetched = withContext(Dispatchers.IO) { PricesApi.fetchPrices() }
-                                    if (fetched != null) priceItems = fetched
-                                    isPricesLoading = false
-                                }
-                            },
-                            onCoinClick = { symbol ->
-                                val coin = priceItems.firstOrNull { it.symbol == symbol }
-                                selectedCoin = coin
-                                currentScreen = "coin_detail"
-                            }
-                        )
-                        "coin_detail" -> CoinDetailScreen(
-                            coin = selectedCoin,
-                            onBack = { currentScreen = "prices" },
-                            onAnalyze = { symbol ->
-                                if (!limitManager.consumeAnalysis()) {
-                                    openDailyLimitDialog()
-                                    refreshLimitStatus()
-                                } else {
-                                    refreshLimitStatus()
-
-                                    selectedTimeframe = "4H"
-                                    selectedStrategy = StrategyType.SWING
-                                    analyzeProgress = 0f
-                                    statusMessage = "..."
-                                    errorMessage = ""
-                                    currentScreen = "analyzing"
-
-                                    lifecycleScope.launch {
-                                        val online = ConnectivityChecker.isOnline(applicationContext)
-                                        isOnline = online
-
-                                        if (!online) {
-                                            errorMessage = NetworkError.NO_INTERNET.message
-                                            currentScreen = "error"
-                                            return@launch
-                                        }
-
-                                        analyzeProgress = 0.3f
-                                        delay(200)
-
-                                        val dataResult = MarketDataService.getCandles(
-                                            symbol = symbol,
-                                            timeframe = selectedTimeframe,
-                                            cache = cache
-                                        )
-
-                                        val sourceName = MarketDataService.sourceLabel(dataResult.source)
-
-                                        if (dataResult.candles != null && dataResult.candles.size >= 50) {
-                                            analyzeProgress = 0.7f
-                                            statusMessage = sourceName
-                                            delay(300)
-                                            analyzeProgress = 0.9f
-                                            val result = withContext(Dispatchers.Default) {
-                                                SignalEngine.analyze(
-                                                    dataResult.candles,
-                                                    selectedTimeframe,
-                                                    selectedStrategy
-                                                )
-                                            }
-                                            analyzeProgress = 1f
-                                            delay(200)
-                                            analysisResult = result
-                                            if (result != null) {
-                                                if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
-                                                currentScreen = "result"
-                                            } else {
-                                                errorMessage = NetworkError.DATA_EMPTY.message
-                                                currentScreen = "error"
-                                            }
-                                        } else {
-                                            errorMessage = NetworkError.DATA_EMPTY.message
-                                            currentScreen = "error"
-                                        }
-                                    }
-                                }
-                            },
-                            onSetAlert = { _, _ ->
-                                selectedCoin = null
-                                currentScreen = "alerts"
-                            }
-                        )
-                        "settings" -> SettingsScreen(
-                            autoSaveHistory = autoSaveHistory,
-                            showWarnings = showWarnings,
-                            defaultTimeframe = defaultTimeframe,
-                            theme = themeSetting,
-                            onBack = { currentScreen = "home" },
-                            onShowTutorial = { currentScreen = "tutorial" },
-                            onShowGlossary = { currentScreen = "glossary" },
-                            onShowEducation = { currentScreen = "education" },
-                            onShowAbout = { currentScreen = "about" },
-                            onShowChangelog = { currentScreen = "changelog" },
-                            onShowPrivacy = { currentScreen = "privacy" },
-                            onShowTerms = { currentScreen = "terms" },
-                            onAutoSaveChange = { v ->
-                                autoSaveHistory = v
-                                lifecycleScope.launch { prefs.setAutoSaveHistory(v) }
-                            },
-                            onShowWarningsChange = { v ->
-                                showWarnings = v
-                                lifecycleScope.launch { prefs.setShowWarnings(v) }
-                            },
-                            onDefaultTimeframeChange = { v ->
-                                defaultTimeframe = v
-                                lifecycleScope.launch { prefs.setDefaultTimeframe(v) }
-                            },
-                            onThemeChange = { v ->
-                                themeSetting = v
-                                lifecycleScope.launch { prefs.setTheme(v) }
-                            },
-                            onResetDisclaimer = {
-                                lifecycleScope.launch {
-                                    prefs.resetDisclaimer()
-                                    disclaimerAccepted = false
-                                    currentScreen = "home"
-                                }
-                            },
-                            onClearHistory = {
-                                lifecycleScope.launch {
-                                    db.historyDao().clearAll()
-                                    historyItems = emptyList()
-                                }
-                            },
-                            onResetTutorial = {
-                                lifecycleScope.launch {
-                                    prefs.resetTutorial()
-                                    tutorialSeen = false
-                                    currentScreen = "tutorial"
-                                }
-                            }
-                        )
-                        "error" -> Box(
-                            modifier = Modifier.fillMaxSize().background(DarkBg),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.padding(32.dp)
-                            ) {
-                                Text(
-                                    text = errorMessage,
-                                    color = TextPrimary,
-                                    style = MaterialTheme.typography.headlineMedium
-                                )
-                                Spacer(Modifier.height(24.dp))
-                                Button(
-                                    onClick = {
-                                        errorMessage = ""
-                                        currentScreen = "home"
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = AccentBlue,
-                                        contentColor = TextPrimary
+                                    "trending" -> TrendingCoinsScreen(
+                                        onBack = { currentScreen = "home" },
+                                        onCoinClick = { currentScreen = "prices" }
                                     )
-                                ) { Text("OK") }
+                                    "analyses" -> LatestAnalysesScreen(
+                                        onBack = { currentScreen = "home" }
+                                    )
+                                    "calculator" -> PositionCalculatorScreen(
+                                        onBack = { currentScreen = "home" }
+                                    )
+                                    "mining" -> MiningCalculatorScreen(
+                                        onBack = { currentScreen = "home" }
+                                    )
+                                    "exchanges" -> ExchangesScreen(
+                                        onBack = { currentScreen = "home" }
+                                    )
+                                    "multi_tf" -> MultiTfInputScreen(
+                                        cache = cache,
+                                        onBack = { currentScreen = "home" },
+                                        onResult = { res ->
+                                            multiTfResult = res
+                                            currentScreen = "multi_tf_result"
+                                        }
+                                    )
+                                    "multi_tf_result" -> {
+                                        val r = multiTfResult
+                                        if (r != null) {
+                                            MultiTimeframeScreen(
+                                                result = r,
+                                                onBack = { currentScreen = "multi_tf" }
+                                            )
+                                        } else {
+                                            currentScreen = "multi_tf"
+                                        }
+                                    }
+                                    "symbol" -> SymbolSelectorScreen(
+                                        strategies = StrategyEngine.allStrategies,
+                                        selectedStrategy = selectedStrategy,
+                                        defaultTimeframe = defaultTimeframe,
+                                        lockedStrategies = StrategyEngine.allStrategies
+                                            .filter { !unlockedStrategies.contains(it.type.name) }
+                                            .map { it.type }
+                                            .toSet(),
+                                        onStrategyChange = { newStrategy ->
+                                            val isUnlocked = unlockedStrategies.contains(newStrategy.name)
+                                            if (isUnlocked) {
+                                                selectedStrategy = newStrategy
+                                                lifecycleScope.launch {
+                                                    prefs.setDefaultStrategy(newStrategy.name)
+                                                }
+                                            } else {
+                                                openLockedStrategyDialog(newStrategy)
+                                            }
+                                        },
+                                        onBack = { currentScreen = "home" },
+                                        onSymbolSelected = { symbol, tf, strategy ->
+                                            if (!limitManager.consumeAnalysis()) {
+                                                openDailyLimitDialog()
+                                                refreshLimitStatus()
+                                            } else {
+                                                refreshLimitStatus()
+
+                                                selectedTimeframe = tf
+                                                selectedStrategy = strategy
+                                                analyzeProgress = 0f
+                                                statusMessage = "..."
+                                                errorMessage = ""
+                                                currentScreen = "analyzing"
+
+                                                lifecycleScope.launch {
+                                                    val online = ConnectivityChecker.isOnline(applicationContext)
+                                                    isOnline = online
+
+                                                    if (!online) {
+                                                        errorMessage = NetworkError.NO_INTERNET.message
+                                                        currentScreen = "error"
+                                                        return@launch
+                                                    }
+
+                                                    analyzeProgress = 0.3f
+                                                    statusMessage = "..."
+                                                    delay(200)
+
+                                                    val dataResult = MarketDataService.getCandles(
+                                                        symbol = symbol,
+                                                        timeframe = selectedTimeframe,
+                                                        cache = cache
+                                                    )
+
+                                                    val sourceName = MarketDataService.sourceLabel(dataResult.source)
+
+                                                    if (dataResult.candles != null && dataResult.candles.size >= 50) {
+                                                        analyzeProgress = 0.7f
+                                                        statusMessage = sourceName
+                                                        delay(300)
+                                                        analyzeProgress = 0.9f
+                                                        statusMessage = "..."
+                                                        val result = withContext(Dispatchers.Default) {
+                                                            SignalEngine.analyze(
+                                                                dataResult.candles,
+                                                                selectedTimeframe,
+                                                                strategy
+                                                            )
+                                                        }
+                                                        analyzeProgress = 1f
+                                                        delay(200)
+                                                        analysisResult = result
+                                                        if (result != null) {
+                                                            if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                                            currentScreen = "result"
+                                                        } else {
+                                                            errorMessage = NetworkError.DATA_EMPTY.message
+                                                            currentScreen = "error"
+                                                        }
+                                                    } else {
+                                                        errorMessage = NetworkError.DATA_EMPTY.message
+                                                        currentScreen = "error"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    )
+                                    "analyzing" -> ProgressScreen(
+                                        progress = analyzeProgress,
+                                        statusMessage = statusMessage,
+                                        timeframe = selectedTimeframe
+                                    )
+                                    "result" -> {
+                                        val result = analysisResult
+                                        if (result != null) ResultScreen(
+                                            result = result,
+                                            onBack = {
+                                                analysisResult = null
+                                                currentScreen = "home"
+                                            },
+                                            onChangeStrategy = {
+                                                analysisResult = null
+                                                currentScreen = "symbol"
+                                            }
+                                        ) else currentScreen = "home"
+                                    }
+                                    "history" -> HistoryScreen(
+                                        items = historyItems,
+                                        onBack = { currentScreen = "home" },
+                                        onDelete = { id ->
+                                            lifecycleScope.launch {
+                                                db.historyDao().deleteById(id)
+                                                historyItems = db.historyDao().getAll().first()
+                                            }
+                                        },
+                                        onClearAll = {
+                                            lifecycleScope.launch {
+                                                db.historyDao().clearAll()
+                                                historyItems = emptyList()
+                                            }
+                                        }
+                                    )
+                                    "alerts" -> AlertScreen(
+                                        alerts = alertItems,
+                                        onBack = { currentScreen = "home" },
+                                        onCreateAlert = { symbol, price, condition, note, currency ->
+                                            lifecycleScope.launch {
+                                                db.alertDao().insert(
+                                                    AlertHelper.createAlert(symbol, price, condition, note, currency)
+                                                )
+                                                alertItems = db.alertDao().getAll().first()
+                                            }
+                                        },
+                                        onDeleteAlert = { id ->
+                                            lifecycleScope.launch {
+                                                db.alertDao().deleteById(id)
+                                                alertItems = db.alertDao().getAll().first()
+                                            }
+                                        },
+                                        onToggleActive = { id, active ->
+                                            lifecycleScope.launch {
+                                                db.alertDao().setActive(id, active)
+                                                alertItems = db.alertDao().getAll().first()
+                                            }
+                                        },
+                                        onResetAlert = { id ->
+                                            lifecycleScope.launch {
+                                                val alert = db.alertDao().getById(id)
+                                                if (alert != null) {
+                                                    db.alertDao().update(
+                                                        alert.copy(isTriggered = false, triggeredAt = 0L)
+                                                    )
+                                                    alertItems = db.alertDao().getAll().first()
+                                                }
+                                            }
+                                        }
+                                    )
+                                    "news" -> NewsScreen(
+                                        news = newsItems,
+                                        isLoading = isNewsLoading,
+                                        isOnline = isOnline,
+                                        onBack = { currentScreen = "home" },
+                                        onRefresh = {
+                                            lifecycleScope.launch {
+                                                isNewsLoading = true
+                                                val fetched = withContext(Dispatchers.IO) {
+                                                    ArzdigitalNewsApi.fetchNews(30)
+                                                }
+                                                if (fetched != null) newsItems = fetched
+                                                isNewsLoading = false
+                                            }
+                                        }
+                                    )
+                                    "prices" -> PricesScreen(
+                                        prices = priceItems,
+                                        isLoading = isPricesLoading,
+                                        isOnline = isOnline,
+                                        onBack = { currentScreen = "home" },
+                                        onRefresh = {
+                                            lifecycleScope.launch {
+                                                isPricesLoading = true
+                                                val fetched = withContext(Dispatchers.IO) { PricesApi.fetchPrices() }
+                                                if (fetched != null) priceItems = fetched
+                                                isPricesLoading = false
+                                            }
+                                        },
+                                        onCoinClick = { symbol ->
+                                            val coin = priceItems.firstOrNull { it.symbol == symbol }
+                                            selectedCoin = coin
+                                            currentScreen = "coin_detail"
+                                        }
+                                    )
+                                    "coin_detail" -> CoinDetailScreen(
+                                        coin = selectedCoin,
+                                        onBack = { currentScreen = "prices" },
+                                        onAnalyze = { symbol ->
+                                            if (!limitManager.consumeAnalysis()) {
+                                                openDailyLimitDialog()
+                                                refreshLimitStatus()
+                                            } else {
+                                                refreshLimitStatus()
+
+                                                selectedTimeframe = "4H"
+                                                selectedStrategy = StrategyType.SWING
+                                                analyzeProgress = 0f
+                                                statusMessage = "..."
+                                                errorMessage = ""
+                                                currentScreen = "analyzing"
+
+                                                lifecycleScope.launch {
+                                                    val online = ConnectivityChecker.isOnline(applicationContext)
+                                                    isOnline = online
+
+                                                    if (!online) {
+                                                        errorMessage = NetworkError.NO_INTERNET.message
+                                                        currentScreen = "error"
+                                                        return@launch
+                                                    }
+
+                                                    analyzeProgress = 0.3f
+                                                    delay(200)
+
+                                                    val dataResult = MarketDataService.getCandles(
+                                                        symbol = symbol,
+                                                        timeframe = selectedTimeframe,
+                                                        cache = cache
+                                                    )
+
+                                                    val sourceName = MarketDataService.sourceLabel(dataResult.source)
+
+                                                    if (dataResult.candles != null && dataResult.candles.size >= 50) {
+                                                        analyzeProgress = 0.7f
+                                                        statusMessage = sourceName
+                                                        delay(300)
+                                                        analyzeProgress = 0.9f
+                                                        val result = withContext(Dispatchers.Default) {
+                                                            SignalEngine.analyze(
+                                                                dataResult.candles,
+                                                                selectedTimeframe,
+                                                                selectedStrategy
+                                                            )
+                                                        }
+                                                        analyzeProgress = 1f
+                                                        delay(200)
+                                                        analysisResult = result
+                                                        if (result != null) {
+                                                            if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
+                                                            currentScreen = "result"
+                                                        } else {
+                                                            errorMessage = NetworkError.DATA_EMPTY.message
+                                                            currentScreen = "error"
+                                                        }
+                                                    } else {
+                                                        errorMessage = NetworkError.DATA_EMPTY.message
+                                                        currentScreen = "error"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        onSetAlert = { _, _ ->
+                                            selectedCoin = null
+                                            currentScreen = "alerts"
+                                        }
+                                    )
+                                    "settings" -> SettingsScreen(
+                                        autoSaveHistory = autoSaveHistory,
+                                        showWarnings = showWarnings,
+                                        defaultTimeframe = defaultTimeframe,
+                                        theme = themeSetting,
+                                        onBack = { currentScreen = "home" },
+                                        onShowTutorial = { currentScreen = "tutorial" },
+                                        onShowGlossary = { currentScreen = "glossary" },
+                                        onShowEducation = { currentScreen = "education" },
+                                        onShowAbout = { currentScreen = "about" },
+                                        onShowChangelog = { currentScreen = "changelog" },
+                                        onShowPrivacy = { currentScreen = "privacy" },
+                                        onShowTerms = { currentScreen = "terms" },
+                                        onAutoSaveChange = { v ->
+                                            autoSaveHistory = v
+                                            lifecycleScope.launch { prefs.setAutoSaveHistory(v) }
+                                        },
+                                        onShowWarningsChange = { v ->
+                                            showWarnings = v
+                                            lifecycleScope.launch { prefs.setShowWarnings(v) }
+                                        },
+                                        onDefaultTimeframeChange = { v ->
+                                            defaultTimeframe = v
+                                            lifecycleScope.launch { prefs.setDefaultTimeframe(v) }
+                                        },
+                                        onThemeChange = { v ->
+                                            themeSetting = v
+                                            lifecycleScope.launch { prefs.setTheme(v) }
+                                        },
+                                        onResetDisclaimer = {
+                                            lifecycleScope.launch {
+                                                prefs.resetDisclaimer()
+                                                disclaimerAccepted = false
+                                                currentScreen = "home"
+                                            }
+                                        },
+                                        onClearHistory = {
+                                            lifecycleScope.launch {
+                                                db.historyDao().clearAll()
+                                                historyItems = emptyList()
+                                            }
+                                        },
+                                        onResetTutorial = {
+                                            lifecycleScope.launch {
+                                                prefs.resetTutorial()
+                                                tutorialSeen = false
+                                                currentScreen = "tutorial"
+                                            }
+                                        }
+                                    )
+                                    "error" -> Box(
+                                        modifier = Modifier.fillMaxSize().background(DarkBg),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier.padding(32.dp)
+                                        ) {
+                                            Text(
+                                                text = errorMessage,
+                                                color = TextPrimary,
+                                                style = MaterialTheme.typography.headlineMedium
+                                            )
+                                            Spacer(Modifier.height(24.dp))
+                                            Button(
+                                                onClick = {
+                                                    errorMessage = ""
+                                                    currentScreen = "home"
+                                                },
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = AccentBlue,
+                                                    contentColor = TextPrimary
+                                                )
+                                            ) { Text("OK") }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (showBottomBar) {
+                                ViaChartBottomBar(
+                                    currentRoute = currentScreen,
+                                    onHomeClick = { currentScreen = "home" },
+                                    onTrendingClick = { currentScreen = "trending" },
+                                    onExchangesClick = { currentScreen = "exchanges" },
+                                    onAnalysesClick = { currentScreen = "analyses" }
+                                )
                             }
                         }
                     }
