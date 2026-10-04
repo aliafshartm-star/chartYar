@@ -82,4 +82,32 @@
     <string name="exchanges_copy_success">کد کپی شد</string>
     <string name="exchanges_copy_failed">کپی نشد</string>
     <string name="exchanges_link_failed">لینک باز نشد</string>
+
+    <string name="bottom_nav_home">خانه</string>
+    <string name="bottom_nav_trending">پرطرفدار</string>
+    <string name="bottom_nav_exchanges">صرافی‌ها</string>
+    <string name="bottom_nav_analyses">تحلیل‌ها</string>
+
+    <string name="home_icon_futures">فیوچرز</string>
+    <string name="home_icon_profit">ماشین سود</string>
+    <string name="home_icon_news">اخبار</string>
+    <string name="home_icon_prices">قیمت‌ها</string>
+    <string name="home_icon_fear_greed">ترس و طمع</string>
+
+    <string name="home_last_analyses_title">آخرین تحلیل‌ها</string>
+    <string name="home_last_analyses_view_all">مشاهده همه</string>
+    <string name="home_last_analyses_empty">هنوز تحلیلی موجود نیست</string>
+
+    <string name="trending_title">ارزهای پرطرفدار</string>
+    <string name="trending_subtitle">پرطرفدارترین ارزهای بازار</string>
+    <string name="trending_loading">در حال بارگذاری</string>
+    <string name="trending_empty">ارزی یافت نشد</string>
+
+    <string name="analyses_title">آخرین تحلیل‌ها</string>
+    <string name="analyses_subtitle">تحلیل‌های اخیر بازار کریپتو</string>
+    <string name="analyses_loading">در حال بارگذاری تحلیل‌ها</string>
+    <string name="analyses_empty">تحلیلی یافت نشد</string>
+    <string name="analyses_read_more">مطالعه کامل</string>
+    <string name="analyses_views">بازدید</string>
+    <string name="analyses_replies">پاسخ</string>
 </resources>
