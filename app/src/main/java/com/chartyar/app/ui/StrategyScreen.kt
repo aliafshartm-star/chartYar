@@ -19,7 +19,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -38,8 +39,6 @@ import com.chartyar.app.analysis.StrategyEngine
 import com.chartyar.app.analysis.StrategyInfo
 import com.chartyar.app.analysis.StrategyType
 import com.chartyar.app.ui.theme.AccentBlue
-import com.chartyar.app.ui.theme.AccentGreen
-import com.chartyar.app.ui.theme.AccentRed
 import com.chartyar.app.ui.theme.AccentYellow
 import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.DarkSurface
@@ -49,6 +48,8 @@ import com.chartyar.app.ui.theme.TextSecondary
 
 @Composable
 fun StrategyScreen(
+    unlockedStrategies: Set<String>,
+    strategyAdProgress: (String) -> Pair<Int, Int>,
     onStrategyClick: (StrategyType) -> Unit
 ) {
     Column(
@@ -78,8 +79,16 @@ fun StrategyScreen(
             contentPadding = PaddingValues(bottom = 20.dp)
         ) {
             items(StrategyEngine.allStrategies, key = { it.type.name }) { strategy ->
+                val isUnlocked = unlockedStrategies.contains(strategy.type.name) ||
+                        strategy.type == StrategyType.SWING
+
+                val progress = if (!isUnlocked) strategyAdProgress(strategy.type.name) else (0 to 0)
+
                 StrategyCard(
                     strategy = strategy,
+                    isUnlocked = isUnlocked,
+                    adsWatched = progress.first,
+                    adsRequired = progress.second,
                     onClick = { onStrategyClick(strategy.type) }
                 )
             }
@@ -90,6 +99,9 @@ fun StrategyScreen(
 @Composable
 private fun StrategyCard(
     strategy: StrategyInfo,
+    isUnlocked: Boolean,
+    adsWatched: Int,
+    adsRequired: Int,
     onClick: () -> Unit
 ) {
     val color = Color(strategy.iconColor)
@@ -119,12 +131,23 @@ private fun StrategyCard(
                 }
                 Spacer(Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = strategy.displayName,
-                        color = TextPrimary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = strategy.displayName,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp
+                        )
+                        if (!isUnlocked) {
+                            Spacer(Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Filled.Lock,
+                                contentDescription = "locked",
+                                tint = AccentYellow,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
                     Spacer(Modifier.height(3.dp))
                     Text(
                         text = strategy.shortDescription,
@@ -132,12 +155,21 @@ private fun StrategyCard(
                         fontSize = 11.sp
                     )
                 }
-                Icon(
-                    Icons.Filled.ArrowForward,
-                    null,
-                    tint = AccentBlue,
-                    modifier = Modifier.size(20.dp)
-                )
+                if (isUnlocked) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(color.copy(alpha = 0.15f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = "start",
+                            tint = color,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(12.dp))
@@ -170,6 +202,57 @@ private fun StrategyCard(
                             fontSize = 10.sp,
                             fontWeight = FontWeight.SemiBold
                         )
+                    }
+                }
+            }
+
+            if (!isUnlocked && adsRequired > 0) {
+                Spacer(Modifier.height(12.dp))
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(AccentYellow.copy(alpha = 0.1f), RoundedCornerShape(10.dp))
+                        .padding(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "🎬 برای باز کردن: $adsRequired تبلیغ",
+                            color = AccentYellow,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (adsWatched > 0) {
+                            Text(
+                                text = "$adsWatched / $adsRequired",
+                                color = AccentYellow,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    if (adsWatched > 0) {
+                        Spacer(Modifier.height(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .background(Divider, RoundedCornerShape(2.dp))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(
+                                        adsWatched.toFloat() / adsRequired.toFloat()
+                                    )
+                                    .height(4.dp)
+                                    .background(AccentYellow, RoundedCornerShape(2.dp))
+                            )
+                        }
                     }
                 }
             }
