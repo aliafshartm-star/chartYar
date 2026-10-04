@@ -46,8 +46,8 @@ import com.chartyar.app.ui.theme.DarkSurface
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.ui.theme.TextSecondary
 
-private const val TELEGRAM_URL = "https://t.me/chartyar_app"
-private const val INSTAGRAM_URL = "https://www.instagram.com/chartyar_app"
+private const val TELEGRAM_URL = "https://t.me/viachart_app"
+private const val INSTAGRAM_URL = "https://www.instagram.com/viachart_app"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +82,7 @@ fun AboutScreen(
                 Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
             }
             Text(
-                "درباره چارت‌یار",
+                "درباره ViaChart",
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold
@@ -98,10 +98,22 @@ fun AboutScreen(
                 modifier = Modifier.fillMaxWidth().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = "📊", fontSize = 64.sp)
-                Spacer(Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .background(AccentBlue, RoundedCornerShape(20.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "V",
+                        color = Color.White,
+                        fontSize = 42.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "چارت‌یار",
+                    text = "ViaChart",
                     color = AccentBlue,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold
@@ -127,11 +139,12 @@ fun AboutScreen(
         Spacer(Modifier.height(12.dp))
 
         InfoCard(
-            title = "چرا چارت‌یار؟",
+            title = "چرا ViaChart؟",
             lines = listOf(
                 "🚀 استراتژی ترکیبی چند هوش مصنوعی (Multi-AI Strategy)",
+                "💎 استراتژی PRO با ۲۵ اندیکاتور پیشرفته",
                 "🎯 نرخ موفقیت بهینه با مدیریت ریسک پیشرفته",
-                "🧠 ترکیب ۳ موتور تحلیلی مستقل برای تأیید سیگنال",
+                "🧠 ترکیب ۵ موتور تحلیلی مستقل برای تأیید سیگنال",
                 "⚡ دقت بالاتر از تحلیل انسانی در تست‌های مقایسه‌ای",
                 "📊 داده‌های لحظه‌ای و به‌روز بازار",
                 "🔒 امن، بدون ذخیره اطلاعات شخصی",
@@ -146,20 +159,21 @@ fun AboutScreen(
         InfoCard(
             title = "امکانات بی‌نظیر",
             lines = listOf(
+                "۵ استراتژی تحلیل (اسکالپ، سوئینگ، پوزیشن، Multi-AI، PRO)",
                 "تحلیل جفت ارز با الگوریتم پیشرفته هوش مصنوعی",
                 "تحلیل چند تایم‌فریمی برای تأیید سیگنال قوی‌تر",
                 "قیمت لحظه‌ای ۲۰۰+ ارز به تومان و دلار",
                 "صفحه جزئیات کامل هر ارز",
                 "هشدار قیمت هوشمند (تومان یا دلار)",
-                "چک خودکار هر ۱۵ ثانیه برای پامپ‌ها",
+                "شاخص‌های بازار (دامیننس BTC، آلت سیزن، DeFi)",
                 "اخبار لحظه‌ای ارز دیجیتال",
-                "شاخص ترس و طمع برای درک حس بازار",
+                "شاخص ترس و طمع",
                 "ماشین‌حساب فیوچرز (سود/زیان/لیکویید)",
                 "ماشین‌حساب استخراج بیت‌کوین",
                 "صرافی‌ها با تخفیف کارمزد اختصاصی",
                 "دیکشنری کامل اصطلاحات تریدینگ",
                 "درس‌های آموزشی تحلیل تکنیکال از صفر",
-                "تاریخچه تحلیل‌ها برای پیگیری",
+                "تاریخچه تحلیل‌ها با یادداشت شخصی",
                 "حالت تاریک حرفه‌ای (Wallex Style)"
             )
         )
