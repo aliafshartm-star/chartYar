@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,7 +36,7 @@ fun ViaChartBottomBar(
     onHomeClick: () -> Unit,
     onTrendingClick: () -> Unit,
     onExchangesClick: () -> Unit,
-    onAnalysesClick: () -> Unit
+    onStrategyClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -65,10 +65,10 @@ fun ViaChartBottomBar(
             onClick = onExchangesClick
         )
         BottomBarItem(
-            icon = Icons.Filled.Insights,
-            label = stringResource(R.string.bottom_nav_analyses),
-            selected = currentRoute == "analyses",
-            onClick = onAnalysesClick
+            icon = Icons.Filled.Psychology,
+            label = stringResource(R.string.bottom_nav_strategy),
+            selected = currentRoute == "strategy",
+            onClick = onStrategyClick
         )
     }
 }
