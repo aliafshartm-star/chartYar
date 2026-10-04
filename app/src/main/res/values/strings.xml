@@ -93,6 +93,7 @@
     <string name="home_icon_news">اخبار</string>
     <string name="home_icon_prices">قیمت‌ها</string>
     <string name="home_icon_fear_greed">ترس و طمع</string>
+    <string name="home_icon_market">شاخص‌ها</string>
 
     <string name="home_last_analyses_title">آخرین تحلیل‌ها</string>
     <string name="home_last_analyses_view_all">مشاهده همه</string>
