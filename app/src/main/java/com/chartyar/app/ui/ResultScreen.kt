@@ -1,5 +1,7 @@
 package com.chartyar.app.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,6 +34,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,6 +72,7 @@ import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.ui.theme.TextSecondary
 import com.chartyar.app.util.ShareHelper
 import com.chartyar.app.util.ShareImageHelper
+import kotlin.math.abs
 
 @Composable
 fun ResultScreen(
@@ -105,28 +113,25 @@ fun ResultScreen(
 
         Spacer(Modifier.height(16.dp))
 
+        TradeSetupCard(result)
+
+        Spacer(Modifier.height(12.dp))
+
         if (result.strategy == StrategyType.MULTI_AI && result.engineVotes.isNotEmpty()) {
             EngineVotesCard(result)
             Spacer(Modifier.height(12.dp))
         }
 
-        QuickStatsRow(result)
-
-        Spacer(Modifier.height(16.dp))
-
-        PriceLevelsCard(result)
-
         if (result.patterns.isNotEmpty()) {
-            Spacer(Modifier.height(12.dp))
             PatternsCard(result.patterns)
+            Spacer(Modifier.height(12.dp))
         }
 
         if (result.visionTrendLines.isNotEmpty()) {
-            Spacer(Modifier.height(12.dp))
             VisionCard(result)
+            Spacer(Modifier.height(12.dp))
         }
 
-        Spacer(Modifier.height(12.dp))
         ReasonsCard(result.reasons, "دلایل تحلیل", AccentGreen)
 
         if (result.warnings.isNotEmpty()) {
@@ -135,9 +140,11 @@ fun ResultScreen(
         }
 
         Spacer(Modifier.height(12.dp))
+
         LevelsCard(result)
 
         Spacer(Modifier.height(12.dp))
+
         ScoresCard(result)
 
         Spacer(Modifier.height(20.dp))
@@ -245,6 +252,358 @@ private fun StrategyHeaderCard(
 }
 
 @Composable
+private fun SignalHeroCard(result: AnalysisResult) {
+    val signalText = when (result.signal) {
+        SignalType.STRONG_BUY -> "خرید قوی"
+        SignalType.BUY -> "خرید"
+        SignalType.NEUTRAL -> "خنثی"
+        SignalType.SELL -> "فروش"
+        SignalType.STRONG_SELL -> "فروش قوی"
+    }
+
+    val signalIcon = when (result.signal) {
+        SignalType.STRONG_BUY -> "🚀"
+        SignalType.BUY -> "📈"
+        SignalType.NEUTRAL -> "⏸"
+        SignalType.SELL -> "📉"
+        SignalType.STRONG_SELL -> "🔻"
+    }
+
+    val (gradientStart, gradientEnd) = when (result.signal) {
+        SignalType.STRONG_BUY, SignalType.BUY -> GradientGreenStart to GradientGreenEnd
+        SignalType.STRONG_SELL, SignalType.SELL -> GradientRedStart to GradientRedEnd
+        else -> GradientBlueStart to GradientBlueEnd
+    }
+
+    val trendText = when (result.trend) {
+        TrendType.UPTREND -> "صعودی"
+        TrendType.DOWNTREND -> "نزولی"
+        TrendType.RANGE -> "رنج"
+    }
+
+    val trendColor = when (result.trend) {
+        TrendType.UPTREND -> AccentGreen
+        TrendType.DOWNTREND -> AccentRed
+        TrendType.RANGE -> AccentYellow
+    }
+
+    var animatedConfidence by remember { mutableStateOf(0f) }
+    LaunchedEffect(result.confidence) {
+        animatedConfidence = result.confidence / 100f
+    }
+    val progress by animateFloatAsState(
+        targetValue = animatedConfidence,
+        animationSpec = tween(1200),
+        label = "confidence"
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Brush.linearGradient(listOf(gradientStart, gradientEnd)))
+                .padding(20.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(58.dp)
+                            .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(14.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(signalIcon, fontSize = 30.sp)
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("سیگنال تحلیل", color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp)
+                        Spacer(Modifier.height(2.dp))
+                        Text(signalText, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 26.sp)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("اطمینان", color = Color.White.copy(alpha = 0.75f), fontSize = 10.sp)
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            "${result.confidence}%",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 26.sp
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(Color.White.copy(alpha = 0.2f))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(Color.White)
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text("روند", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp)
+                        Spacer(Modifier.height(3.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(trendText, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("قیمت فعلی", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp)
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            "%.2f".format(result.currentPrice),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TradeSetupCard(result: AnalysisResult) {
+    val isBuy = result.signal == SignalType.BUY || result.signal == SignalType.STRONG_BUY
+    val isNeutral = result.signal == SignalType.NEUTRAL
+
+    val current = result.currentPrice
+    val entry = result.entry
+    val sl = result.stopLoss
+    val t1 = result.target1
+    val t2 = result.target2
+    val t3 = result.target3
+
+    fun pctFrom(price: Double): String {
+        if (current <= 0.0) return "0%"
+        val pct = ((price - current) / current) * 100.0
+        val sign = if (pct >= 0) "+" else ""
+        return "$sign${"%.2f".format(pct)}%"
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, DividerColor)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)
+                        .background(AccentBlue, RoundedCornerShape(2.dp))
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "ستاپ معاملاتی",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+            }
+
+            Spacer(Modifier.height(4.dp))
+            Text(
+                if (isNeutral) "پیشنهاد: منتظر سیگنال واضح‌تر بمان"
+                else if (isBuy) "پیشنهاد: ورود در جهت صعودی"
+                else "پیشنهاد: ورود در جهت نزولی",
+                color = TextSecondary,
+                fontSize = 11.sp
+            )
+
+            Spacer(Modifier.height(14.dp))
+
+            PriceLevelRow(
+                label = "نقطه ورود",
+                sublabel = "ورود پیشنهادی",
+                price = entry,
+                percent = pctFrom(entry),
+                color = AccentBlue,
+                isHighlighted = true
+            )
+
+            LevelDivider()
+
+            PriceLevelRow(
+                label = "حد ضرر",
+                sublabel = "خروج اضطراری",
+                price = sl,
+                percent = pctFrom(sl),
+                color = AccentRed,
+                isHighlighted = false
+            )
+
+            LevelDivider()
+
+            PriceLevelRow(
+                label = "هدف اول",
+                sublabel = "سود سبک",
+                price = t1,
+                percent = pctFrom(t1),
+                color = AccentGreen,
+                isHighlighted = false
+            )
+
+            LevelDivider()
+
+            PriceLevelRow(
+                label = "هدف دوم",
+                sublabel = "سود متوسط",
+                price = t2,
+                percent = pctFrom(t2),
+                color = AccentGreen,
+                isHighlighted = false
+            )
+
+            LevelDivider()
+
+            PriceLevelRow(
+                label = "هدف سوم",
+                sublabel = "سود حداکثری",
+                price = t3,
+                percent = pctFrom(t3),
+                color = AccentGreen,
+                isHighlighted = false
+            )
+
+            Spacer(Modifier.height(14.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AccentBlue.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                    .padding(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("ریسک به ریوارد", color = TextSecondary, fontSize = 11.sp)
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            "1 : ${"%.2f".format(result.riskReward)}",
+                            color = if (result.riskReward >= 2.0) AccentGreen else AccentYellow,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                if (result.riskReward >= 2.0) AccentGreen.copy(alpha = 0.2f)
+                                else AccentYellow.copy(alpha = 0.2f),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            if (result.riskReward >= 2.0) "مطلوب" else "مرزی",
+                            color = if (result.riskReward >= 2.0) AccentGreen else AccentYellow,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PriceLevelRow(
+    label: String,
+    sublabel: String,
+    price: Double,
+    percent: String,
+    color: Color,
+    isHighlighted: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(if (isHighlighted) 12.dp else 8.dp)
+                .background(color, CircleShape)
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                label,
+                color = TextPrimary,
+                fontWeight = if (isHighlighted) FontWeight.Bold else FontWeight.SemiBold,
+                fontSize = if (isHighlighted) 14.sp else 13.sp
+            )
+            Text(sublabel, color = TextSecondary, fontSize = 10.sp)
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                "%.2f".format(price),
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+            Spacer(Modifier.height(2.dp))
+            Box(
+                modifier = Modifier
+                    .background(color.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    percent,
+                    color = color,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 10.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LevelDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(DividerColor.copy(alpha = 0.5f))
+    )
+}
+
+@Composable
 private fun EngineVotesCard(result: AnalysisResult) {
     val bullish = result.engineVotes.count { it.vote == 1 }
     val bearish = result.engineVotes.count { it.vote == -1 }
@@ -315,157 +674,6 @@ private fun EngineVotesCard(result: AnalysisResult) {
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun SignalHeroCard(result: AnalysisResult) {
-    val signalText = when (result.signal) {
-        SignalType.STRONG_BUY -> "خرید قوی"
-        SignalType.BUY -> "خرید"
-        SignalType.NEUTRAL -> "خنثی"
-        SignalType.SELL -> "فروش"
-        SignalType.STRONG_SELL -> "فروش قوی"
-    }
-
-    val (gradientStart, gradientEnd) = when (result.signal) {
-        SignalType.STRONG_BUY, SignalType.BUY -> GradientGreenStart to GradientGreenEnd
-        SignalType.STRONG_SELL, SignalType.SELL -> GradientRedStart to GradientRedEnd
-        else -> GradientBlueStart to GradientBlueEnd
-    }
-
-    val trendText = when (result.trend) {
-        TrendType.UPTREND -> "صعودی"
-        TrendType.DOWNTREND -> "نزولی"
-        TrendType.RANGE -> "رنج"
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Brush.linearGradient(listOf(gradientStart, gradientEnd)))
-                .padding(20.dp)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text("سیگنال", color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
-                        Spacer(Modifier.height(4.dp))
-                        Text(signalText, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 28.sp)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(70.dp)
-                            .background(Color.White.copy(alpha = 0.15f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${result.confidence}%", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            Text("اطمینان", color = Color.White.copy(alpha = 0.75f), fontSize = 9.sp)
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text("روند", color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp)
-                        Text(trendText, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("قیمت فعلی", color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp)
-                        Text(
-                            "%.2f".format(result.currentPrice),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun QuickStatsRow(result: AnalysisResult) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        StatCard("ریسک به ریوارد", "1 : ${"%.1f".format(result.riskReward)}",
-            if (result.riskReward >= 2.0) AccentGreen else AccentYellow, Modifier.weight(1f))
-        StatCard("نقطه ورود", "%.2f".format(result.entry), AccentBlue, Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun StatCard(label: String, value: String, color: Color, modifier: Modifier) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, DividerColor)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
-            Text(label, color = TextSecondary, fontSize = 11.sp)
-            Spacer(Modifier.height(6.dp))
-            Text(value, color = color, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        }
-    }
-}
-
-@Composable
-private fun PriceLevelsCard(result: AnalysisResult) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, DividerColor)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Text("سطوح معاملاتی", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Spacer(Modifier.height(12.dp))
-            PriceRow("حد ضرر", result.stopLoss, AccentRed)
-            Spacer(Modifier.height(4.dp))
-            Divider(color = DividerColor)
-            Spacer(Modifier.height(4.dp))
-            PriceRow("هدف اول", result.target1, AccentGreen)
-            Spacer(Modifier.height(4.dp))
-            Divider(color = DividerColor)
-            Spacer(Modifier.height(4.dp))
-            PriceRow("هدف دوم", result.target2, AccentGreen)
-            Spacer(Modifier.height(4.dp))
-            Divider(color = DividerColor)
-            Spacer(Modifier.height(4.dp))
-            PriceRow("هدف سوم", result.target3, AccentGreen)
-        }
-    }
-}
-
-@Composable
-private fun PriceRow(label: String, value: Double, valueColor: Color) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, color = TextSecondary, fontSize = 13.sp)
-        Text("%.2f".format(value), color = valueColor, fontWeight = FontWeight.Bold, fontSize = 14.sp)
     }
 }
 
@@ -653,7 +861,7 @@ private fun ScoresCard(result: AnalysisResult) {
                                 .clip(RoundedCornerShape(2.dp))
                                 .background(DarkCard)
                         ) {
-                            val fraction = (kotlin.math.abs(score).coerceAtMost(100) / 100f)
+                            val fraction = (abs(score).coerceAtMost(100) / 100f)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth(fraction)
