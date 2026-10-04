@@ -46,7 +46,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
@@ -62,8 +61,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.chartyar.app.R
 import com.chartyar.app.data.ArzdigitalNewsApi
-import com.chartyar.app.data.FearGreedApi
-import com.chartyar.app.data.FearGreedData
 import com.chartyar.app.data.NewsItem
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.AccentGreen
@@ -154,22 +151,10 @@ fun HomeScreen(
             LimitStatusCard(remainingFree, adCountToday, adsForBonus, isUnlimited)
         }
 
-        Spacer(Modifier.height(12.dp))
-
-        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-            AlertsCompactButton(onClick = onAlertsClick)
-        }
-
         Spacer(Modifier.height(16.dp))
 
         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
             HeroAnalysisCard(onUploadClick)
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-            FearGreedCard()
         }
 
         Spacer(Modifier.height(16.dp))
@@ -575,36 +560,6 @@ private fun LimitStatusCard(
 }
 
 @Composable
-private fun AlertsCompactButton(onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .background(AccentYellow.copy(alpha = 0.15f), RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.Notifications, null, tint = AccentYellow, modifier = Modifier.size(20.dp))
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.home_alerts_title), color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text(stringResource(R.string.home_alerts_subtitle), color = TextSecondary, fontSize = 11.sp)
-            }
-            Icon(Icons.Filled.OpenInNew, null, tint = AccentBlue, modifier = Modifier.size(16.dp))
-        }
-    }
-}
-
-@Composable
 private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -649,85 +604,6 @@ private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
                     Icon(Icons.Filled.TrendingUp, null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.home_hero_button), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FearGreedCard() {
-    var data by remember { mutableStateOf<FearGreedData?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-
-    LaunchedEffect(Unit) {
-        isLoading = true
-        data = withContext(Dispatchers.IO) { FearGreedApi.fetchFearGreed() }
-        isLoading = false
-    }
-
-    val value = data?.value ?: 0
-    val color = when {
-        value <= 25 -> AccentRed
-        value <= 45 -> Color(0xFFFF8C42)
-        value <= 55 -> AccentYellow
-        value <= 75 -> Color(0xFF7BC97C)
-        else -> AccentGreen
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, Divider)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(80.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(color = AccentBlue, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
-                } else if (data != null) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            data!!.value.toString(),
-                            color = TextPrimary,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            data!!.classificationFa,
-                            color = color,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                } else {
-                    Text("-", color = TextSecondary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-            Spacer(Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.home_fear_greed_title), color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Spacer(Modifier.height(4.dp))
-                Text(stringResource(R.string.home_fear_greed_subtitle), color = TextSecondary, fontSize = 11.sp)
-                if (data != null && !isLoading) {
-                    Spacer(Modifier.height(10.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(AccentRed, Color(0xFFFF8C42), AccentYellow, Color(0xFF7BC97C), AccentGreen)
-                                )
-                            )
-                    )
                 }
             }
         }
