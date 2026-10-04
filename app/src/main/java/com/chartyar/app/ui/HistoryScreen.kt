@@ -472,4 +472,5 @@ private fun formatPrice(value: Double): String {
 
 private fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
-    return
+    return sdf.format(Date(timestamp))
+}
