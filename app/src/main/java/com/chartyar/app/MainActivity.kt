@@ -58,7 +58,7 @@ import com.chartyar.app.data.RateAppManager
 import com.chartyar.app.data.UpdateChecker
 import com.chartyar.app.security.RootDetector
 import com.chartyar.app.ui.AboutScreen
-import com.chartyar.app.ui.AgeVerificationDialog
+import com.chartyar.app.ui.AgeScreen
 import com.chartyar.app.ui.AlertScreen
 import com.chartyar.app.ui.ChangelogScreen
 import com.chartyar.app.ui.CoinDetailScreen
@@ -89,7 +89,6 @@ import com.chartyar.app.ui.SplashScreen
 import com.chartyar.app.ui.StrategyScreen
 import com.chartyar.app.ui.SymbolSelectorScreen
 import com.chartyar.app.ui.TermsScreen
-import com.chartyar.app.ui.TermsVersionDialog
 import com.chartyar.app.ui.TrendingCoinsScreen
 import com.chartyar.app.ui.TutorialScreen
 import com.chartyar.app.ui.UpdateDialog
@@ -153,6 +152,8 @@ class MainActivity : ComponentActivity() {
             ChartYarTheme(isDark = isDark) {
                 var isLoading by remember { mutableStateOf(true) }
                 var disclaimerAccepted by remember { mutableStateOf(false) }
+                var termsAccepted by remember { mutableStateOf(false) }
+                var ageConfirmed by remember { mutableStateOf(false) }
                 var currentScreen by remember { mutableStateOf("home") }
                 var selectedTimeframe by remember { mutableStateOf("4H") }
                 var selectedStrategy by remember { mutableStateOf(StrategyType.SWING) }
@@ -176,8 +177,6 @@ class MainActivity : ComponentActivity() {
                 var updateDialogShown by remember { mutableStateOf(false) }
                 var showRateDialog by remember { mutableStateOf(false) }
                 var showExitDialog by remember { mutableStateOf(false) }
-                var showAgeDialog by remember { mutableStateOf(false) }
-                var showTermsUpdateDialog by remember { mutableStateOf(false) }
                 var multiTfResult by remember { mutableStateOf<MultiTimeframeResult?>(null) }
                 var selectedCoin by remember { mutableStateOf<CoinPrice?>(null) }
 
@@ -254,11 +253,8 @@ class MainActivity : ComponentActivity() {
                         rateAppManager.markShown()
                     }
 
-                    if (!legalManager.hasConfirmedAge()) {
-                        showAgeDialog = true
-                    } else if (!legalManager.hasAcceptedLatestTerms()) {
-                        showTermsUpdateDialog = true
-                    }
+                    termsAccepted = legalManager.hasAcceptedLatestTerms()
+                    ageConfirmed = legalManager.hasConfirmedAge()
 
                     refreshLimitStatus()
                 }
@@ -326,7 +322,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                BackHandler(enabled = !isLoading && disclaimerAccepted) {
+                BackHandler(enabled = !isLoading && disclaimerAccepted && termsAccepted && ageConfirmed) {
                     when (currentScreen) {
                         "home" -> showExitDialog = true
                         "privacy" -> currentScreen = "settings"
@@ -354,28 +350,6 @@ class MainActivity : ComponentActivity() {
                         "fear_greed" -> currentScreen = "home"
                         else -> showExitDialog = true
                     }
-                }
-
-                if (showAgeDialog) {
-                    AgeVerificationDialog(
-                        onConfirm = {
-                            legalManager.confirmAge()
-                            legalManager.acceptTerms()
-                            legalManager.acceptPrivacy()
-                            showAgeDialog = false
-                        },
-                        onDecline = { finish() }
-                    )
-                }
-
-                if (showTermsUpdateDialog) {
-                    TermsVersionDialog(
-                        onAccept = {
-                            legalManager.acceptTerms()
-                            legalManager.acceptPrivacy()
-                            showTermsUpdateDialog = false
-                        }
-                    )
                 }
 
                 if (updateInfo != null && !updateDialogShown) {
@@ -413,8 +387,8 @@ class MainActivity : ComponentActivity() {
                     LimitDialog(
                         type = limitDialogType,
                         strategyName = lockedStrategyNameForDialog,
-                        adsCount = limitStatus.adCountToday,
-                        adsForBonus = AnalysisLimitManager.ADS_FOR_BONUS,
+                        adsSinceReward = limitStatus.adsSinceReward,
+                        adsPerReward = AnalysisLimitManager.ADS_PER_REWARD,
                         onDismiss = {
                             showLimitDialog = false
                         }
@@ -423,6 +397,7 @@ class MainActivity : ComponentActivity() {
 
                 when {
                     isLoading -> SplashScreen()
+
                     !disclaimerAccepted -> DisclaimerScreen(
                         onAccept = {
                             lifecycleScope.launch {
@@ -433,6 +408,28 @@ class MainActivity : ComponentActivity() {
                         },
                         onDecline = { finish() }
                     )
+
+                    !termsAccepted -> TermsScreen(
+                        onAccept = {
+                            lifecycleScope.launch {
+                                legalManager.acceptTerms()
+                                legalManager.acceptPrivacy()
+                                termsAccepted = true
+                            }
+                        },
+                        onDecline = { finish() }
+                    )
+
+                    !ageConfirmed -> AgeScreen(
+                        onConfirm = {
+                            lifecycleScope.launch {
+                                legalManager.confirmAge()
+                                ageConfirmed = true
+                            }
+                        },
+                        onDecline = { finish() }
+                    )
+
                     currentScreen == "tutorial" -> TutorialScreen(
                         isFirstTime = !tutorialSeen,
                         onFinish = {
@@ -444,9 +441,6 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                     currentScreen == "privacy" -> PrivacyPolicyScreen(
-                        onBack = { currentScreen = "settings" }
-                    )
-                    currentScreen == "terms" -> TermsScreen(
                         onBack = { currentScreen = "settings" }
                     )
                     currentScreen == "glossary" -> GlossaryScreen(
@@ -470,9 +464,8 @@ class MainActivity : ComponentActivity() {
                                 when (currentScreen) {
                                     "home" -> HomeScreen(
                                         remainingFree = limitStatus.remainingFree,
-                                        adCountToday = limitStatus.adCountToday,
-                                        adsForBonus = AnalysisLimitManager.ADS_FOR_BONUS,
-                                        isUnlimited = limitStatus.isUnlimited,
+                                        adsSinceReward = limitStatus.adsSinceReward,
+                                        adsPerReward = AnalysisLimitManager.ADS_PER_REWARD,
                                         onUploadClick = { currentScreen = "symbol" },
                                         onHistoryClick = { currentScreen = "history" },
                                         onSettingsClick = { currentScreen = "settings" },
