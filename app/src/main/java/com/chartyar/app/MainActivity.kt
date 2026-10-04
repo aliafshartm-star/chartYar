@@ -86,6 +86,7 @@ import com.chartyar.app.ui.RateAppDialog
 import com.chartyar.app.ui.ResultScreen
 import com.chartyar.app.ui.SettingsScreen
 import com.chartyar.app.ui.SplashScreen
+import com.chartyar.app.ui.StrategyScreen
 import com.chartyar.app.ui.SymbolSelectorScreen
 import com.chartyar.app.ui.TermsScreen
 import com.chartyar.app.ui.TermsVersionDialog
@@ -348,7 +349,7 @@ class MainActivity : ComponentActivity() {
                         "mining" -> currentScreen = "home"
                         "exchanges" -> currentScreen = "home"
                         "trending" -> currentScreen = "home"
-                        "analyses" -> currentScreen = "home"
+                        "strategy" -> currentScreen = "home"
                         "market_indices" -> currentScreen = "home"
                         "fear_greed" -> currentScreen = "home"
                         else -> showExitDialog = true
@@ -461,7 +462,7 @@ class MainActivity : ComponentActivity() {
                         onBack = { currentScreen = "settings" }
                     )
                     else -> {
-                        val mainTabs = setOf("home", "trending", "exchanges", "analyses")
+                        val mainTabs = setOf("home", "trending", "exchanges", "strategy")
                         val showBottomBar = currentScreen in mainTabs
 
                         Column(modifier = Modifier.fillMaxSize()) {
@@ -482,6 +483,12 @@ class MainActivity : ComponentActivity() {
                                         onCalculatorClick = { currentScreen = "calculator" },
                                         onMiningClick = { currentScreen = "mining" },
                                         onExchangesClick = { currentScreen = "exchanges" }
+                                    )
+                                    "strategy" -> StrategyScreen(
+                                        onStrategyClick = { strategyType ->
+                                            selectedStrategy = strategyType
+                                            currentScreen = "symbol"
+                                        }
                                     )
                                     "market_indices" -> MarketIndicesScreen(
                                         onBack = { currentScreen = "home" }
@@ -881,7 +888,7 @@ class MainActivity : ComponentActivity() {
                                     onHomeClick = { currentScreen = "home" },
                                     onTrendingClick = { currentScreen = "trending" },
                                     onExchangesClick = { currentScreen = "exchanges" },
-                                    onAnalysesClick = { currentScreen = "analyses" }
+                                    onStrategyClick = { currentScreen = "strategy" }
                                 )
                             }
                         }
