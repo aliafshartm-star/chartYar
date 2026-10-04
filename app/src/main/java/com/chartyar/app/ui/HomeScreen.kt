@@ -88,8 +88,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 private const val TAPSELL_BANNER_ZONE_ID = "6abe61690a772b2b3f29c2a5"
-private const val TELEGRAM_URL = "https://t.me/chartyar_app"
-private const val INSTAGRAM_URL = "https://www.instagram.com/chartyar_app"
+private const val TELEGRAM_URL = "https://t.me/viachart_app"
+private const val INSTAGRAM_URL = "https://www.instagram.com/viachart_app"
 
 @Composable
 fun HomeScreen(
@@ -522,7 +522,7 @@ private fun LimitStatusCard(
             Text(
                 text = if (adsPerReward - adsSinceReward > 0)
                     "${adsPerReward - adsSinceReward} تبلیغ دیگه = ۳ تحلیل رایگان"
-                else "🎉 پاداش آماده است!",
+                else "پاداش آماده است",
                 color = AccentYellow,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium
@@ -651,21 +651,22 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
             BannerContainer(ctx).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams activity.WRAP_CONTENT
+                    ViewGroup.LayoutParams.WRAP_CONTENT
                 )
             }
         },
         update = { container ->
             if (activity != null && !adShown) {
                 try {
-,
                     Tapsell.requestBannerAd(
                         zoneId,
                         BannerSize.BANNER_320_50,
-                                               object : RequestResultListener {
+                        activity,
+                        object : RequestResultListener {
                             override fun onSuccess(adId: String) {
                                 adShown = tryShowAd(container, adId)
                             }
+
                             override fun onFailure(message: String) {
                                 adShown = false
                             }
