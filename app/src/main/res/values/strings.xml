@@ -111,4 +111,14 @@
     <string name="analyses_read_more">مطالعه کامل</string>
     <string name="analyses_views">بازدید</string>
     <string name="analyses_replies">پاسخ</string>
+
+    <string name="market_indices_title">شاخص‌های بازار</string>
+    <string name="market_indices_subtitle">وضعیت کلی بازار کریپتو</string>
+    <string name="index_btc_dominance">دامیننس بیت‌کوین</string>
+    <string name="index_btc_dominance_desc">سهم بیت‌کوین از کل بازار</string>
+    <string name="index_altcoin_season">شاخص آلت سیزن</string>
+    <string name="index_defi_tvl">لیکوئیدیتی DeFi</string>
+    <string name="index_defi_tvl_desc">ارزش قفل‌شده در پروتکل‌های DeFi</string>
+
+    <string name="fear_greed_screen_title">شاخص ترس و طمع</string>
 </resources>
