@@ -132,9 +132,9 @@ fun LatestAnalysesScreen(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(items, key = { it.link }) { item ->
+                items(items, key = { it.id }) { item ->
                     AnalysisCard(item = item) {
-                        openUrl(context, item.link)
+                        openUrl(context, item.url)
                     }
                 }
             }
@@ -190,10 +190,10 @@ private fun AnalysisCard(item: NewsItem, onClick: () -> Unit) {
                 )
             }
 
-            if (item.description.isNotEmpty()) {
+            if (item.body.isNotBlank()) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = item.description,
+                    text = item.body,
                     color = TextSecondary,
                     fontSize = 11.sp,
                     maxLines = 3,
