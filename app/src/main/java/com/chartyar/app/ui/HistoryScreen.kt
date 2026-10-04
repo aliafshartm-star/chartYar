@@ -146,7 +146,8 @@ fun HistoryScreen(
         }
     }
 
-    if (editingItem != null) {
+    val edit = editingItem
+    if (edit != null) {
         AlertDialog(
             onDismissRequest = { editingItem = null },
             containerColor = DarkSurface,
@@ -157,7 +158,7 @@ fun HistoryScreen(
             text = {
                 Column {
                     Text(
-                        editingItem?.timeframe ?: "",
+                        edit.timeframe,
                         color = AccentBlue,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold
@@ -167,10 +168,7 @@ fun HistoryScreen(
                         value = noteText,
                         onValueChange = { noteText = it },
                         placeholder = {
-                            Text(
-                                "یادداشت خود را بنویسید",
-                                color = TextSecondary
-                            )
+                            Text("یادداشت خود را بنویسید", color = TextSecondary)
                         },
                         modifier = Modifier.fillMaxWidth().height(120.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -185,9 +183,7 @@ fun HistoryScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        editingItem?.let {
-                            noteManager.saveNote(it.timestamp, noteText)
-                        }
+                        noteManager.saveNote(edit.timestamp, noteText)
                         editingItem = null
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -206,110 +202,125 @@ fun HistoryScreen(
         )
     }
 
-    if (detailItem != null) {
-        val item = detailItem!!
-        val note = noteManager.getNote(item.timestamp)
-
-        AlertDialog(
-            onDismissRequest = { detailItem = null },
-            containerColor = DarkSurface,
-            titleContentColor = TextPrimary,
-            title = {
-                Text("جزئیات تحلیل", fontWeight = FontWeight.Bold, color = TextPrimary)
-            },
-            text = {
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        "تایم فریم: " + item.timeframe,
-                        color = TextSecondary,
-                        fontSize = 12.sp
-                    )
-                    Text(
-                        "تاریخ: " + formatDate(item.timestamp),
-                        color = TextSecondary,
-                        fontSize = 12.sp
-                    )
-
-                    Spacer(Modifier.height(12.dp))
-
-                    DetailRow(
-                        label = "سیگنال",
-                        value = item.signalText,
-                        valueColor = signalColor(item.signalText)
-                    )
-                    DetailRow(
-                        label = "اطمینان",
-                        value = item.confidence.toString() + "%",
-                        valueColor = AccentBlue
-                    )
-                    DetailRow(
-                        label = "قیمت فعلی",
-                        value = formatPrice(item.currentPrice),
-                        valueColor = TextPrimary
-                    )
-
-                    Spacer(Modifier.height(8.dp))
-                    Divider(color = DividerColor)
-                    Spacer(Modifier.height(8.dp))
-
-                    DetailRow(
-                        label = "نقطه ورود",
-                        value = formatPrice(item.entry),
-                        valueColor = AccentBlue
-                    )
-                    DetailRow(
-                        label = "حد ضرر",
-                        value = formatPrice(item.stopLoss),
-                        valueColor = AccentRed
-                    )
-                    DetailRow(
-                        label = "هدف اول",
-                        value = formatPrice(item.target1),
-                        valueColor = AccentGreen
-                    )
-                    DetailRow(
-                        label = "هدف دوم",
-                        value = formatPrice(item.target2),
-                        valueColor = AccentGreen
-                    )
-                    DetailRow(
-                        label = "هدف سوم",
-                        value = formatPrice(item.target3),
-                        valueColor = AccentGreen
-                    )
-
-                    if (note.isNotBlank()) {
-                        Spacer(Modifier.height(12.dp))
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = CardDefaults.cardColors(containerColor = DarkCard)
-                        ) {
-                            Text(
-                                note,
-                                color = AccentYellow,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(10.dp)
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { detailItem = null },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentBlue,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("بستن", fontWeight = FontWeight.Bold)
-                }
-            }
+    val detail = detailItem
+    if (detail != null) {
+        DetailDialog(
+            item = detail,
+            note = noteManager.getNote(detail.timestamp),
+            onDismiss = { detailItem = null }
         )
     }
+}
+
+@Composable
+private fun DetailDialog(
+    item: AnalysisHistory,
+    note: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = DarkSurface,
+        titleContentColor = TextPrimary,
+        title = {
+            Text(
+                "جزئیات تحلیل",
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    "تایم فریم: " + item.timeframe,
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+                Text(
+                    "تاریخ: " + formatDate(item.timestamp),
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                DetailRow(
+                    label = "سیگنال",
+                    value = item.signalText,
+                    valueColor = signalColor(item.signalText)
+                )
+                DetailRow(
+                    label = "اطمینان",
+                    value = item.confidence.toString() + "%",
+                    valueColor = AccentBlue
+                )
+                DetailRow(
+                    label = "قیمت فعلی",
+                    value = formatPrice(item.currentPrice),
+                    valueColor = TextPrimary
+                )
+
+                Spacer(Modifier.height(8.dp))
+                Divider(color = DividerColor)
+                Spacer(Modifier.height(8.dp))
+
+                DetailRow(
+                    label = "نقطه ورود",
+                    value = formatPrice(item.entry),
+                    valueColor = AccentBlue
+                )
+                DetailRow(
+                    label = "حد ضرر",
+                    value = formatPrice(item.stopLoss),
+                    valueColor = AccentRed
+                )
+                DetailRow(
+                    label = "هدف اول",
+                    value = formatPrice(item.target1),
+                    valueColor = AccentGreen
+                )
+                DetailRow(
+                    label = "هدف دوم",
+                    value = formatPrice(item.target2),
+                    valueColor = AccentGreen
+                )
+                DetailRow(
+                    label = "هدف سوم",
+                    value = formatPrice(item.target3),
+                    valueColor = AccentGreen
+                )
+
+                if (note.isNotBlank()) {
+                    Spacer(Modifier.height(12.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = DarkCard)
+                    ) {
+                        Text(
+                            note,
+                            color = AccentYellow,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AccentBlue,
+                    contentColor = Color.White
+                )
+            ) {
+                Text("بستن", fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }
 
 @Composable
