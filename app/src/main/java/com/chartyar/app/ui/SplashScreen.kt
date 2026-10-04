@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.DarkBg
+import com.chartyar.app.ui.theme.GradientBlueStart
+import com.chartyar.app.ui.theme.GradientPurpleEnd
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.ui.theme.TextSecondary
 
@@ -71,23 +73,25 @@ fun SplashScreen() {
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
-                                Color(0xFF1E3A8A),
-                                AccentBlue
+                                GradientBlueStart,
+                                GradientPurpleEnd
                             )
                         )
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "📊",
-                    fontSize = 80.sp
+                    text = "V",
+                    color = Color.White,
+                    fontSize = 80.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
             Spacer(Modifier.height(24.dp))
 
             Text(
-                text = "چارت‌یار",
+                text = "ViaChart",
                 color = AccentBlue,
                 fontSize = 38.sp,
                 fontWeight = FontWeight.Bold,
@@ -97,7 +101,7 @@ fun SplashScreen() {
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "تحلیل حرفه‌ای چارت",
+                text = "تحلیل هوشمند چارت",
                 color = TextSecondary,
                 fontSize = 16.sp,
                 modifier = Modifier.alpha(alpha)
@@ -106,7 +110,7 @@ fun SplashScreen() {
             Spacer(Modifier.height(40.dp))
 
             Text(
-                text = "v ۱.۰.۰",
+                text = "v 1.0.0",
                 color = TextPrimary,
                 fontSize = 12.sp,
                 modifier = Modifier.alpha(0.5f)
