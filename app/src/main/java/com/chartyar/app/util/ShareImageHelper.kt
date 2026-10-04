@@ -54,7 +54,7 @@ object ShareImageHelper {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("ChartYar", IMAGE_WIDTH / 2f, y, titlePaint)
+        canvas.drawText("ViaChart", IMAGE_WIDTH / 2f, y, titlePaint)
         y += 60f
 
         val subtitlePaint = Paint().apply {
@@ -63,7 +63,7 @@ object ShareImageHelper {
             isAntiAlias = true
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("Technical Chart Analysis", IMAGE_WIDTH / 2f, y, subtitlePaint)
+        canvas.drawText("Smart Chart Analysis", IMAGE_WIDTH / 2f, y, subtitlePaint)
         y += 80f
 
         // ============ Signal Card ============
@@ -309,8 +309,8 @@ object ShareImageHelper {
             isAntiAlias = true
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("ChartYar App", IMAGE_WIDTH / 2f, IMAGE_HEIGHT - 100f, footerPaint)
-        canvas.drawText("t.me/chartyar_app", IMAGE_WIDTH / 2f, IMAGE_HEIGHT - 60f, footerPaint)
+        canvas.drawText("ViaChart App", IMAGE_WIDTH / 2f, IMAGE_HEIGHT - 100f, footerPaint)
+        canvas.drawText("t.me/viachart_app", IMAGE_WIDTH / 2f, IMAGE_HEIGHT - 60f, footerPaint)
 
         val disclaimerPaint = Paint().apply {
             color = TEXT_SECONDARY
