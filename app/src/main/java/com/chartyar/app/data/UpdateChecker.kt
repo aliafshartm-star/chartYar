@@ -12,7 +12,7 @@ import java.net.URL
 object UpdateChecker {
 
     // آدرس GitHub Releases
-    private const val RELEASES_URL = "https://api.github.com/repos/aliafshartm-star/chartYar/releases/latest"
+    private const val RELEASES_URL = "https://api.github.com/repos/aliashartm-star/chartYar/releases/latest"
 
     // نسخه فعلی اپ
     const val CURRENT_VERSION = "1.0.0"
@@ -36,7 +36,7 @@ object UpdateChecker {
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
             connection.setRequestProperty("Accept", "application/vnd.github+json")
-            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
+            connection.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             val responseCode = connection.responseCode
             if (responseCode != 200) {
