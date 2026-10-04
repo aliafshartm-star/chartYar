@@ -32,12 +32,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chartyar.app.R
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.DarkSurface
@@ -78,7 +76,7 @@ private fun tutorialPages(): List<TutorialPage> = listOf(
     TutorialPage(
         emoji = "📊",
         title = "۳. تحلیل حرفه‌ای بگیر",
-        description = "اپ ۱۰+ اندیکاتور، ۱۱ الگو و ۴ استایل ترید رو بررسی می‌کنه و سیگنال نهایی رو می‌ده.",
+        description = "اپ ۲۵ اندیکاتور، ۱۱ الگو و ۵ استراتژی ترید رو بررسی می‌کنه و سیگنال نهایی رو می‌ده.",
         tips = listOf(
             "نقطه ورود، حد ضرر و ۳ هدف",
             "نسبت ریسک به ریوارد",
@@ -88,10 +86,10 @@ private fun tutorialPages(): List<TutorialPage> = listOf(
     TutorialPage(
         emoji = "🚀",
         title = "۴. از همه امکانات استفاده کن",
-        description = "تحلیل چند تایم‌فریمی، ماشین‌حساب فیوچرز، ماشین استخراج، هشدار قیمت و اخبار لحظه‌ای.",
+        description = "تحلیل چند تایم‌فریمی، ماشین‌حساب فیوچرز، شاخص‌های بازار، هشدار قیمت و اخبار لحظه‌ای.",
         tips = listOf(
             "هشدار خودکار قیمت",
-            "چند تایم‌فریمی برای تأیید سیگنال",
+            "شاخص‌های بازار (BTC Dominance)",
             "محاسبه سود و لیکویید فیوچرز"
         )
     )
@@ -139,7 +137,7 @@ fun TutorialScreen(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "بذار توی ۴ قدم سریع، با چارت‌یار آشنا بشی",
+                "بذار توی ۴ قدم سریع، با ViaChart آشنا بشی",
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextSecondary,
                 textAlign = TextAlign.Center,
