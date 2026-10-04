@@ -15,11 +15,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
@@ -49,7 +50,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import com.chartyar.app.data.AnalysisHistory
 import com.chartyar.app.data.NoteManager
 import com.chartyar.app.ui.theme.AccentBlue
@@ -210,31 +210,17 @@ fun HistoryScreen(
         val item = detailItem!!
         val note = noteManager.getNote(item.timestamp)
 
-        Dialog(onDismissRequest = { detailItem = null }) {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface)
-            ) {
-                Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "جزئیات تحلیل",
-                            color = TextPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(onClick = { detailItem = null }) {
-                            Icon(Icons.Filled.Close, "close", tint = TextSecondary, modifier = Modifier.size(20.dp))
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
+        AlertDialog(
+            onDismissRequest = { detailItem = null },
+            containerColor = DarkSurface,
+            titleContentColor = TextPrimary,
+            title = {
+                Text("جزئیات تحلیل", fontWeight = FontWeight.Bold, color = TextPrimary)
+            },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                ) {
                     Text(
                         "تایم فریم: " + item.timeframe,
                         color = TextSecondary,
@@ -309,23 +295,20 @@ fun HistoryScreen(
                             )
                         }
                     }
-
-                    Spacer(Modifier.height(16.dp))
-
-                    Button(
-                        onClick = { detailItem = null },
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AccentBlue,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("بستن", fontWeight = FontWeight.Bold)
-                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { detailItem = null },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AccentBlue,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("بستن", fontWeight = FontWeight.Bold)
                 }
             }
-        }
+        )
     }
 }
 
