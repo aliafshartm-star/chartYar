@@ -4,7 +4,8 @@ enum class StrategyType {
     SCALPING,
     SWING,
     POSITION,
-    MULTI_AI
+    MULTI_AI,
+    PRO
 }
 
 data class StrategyInfo(
@@ -14,7 +15,8 @@ data class StrategyInfo(
     val description: String,
     val shortDescription: String,
     val timeframes: List<String>,
-    val iconColor: Long
+    val iconColor: Long,
+    val indicatorCount: Int = 15
 )
 
 object StrategyEngine {
@@ -27,7 +29,8 @@ object StrategyEngine {
             description = "معاملات سریع در چند دقیقه تا چند ساعت. سیگنال‌های زیاد با ریسک بالا.",
             shortDescription = "سریع، پرسیگنال",
             timeframes = listOf("1m", "5m", "15m", "30m"),
-            iconColor = 0xFFFF4D4D
+            iconColor = 0xFFFF4D4D,
+            indicatorCount = 15
         ),
         StrategyInfo(
             type = StrategyType.SWING,
@@ -36,7 +39,8 @@ object StrategyEngine {
             description = "معاملات چند روزه تا چند هفته. تعادل بین دقت و تعداد سیگنال.",
             shortDescription = "متعادل، برای اکثر کاربرا",
             timeframes = listOf("1H", "4H"),
-            iconColor = 0xFF2962FF
+            iconColor = 0xFF2962FF,
+            indicatorCount = 15
         ),
         StrategyInfo(
             type = StrategyType.POSITION,
@@ -45,16 +49,28 @@ object StrategyEngine {
             description = "معاملات بلندمدت چند هفته تا چند ماه. سیگنال‌های کم ولی بسیار دقیق.",
             shortDescription = "بلندمدت، کم‌ریسک",
             timeframes = listOf("1D", "1W"),
-            iconColor = 0xFF00C896
+            iconColor = 0xFF00C896,
+            indicatorCount = 15
         ),
         StrategyInfo(
             type = StrategyType.MULTI_AI,
             displayName = "Multi-AI",
             emoji = "🤖",
-            description = "ترکیب ۴ موتور هوش مصنوعی مستقل با رأی‌گیری. بالاترین دقت.",
-            shortDescription = "هوش مصنوعی، بالاترین دقت",
+            description = "ترکیب ۵ موتور هوش مصنوعی مستقل با رأی‌گیری. نیاز به توافق اکثریت.",
+            shortDescription = "هوش مصنوعی، ۵ موتور رأی‌گیری",
             timeframes = listOf("15m", "1H", "4H", "1D"),
-            iconColor = 0xFF8B5CF6
+            iconColor = 0xFF8B5CF6,
+            indicatorCount = 15
+        ),
+        StrategyInfo(
+            type = StrategyType.PRO,
+            displayName = "PRO",
+            emoji = "💎",
+            description = "دقیق‌ترین استراتژی با ۲۵ اندیکاتور پیشرفته. تحلیل چندلایه با Ichimoku، Supertrend، Aroon و ... . مناسب تریدرهای حرفه‌ای.",
+            shortDescription = "۲۵ اندیکاتور، حرفه‌ای",
+            timeframes = listOf("15m", "1H", "4H", "1D"),
+            iconColor = 0xFFFFB800,
+            indicatorCount = 25
         )
     )
 
@@ -68,6 +84,7 @@ object StrategyEngine {
             StrategyType.SWING -> "4H"
             StrategyType.POSITION -> "1D"
             StrategyType.MULTI_AI -> "4H"
+            StrategyType.PRO -> "4H"
         }
     }
 
@@ -77,11 +94,11 @@ object StrategyEngine {
             StrategyType.SWING -> swingWeights(timeframe)
             StrategyType.POSITION -> positionWeights(timeframe)
             StrategyType.MULTI_AI -> multiAiWeights(timeframe)
+            StrategyType.PRO -> proWeights(timeframe)
         }
     }
 
     // ============ اسکالپ ============
-    // تأکید: مومنتوم، استوکاستیک، پرایس اکشن، حجم
     private fun scalpingWeights(timeframe: String): Map<String, Double> {
         return mapOf(
             "Market Structure" to 0.7,
@@ -103,7 +120,6 @@ object StrategyEngine {
     }
 
     // ============ سوئینگ ============
-    // تأکید: ساختار بازار، EMA، الگوها
     private fun swingWeights(timeframe: String): Map<String, Double> {
         return mapOf(
             "Market Structure" to 1.5,
@@ -125,7 +141,6 @@ object StrategyEngine {
     }
 
     // ============ پوزیشن ============
-    // تأکید: ساختار بلندمدت، EMA، ADX، ایچیموکو
     private fun positionWeights(timeframe: String): Map<String, Double> {
         return mapOf(
             "Market Structure" to 2.0,
@@ -147,7 +162,6 @@ object StrategyEngine {
     }
 
     // ============ Multi-AI ============
-    // وزن‌های متعادل — رأی‌گیری توی SignalEngine انجام می‌شه
     private fun multiAiWeights(timeframe: String): Map<String, Double> {
         return mapOf(
             "Market Structure" to 1.5,
@@ -168,7 +182,42 @@ object StrategyEngine {
         )
     }
 
-    // ============ رأی‌گیری Multi-AI ============
+    // ============ PRO — ۲۵ اندیکاتور ============
+    private fun proWeights(timeframe: String): Map<String, Double> {
+        return mapOf(
+            // ۱۵ اندیکاتور پایه
+            "Market Structure" to 1.6,
+            "RSI" to 1.1,
+            "Divergence" to 1.5,
+            "MACD" to 1.2,
+            "EMA" to 1.4,
+            "ADX" to 1.3,
+            "Stochastic" to 0.8,
+            "Bollinger" to 0.9,
+            "Price Action" to 1.2,
+            "Patterns" to 1.5,
+            "Vision" to 1.4,
+            "Volume" to 1.1,
+            "VWAP" to 1.0,
+            "CCI" to 0.7,
+            "WilliamsR" to 0.7,
+            // ۱۰ اندیکاتور پیشرفته
+            "Ichimoku" to 1.7,
+            "OBV" to 1.2,
+            "MFI" to 1.1,
+            "PSAR" to 1.4,
+            "Aroon" to 1.0,
+            "Supertrend" to 1.6,
+            "Keltner" to 0.9,
+            "Donchian" to 1.1,
+            "PivotPoints" to 0.8,
+            "ElderRay" to 1.0
+        )
+    }
+
+    // ============================================================
+    // رأی‌گیری Multi-AI — ۵ موتور
+    // ============================================================
     data class EngineVote(
         val engineName: String,
         val score: Int,
@@ -189,7 +238,8 @@ object StrategyEngine {
         structureScore: Int,
         momentumScore: Int,
         reversalScore: Int,
-        volumeScore: Int
+        volumeScore: Int,
+        volatilityScore: Int
     ): MultiAiResult {
         val votes = mutableListOf<EngineVote>()
 
@@ -257,6 +307,22 @@ object StrategyEngine {
             }
         ))
 
+        val volatilityVote = when {
+            volatilityScore >= 30 -> 1
+            volatilityScore <= -30 -> -1
+            else -> 0
+        }
+        votes.add(EngineVote(
+            engineName = "Volatility AI",
+            score = volatilityScore,
+            vote = volatilityVote,
+            description = when (volatilityVote) {
+                1 -> "نوسان در جهت صعود"
+                -1 -> "نوسان در جهت نزول"
+                else -> "نوسان خنثی"
+            }
+        ))
+
         val bullish = votes.count { it.vote == 1 }
         val bearish = votes.count { it.vote == -1 }
         val neutral = votes.count { it.vote == 0 }
@@ -264,11 +330,11 @@ object StrategyEngine {
         val consensus = maxOf(bullish, bearish)
 
         val finalSignal = when {
-            consensus < 3 -> SignalType.NEUTRAL
-            bullish >= 3 && bullish - bearish >= 2 -> SignalType.STRONG_BUY
-            bearish >= 3 && bearish - bullish >= 2 -> SignalType.STRONG_SELL
-            bullish >= 3 -> SignalType.BUY
-            bearish >= 3 -> SignalType.SELL
+            consensus < 4 -> SignalType.NEUTRAL
+            bullish >= 4 && bullish - bearish >= 2 -> SignalType.STRONG_BUY
+            bearish >= 4 && bearish - bullish >= 2 -> SignalType.STRONG_SELL
+            bullish >= 4 -> SignalType.BUY
+            bearish >= 4 -> SignalType.SELL
             else -> SignalType.NEUTRAL
         }
 
