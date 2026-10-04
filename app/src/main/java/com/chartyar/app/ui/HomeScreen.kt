@@ -94,9 +94,8 @@ private const val INSTAGRAM_URL = "https://www.instagram.com/chartyar_app"
 @Composable
 fun HomeScreen(
     remainingFree: Int,
-    adCountToday: Int,
-    adsForBonus: Int,
-    isUnlimited: Boolean,
+    adsSinceReward: Int,
+    adsPerReward: Int,
     onUploadClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
@@ -149,7 +148,11 @@ fun HomeScreen(
         Spacer(Modifier.height(20.dp))
 
         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-            LimitStatusCard(remainingFree, adCountToday, adsForBonus, isUnlimited)
+            LimitStatusCard(
+                remainingFree = remainingFree,
+                adsSinceReward = adsSinceReward,
+                adsPerReward = adsPerReward
+            )
         }
 
         Spacer(Modifier.height(16.dp))
@@ -459,40 +462,9 @@ private fun LatestAnalysisRow(item: NewsItem, onClick: () -> Unit) {
 @Composable
 private fun LimitStatusCard(
     remainingFree: Int,
-    adCountToday: Int,
-    adsForBonus: Int,
-    isUnlimited: Boolean
+    adsSinceReward: Int,
+    adsPerReward: Int
 ) {
-    if (isUnlimited) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurface),
-            border = BorderStroke(1.dp, AccentGreen.copy(alpha = 0.5f))
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .background(
-                            Brush.linearGradient(listOf(GradientGreenStart, GradientGreenEnd)),
-                            RoundedCornerShape(10.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) { Text("🎁", fontSize = 18.sp) }
-                Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("پاداش ویژه فعاله!", color = AccentGreen, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Text("بدون محدودیت تحلیل کن", color = TextSecondary, fontSize = 11.sp)
-                }
-            }
-        }
-        return
-    }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -524,38 +496,37 @@ private fun LimitStatusCard(
                 }
             }
 
-            if (adCountToday > 0) {
-                Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(5.dp)
+                    .background(Divider, RoundedCornerShape(3.dp))
+            ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxWidth(
+                            if (adsPerReward > 0)
+                                (adsSinceReward.toFloat() / adsPerReward.toFloat()).coerceIn(0f, 1f)
+                            else 0f
+                        )
                         .height(5.dp)
-                        .background(Divider, RoundedCornerShape(3.dp))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(
-                                if (adsForBonus > 0)
-                                    (adCountToday.toFloat() / adsForBonus.toFloat()).coerceIn(0f, 1f)
-                                else 0f
-                            )
-                            .height(5.dp)
-                            .background(
-                                Brush.horizontalGradient(listOf(AccentYellow, Color(0xFFFF8C42))),
-                                RoundedCornerShape(3.dp)
-                            )
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    if (adsForBonus - adCountToday > 0)
-                        "${adsForBonus - adCountToday} تبلیغ دیگه = ۱۲ ساعت نامحدود!"
-                    else "🎉 پاداش فعال شد!",
-                    color = AccentYellow,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium
+                        .background(
+                            Brush.horizontalGradient(listOf(AccentYellow, Color(0xFFFF8C42))),
+                            RoundedCornerShape(3.dp)
+                        )
                 )
             }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = if (adsPerReward - adsSinceReward > 0)
+                    "${adsPerReward - adsSinceReward} تبلیغ دیگه = ۳ تحلیل رایگان"
+                else "🎉 پاداش آماده است!",
+                color = AccentYellow,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
@@ -680,18 +651,18 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
             BannerContainer(ctx).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
+                    ViewGroup.LayoutParams activity.WRAP_CONTENT
                 )
             }
         },
         update = { container ->
             if (activity != null && !adShown) {
                 try {
+,
                     Tapsell.requestBannerAd(
                         zoneId,
                         BannerSize.BANNER_320_50,
-                        activity,
-                        object : RequestResultListener {
+                                               object : RequestResultListener {
                             override fun onSuccess(adId: String) {
                                 adShown = tryShowAd(container, adId)
                             }
