@@ -62,10 +62,6 @@ import com.chartyar.app.ui.theme.DarkSurface
 import com.chartyar.app.ui.theme.Divider as DividerColor
 import com.chartyar.app.ui.theme.GradientBlueEnd
 import com.chartyar.app.ui.theme.GradientBlueStart
-import com.chartyar.app.ui.theme.GradientGreenEnd
-import com.chartyar.app.ui.theme.GradientGreenStart
-import com.chartyar.app.ui.theme.GradientRedEnd
-import com.chartyar.app.ui.theme.GradientRedStart
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.ui.theme.TextSecondary
 import java.text.SimpleDateFormat
@@ -101,7 +97,7 @@ fun HistoryScreen(
                 Icon(Icons.Filled.ArrowBack, "back", tint = TextPrimary)
             }
             Text(
-                "تاریخچه تحلیل‌ها",
+                "تاریخچه تحلیل ها",
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold,
@@ -120,7 +116,7 @@ fun HistoryScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("📭", fontSize = 48.sp)
+                    Text("خالی", fontSize = 32.sp, color = TextSecondary)
                     Spacer(Modifier.height(12.dp))
                     Text(
                         "هنوز تحلیلی ذخیره نشده",
@@ -161,7 +157,7 @@ fun HistoryScreen(
             text = {
                 Column {
                     Text(
-                        editingItem?.let { "${it.timeframe} — ${it.signalText}" } ?: "",
+                        editingItem?.timeframe ?: "",
                         color = AccentBlue,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold
@@ -172,7 +168,7 @@ fun HistoryScreen(
                         onValueChange = { noteText = it },
                         placeholder = {
                             Text(
-                                "مثلاً: ورود زدم در ۶۷,۵۰۰ | حد ضرر ۶۶,۰۰۰",
+                                "یادداشت خود را بنویسید",
                                 color = TextSecondary
                             )
                         },
@@ -240,12 +236,12 @@ fun HistoryScreen(
                     Spacer(Modifier.height(8.dp))
 
                     Text(
-                        "تایم‌فریم: ${item.timeframe}",
+                        "تایم فریم: " + item.timeframe,
                         color = TextSecondary,
                         fontSize = 12.sp
                     )
                     Text(
-                        "تاریخ: ${formatDate(item.timestamp)}",
+                        "تاریخ: " + formatDate(item.timestamp),
                         color = TextSecondary,
                         fontSize = 12.sp
                     )
@@ -259,7 +255,7 @@ fun HistoryScreen(
                     )
                     DetailRow(
                         label = "اطمینان",
-                        value = "${item.confidence}%",
+                        value = item.confidence.toString() + "%",
                         valueColor = AccentBlue
                     )
                     DetailRow(
@@ -306,7 +302,7 @@ fun HistoryScreen(
                             colors = CardDefaults.cardColors(containerColor = DarkCard)
                         ) {
                             Text(
-                                "📝 $note",
+                                note,
                                 color = AccentYellow,
                                 fontSize = 12.sp,
                                 modifier = Modifier.padding(10.dp)
@@ -377,7 +373,7 @@ private fun HistoryCard(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("📊", fontSize = 20.sp)
+                    Text("A", fontSize = 18.sp, color = Color.White, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -389,7 +385,7 @@ private fun HistoryCard(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        "تایم‌فریم: ${item.timeframe} | اطمینان: ${item.confidence}%",
+                        "تایم فریم: " + item.timeframe + " | اطمینان: " + item.confidence + "%",
                         color = TextSecondary,
                         fontSize = 11.sp
                     )
@@ -412,7 +408,7 @@ private fun HistoryCard(
             ) {
                 SmallStat("ورود", item.entry, AccentBlue)
                 SmallStat("حد ضرر", item.stopLoss, AccentRed)
-                SmallStat("هدف ۱", item.target1, AccentGreen)
+                SmallStat("هدف 1", item.target1, AccentGreen)
             }
 
             if (note.isNotBlank()) {
@@ -423,7 +419,7 @@ private fun HistoryCard(
                     colors = CardDefaults.cardColors(containerColor = DarkCard)
                 ) {
                     Text(
-                        "📝 $note",
+                        note,
                         color = AccentYellow,
                         fontSize = 11.sp,
                         modifier = Modifier.padding(10.dp)
