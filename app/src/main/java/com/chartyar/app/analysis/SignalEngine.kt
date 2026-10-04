@@ -244,7 +244,7 @@ object SignalEngine {
             -1 -> reasons.add("Vision: bearish trend lines")
         }
 
-        // ============ ۱۲. Volume (جدید) ============
+        // ============ ۱۲. Volume ============
         val volumeAnalysis = TechnicalIndicators.analyzeVolume(candles, 20)
         var volumeScore = 0
         if (volumeAnalysis.isSpike) {
@@ -264,7 +264,7 @@ object SignalEngine {
         }
         scores["Volume"] = volumeScore
 
-        // ============ ۱۳. VWAP (جدید) ============
+        // ============ ۱۳. VWAP ============
         val vwapList = TechnicalIndicators.vwap(candles)
         val vwap = vwapList.lastOrNull()
         var vwapScore = 0
@@ -279,7 +279,7 @@ object SignalEngine {
         }
         scores["VWAP"] = vwapScore
 
-        // ============ ۱۴. CCI (جدید) ============
+        // ============ ۱۴. CCI ============
         val cciList = TechnicalIndicators.cci(candles, 20)
         val cci = cciList.lastOrNull()
         var cciScore = 0
@@ -298,7 +298,7 @@ object SignalEngine {
         }
         scores["CCI"] = cciScore
 
-        // ============ ۱۵. Williams %R (جدید) ============
+        // ============ ۱۵. Williams %R ============
         val williamsList = TechnicalIndicators.williamsR(candles, 14)
         val williams = williamsList.lastOrNull()
         var williamsScore = 0
@@ -316,6 +316,101 @@ object SignalEngine {
             }
         }
         scores["WilliamsR"] = williamsScore
+
+        // ============ ۱۰ اندیکاتور پیشرفته (فقط برای PRO) ============
+        var ichimokuScore = 0
+        var obvScore = 0
+        var mfiScore = 0
+        var psarScore = 0
+        var aroonScore = 0
+        var supertrendScore = 0
+        var keltnerScore = 0
+        var donchianScore = 0
+        var pivotScore = 0
+        var elderRayScore = 0
+
+        if (strategy == StrategyType.PRO) {
+            // ۱۶. Ichimoku
+            val ichimoku = AdvancedIndicators.ichimoku(candles)
+            if (ichimoku != null) {
+                val (s, desc) = AdvancedIndicators.scoreIchimoku(ichimoku, currentPrice)
+                ichimokuScore = s
+                if (desc.isNotEmpty()) reasons.add("Ichimoku: $desc")
+            }
+            scores["Ichimoku"] = ichimokuScore
+
+            // ۱۷. OBV
+            val obvList = AdvancedIndicators.obv(candles)
+            obvScore = AdvancedIndicators.scoreObv(obvList, 20)
+            if (obvScore > 20) reasons.add("OBV rising")
+            else if (obvScore < -20) reasons.add("OBV falling")
+            scores["OBV"] = obvScore
+
+            // ۱۸. MFI
+            val mfiList = AdvancedIndicators.mfi(candles, 14)
+            mfiScore = AdvancedIndicators.scoreMfi(mfiList)
+            if (mfiScore > 20) reasons.add("MFI oversold")
+            else if (mfiScore < -20) reasons.add("MFI overbought")
+            scores["MFI"] = mfiScore
+
+            // ۱۹. PSAR
+            val psarList = AdvancedIndicators.psar(candles)
+            psarScore = AdvancedIndicators.scorePsar(psarList, candles)
+            if (psarScore > 40) reasons.add("PSAR flip bullish")
+            else if (psarScore < -40) reasons.add("PSAR flip bearish")
+            scores["PSAR"] = psarScore
+
+            // ۲۰. Aroon
+            val aroon = AdvancedIndicators.aroon(candles, 25)
+            if (aroon != null) {
+                aroonScore = AdvancedIndicators.scoreAroon(aroon)
+                if (aroonScore > 30) reasons.add("Aroon strong uptrend")
+                else if (aroonScore < -30) reasons.add("Aroon strong downtrend")
+            }
+            scores["Aroon"] = aroonScore
+
+            // ۲۱. Supertrend
+            val supertrend = AdvancedIndicators.supertrend(candles, 10, 3.0)
+            if (supertrend != null) {
+                supertrendScore = AdvancedIndicators.scoreSupertrend(supertrend)
+                if (supertrend.trend == 1) reasons.add("Supertrend bullish")
+                else reasons.add("Supertrend bearish")
+            }
+            scores["Supertrend"] = supertrendScore
+
+            // ۲۲. Keltner
+            val keltner = AdvancedIndicators.keltner(candles, 20, 2.0)
+            keltnerScore = AdvancedIndicators.scoreKeltner(keltner, currentPrice)
+            scores["Keltner"] = keltnerScore
+
+            // ۲۳. Donchian
+            val donchian = AdvancedIndicators.donchian(candles, 20)
+            donchianScore = AdvancedIndicators.scoreDonchian(donchian, currentPrice)
+            if (donchianScore > 30) reasons.add("Donchian breakout up")
+            else if (donchianScore < -30) reasons.add("Donchian breakout down")
+            scores["Donchian"] = donchianScore
+
+            // ۲۴. Pivot Points
+            val pivots = AdvancedIndicators.pivotPoints(candles, 24)
+            if (pivots != null) {
+                val (levelName, levelPrice) = AdvancedIndicators.nearestPivotLevel(pivots, currentPrice)
+                val diff = ((currentPrice - levelPrice) / levelPrice) * 100.0
+                pivotScore = when {
+                    levelName.startsWith("S") && diff > -1.0 -> 30
+                    levelName.startsWith("R") && diff < 1.0 -> -30
+                    else -> 0
+                }
+                if (pivotScore != 0) {
+                    reasons.add("Near pivot $levelName (${"%.2f".format(levelPrice)})")
+                }
+            }
+            scores["PivotPoints"] = pivotScore
+
+            // ۲۵. Elder Ray
+            val elderRay = AdvancedIndicators.elderRay(candles, 13)
+            elderRayScore = AdvancedIndicators.scoreElderRay(elderRay)
+            scores["ElderRay"] = elderRayScore
+        }
 
         // ============ وزن‌دهی بر اساس استراتژی ============
         val weights = StrategyEngine.getWeights(strategy, timeframe)
@@ -338,7 +433,7 @@ object SignalEngine {
             else -> SignalType.NEUTRAL
         }
 
-        // ============ رأی‌گیری Multi-AI ============
+        // ============ رأی‌گیری Multi-AI (۵ موتور) ============
         var engineVotes: List<StrategyEngine.EngineVote> = emptyList()
 
         if (strategy == StrategyType.MULTI_AI) {
@@ -368,21 +463,29 @@ object SignalEngine {
                 scores["VWAP"]!! * 1.2
             ).toInt() / 3
 
+            // موتور جدید: نوسان
+            val volatilityEngineScore = (
+                scores["Bollinger"]!! * 1.0 +
+                scores["Patterns"]!! * 1.2 +
+                scores["Price Action"]!! * 1.0
+            ).toInt() / 3
+
             val multiAiResult = StrategyEngine.evaluateMultiAi(
                 structureScore = trendEngineScore,
                 momentumScore = momentumEngineScore,
                 reversalScore = reversalEngineScore,
-                volumeScore = volumeEngineScore
+                volumeScore = volumeEngineScore,
+                volatilityScore = volatilityEngineScore
             )
 
             engineVotes = multiAiResult.votes
 
-            if (multiAiResult.consensus >= 3) {
+            if (multiAiResult.consensus >= 4) {
                 signal = multiAiResult.finalSignal
-                reasons.add("Multi-AI consensus: ${multiAiResult.consensus}/4 engines")
+                reasons.add("Multi-AI consensus: ${multiAiResult.consensus}/5 engines")
             } else {
                 signal = SignalType.NEUTRAL
-                warnings.add("Multi-AI: no consensus (${multiAiResult.consensus}/4)")
+                warnings.add("Multi-AI: no consensus (${multiAiResult.consensus}/5)")
             }
         }
 
@@ -397,6 +500,7 @@ object SignalEngine {
             StrategyType.SWING -> 1.5
             StrategyType.POSITION -> 2.0
             StrategyType.MULTI_AI -> 1.5
+            StrategyType.PRO -> 1.3
         }
 
         val isBuy = signal == SignalType.BUY || signal == SignalType.STRONG_BUY
