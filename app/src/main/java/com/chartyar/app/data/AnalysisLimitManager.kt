@@ -15,15 +15,25 @@ class AnalysisLimitManager(context: Context) {
         private const val KEY_ADS_SINCE_REWARD = "ads_since_reward"
         private const val KEY_TOTAL_ADS_WATCHED = "total_ads_watched"
         private const val KEY_UNLOCKED_STRATEGIES = "unlocked_strategies"
+        private const val KEY_STRATEGY_ADS_PREFIX = "strategy_ads_"
 
         const val INITIAL_FREE = 3
         const val ADS_PER_REWARD = 5
         const val ANALYSES_PER_REWARD = 3
         const val DEFAULT_STRATEGY = "SWING"
 
-        // برای سازگاری با کدهای قدیمی — معادل ADS_PER_REWARD
+        // برای سازگاری با کدهای قدیمی
         const val ADS_FOR_REWARD = 5
         const val ADS_FOR_BONUS = 5
+
+        // هزینه باز کردن هر استراتژی (تعداد تبلیغ)
+        val STRATEGY_UNLOCK_COSTS: Map<String, Int> = mapOf(
+            "SWING" to 0,       // رایگان
+            "SCALPING" to 2,
+            "POSITION" to 2,
+            "MULTI_AI" to 3,
+            "PRO" to 5
+        )
     }
 
     data class LimitStatus(
@@ -50,7 +60,6 @@ class AnalysisLimitManager(context: Context) {
                 putString(KEY_LAST_RESET, today)
                 putInt(KEY_REMAINING, INITIAL_FREE)
                 putInt(KEY_ADS_SINCE_REWARD, 0)
-                putStringSet(KEY_UNLOCKED_STRATEGIES, emptySet())
             }
         }
     }
@@ -79,6 +88,9 @@ class AnalysisLimitManager(context: Context) {
         return false
     }
 
+    // ============================================================
+    // تبلیغ برای سهمیه تحلیل (۵ تبلیغ = ۳ تحلیل)
+    // ============================================================
     fun onAdWatched(): AdWatchResult {
         resetIfNewDay()
 
@@ -115,26 +127,88 @@ class AnalysisLimitManager(context: Context) {
         )
     }
 
+    // ============================================================
+    // استراتژی‌ها — قفل / باز کردن
+    // ============================================================
+
+    /**
+     * تعداد تبلیغ موردنیاز برای باز کردن این استراتژی
+     */
+    fun getStrategyUnlockCost(strategyType: String): Int {
+        return STRATEGY_UNLOCK_COSTS[strategyType] ?: 0
+    }
+
+    /**
+     * آیا استراتژی باز است؟
+     */
     fun isStrategyUnlocked(strategyType: String): Boolean {
-        resetIfNewDay()
         if (strategyType == DEFAULT_STRATEGY) return true
         val set = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
         return set.contains(strategyType)
     }
 
+    /**
+     * تبلیغ برای باز کردن استراتژی دیده شد
+     * @return true اگه استراتژی باز شد
+     */
+    fun onStrategyUnlockAdWatched(strategyType: String): Boolean {
+        if (strategyType == DEFAULT_STRATEGY) return true
+        if (isStrategyUnlocked(strategyType)) return true
+
+        val cost = getStrategyUnlockCost(strategyType)
+        if (cost <= 0) {
+            // رایگان — مستقیم باز کن
+            unlockStrategy(strategyType)
+            return true
+        }
+
+        val key = "$KEY_STRATEGY_ADS_PREFIX$strategyType"
+        val current = prefs.getInt(key, 0)
+        val newValue = current + 1
+
+        if (newValue >= cost) {
+            // باز کن
+            val set = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
+            val newSet = set + strategyType
+            prefs.edit {
+                putStringSet(KEY_UNLOCKED_STRATEGIES, newSet)
+                putInt(key, 0)
+            }
+            return true
+        } else {
+            prefs.edit {
+                putInt(key, newValue)
+            }
+            return false
+        }
+    }
+
+    /**
+     * تعداد تبلیغ دیده‌شده برای این استراتژی (پیشرفت فعلی)
+     */
+    fun getStrategyAdsProgress(strategyType: String): Int {
+        val key = "$KEY_STRATEGY_ADS_PREFIX$strategyType"
+        return prefs.getInt(key, 0)
+    }
+
+    /**
+     * باز کردن مستقیم استراتژی
+     */
     fun unlockStrategy(strategyType: String) {
-        resetIfNewDay()
         if (strategyType == DEFAULT_STRATEGY) return
-        val current = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
-        val newSet = current + strategyType
+        val set = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
+        val newSet = set + strategyType
         prefs.edit { putStringSet(KEY_UNLOCKED_STRATEGIES, newSet) }
     }
 
     fun getUnlockedStrategies(): Set<String> {
-        resetIfNewDay()
         val set = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
         return set + DEFAULT_STRATEGY
     }
+
+    // ============================================================
+    // Getter های کمکی
+    // ============================================================
 
     fun getRemainingFree(): Int {
         resetIfNewDay()
