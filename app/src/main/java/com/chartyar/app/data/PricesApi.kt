@@ -20,6 +20,7 @@ data class CoinPrice(
 object PricesApi {
 
     private const val BASE_URL = "https://chartyar-prices.chartyar-app.workers.dev"
+    private const val MARKET_STATS_URL = "$BASE_URL/market/stats"
 
     @Volatile
     private var cachedUsdtToman: Double = 0.0
@@ -35,13 +36,13 @@ object PricesApi {
             return@withContext cachedUsdtToman
         }
         try {
-            val url = URL("$BASE_URL?srcCurrency=usdt&dstCurrency=rls")
+            val url = URL("$MARKET_STATS_URL?srcCurrency=usdt&dstCurrency=rls")
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
             connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
+            connection.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             if (connection.responseCode != 200) {
                 connection.disconnect()
@@ -71,14 +72,14 @@ object PricesApi {
         try {
             val usdtToman = fetchUsdtTomanRate()
 
-            val url = URL("$BASE_URL?dstCurrency=rls")
+            val url = URL("$MARKET_STATS_URL?dstCurrency=rls")
             val connection = url.openConnection() as HttpURLConnection
 
             connection.requestMethod = "GET"
             connection.connectTimeout = 15000
             connection.readTimeout = 15000
             connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
+            connection.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             val responseCode = connection.responseCode
             if (responseCode != 200) {
