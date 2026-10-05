@@ -414,7 +414,6 @@ class MainActivity : ComponentActivity() {
                         strategyAdsWatched = strategyAdsWatched,
                         strategyAdsRequired = strategyAdsRequired,
                         onWatchAd = {
-                            // بستن دیالوگ + پخش تبلیغ
                             val isLockedStrategyFlow =
                                 limitDialogType == LimitDialogType.LOCKED_STRATEGY &&
                                         lockedStrategyTypeForDialog != null
@@ -427,25 +426,21 @@ class MainActivity : ComponentActivity() {
                                 onReward = {
                                     runOnUiThread {
                                         if (isLockedStrategyFlow) {
-                                            // تلاش برای باز کردن استراتژی
                                             val strategy = lockedStrategyTypeForDialog
                                             if (strategy != null) {
                                                 val unlocked = limitManager.onStrategyUnlockAdWatched(strategy.name)
                                                 refreshLimitStatus()
 
                                                 if (unlocked) {
-                                                    // استراتژی باز شد
                                                     selectedStrategy = strategy
                                                     lifecycleScope.launch {
                                                         prefs.setDefaultStrategy(strategy.name)
                                                     }
                                                 } else {
-                                                    // هنوز تبلیغ بیشتر لازمه
                                                     openLockedStrategyDialog(strategy)
                                                 }
                                             }
                                         } else {
-                                            // تبلیغ برای سهمیه تحلیل
                                             limitManager.onAdWatched()
                                             refreshLimitStatus()
                                         }
@@ -551,6 +546,7 @@ class MainActivity : ComponentActivity() {
                                         onSettingsClick = { currentScreen = "settings" },
                                         onAlertsClick = { currentScreen = "alerts" },
                                         onNewsClick = { currentScreen = "market_indices" },
+                                        onAnalysesClick = { currentScreen = "analyses" },
                                         onPricesClick = { currentScreen = "prices" },
                                         onMultiTfClick = { currentScreen = "fear_greed" },
                                         onCalculatorClick = { currentScreen = "calculator" },
@@ -558,7 +554,6 @@ class MainActivity : ComponentActivity() {
                                         onExchangesClick = { currentScreen = "exchanges" }
                                     )
                                     "strategy" -> {
-                                        // trigger refresh
                                         val _refresh = strategyRefreshTick
                                         StrategyScreen(
                                             unlockedStrategies = unlockedStrategies,
