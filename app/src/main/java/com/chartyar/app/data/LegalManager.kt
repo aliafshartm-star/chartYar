@@ -10,8 +10,8 @@ class LegalManager(private val context: Context) {
     private val prefs = context.getSharedPreferences("legal_prefs", Context.MODE_PRIVATE)
 
     companion object {
-        const val CURRENT_TERMS_VERSION = 1
-        const val CURRENT_PRIVACY_VERSION = 1
+        const val CURRENT_TERMS_VERSION = 2
+        const val CURRENT_PRIVACY_VERSION = 2
         const val MIN_AGE = 18
 
         private const val KEY_TERMS_VERSION = "terms_version"
