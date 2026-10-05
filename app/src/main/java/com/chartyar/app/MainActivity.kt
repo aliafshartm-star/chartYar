@@ -546,7 +546,7 @@ class MainActivity : ComponentActivity() {
                                         onSettingsClick = { currentScreen = "settings" },
                                         onAlertsClick = { currentScreen = "alerts" },
                                         onNewsClick = { currentScreen = "market_indices" },
-                                        onAnalysesClick = { currentScreen = "analyses" },
+                                        onAnalysesClick = { currentScreen = "news" },
                                         onPricesClick = { currentScreen = "prices" },
                                         onMultiTfClick = { currentScreen = "fear_greed" },
                                         onCalculatorClick = { currentScreen = "calculator" },
