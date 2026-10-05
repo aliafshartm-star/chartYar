@@ -101,6 +101,7 @@ fun HomeScreen(
     onSettingsClick: () -> Unit,
     onAlertsClick: () -> Unit,
     onNewsClick: () -> Unit,
+    onAnalysesClick: () -> Unit,
     onPricesClick: () -> Unit,
     onMultiTfClick: () -> Unit,
     onCalculatorClick: () -> Unit,
@@ -140,7 +141,7 @@ fun HomeScreen(
 
         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
             LatestAnalysesSection(
-                onViewAll = onNewsClick,
+                onViewAll = onAnalysesClick,
                 onItemClick = { url -> openExternalUrl(context, url) }
             )
         }
@@ -552,7 +553,7 @@ private fun HeroAnalysisCard(onUploadClick: () -> Unit) {
                             .size(48.dp)
                             .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
-                    ) { Text("📊", fontSize = 26.sp) }
+                    ) { Text("Chart", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Bold) }
                     Spacer(Modifier.width(14.dp))
                     Column {
                         Text(stringResource(R.string.home_hero_title), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
