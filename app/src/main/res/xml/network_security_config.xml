@@ -1,14 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
 
-    <!-- تنظیمات پیش‌فرض: فقط HTTPS -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
 
-    <!-- دامنه‌های خاص: Binance و APIها -->
+    <!-- Cloudflare Workers (برای Nobitex + Prices) -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">workers.dev</domain>
+        <domain includeSubdomains="true">chartyar-app.workers.dev</domain>
+        <domain includeSubdomains="true">chartyar-prices.chartyar-app.workers.dev</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Nobitex -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">nobitex.ir</domain>
+        <domain includeSubdomains="true">apiv2.nobitex.ir</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Binance -->
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">binance.com</domain>
         <domain includeSubdomains="true">api.binance.com</domain>
@@ -23,6 +41,24 @@
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">coingecko.com</domain>
         <domain includeSubdomains="true">api.coingecko.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- CoinMarketCap -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">coinmarketcap.com</domain>
+        <domain includeSubdomains="true">pro-api.coinmarketcap.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- DefiLlama -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">llama.fi</domain>
+        <domain includeSubdomains="true">api.llama.fi</domain>
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
@@ -46,7 +82,25 @@
         </trust-anchors>
     </domain-config>
 
-    <!-- Firebase (اگه استفاده می‌شه) -->
+    <!-- ArzDigital -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">arzdigital.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- GitHub (برای Update) -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">github.com</domain>
+        <domain includeSubdomains="true">api.github.com</domain>
+        <domain includeSubdomains="true">objects.githubusercontent.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Firebase -->
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">googleapis.com</domain>
         <domain includeSubdomains="true">firebaseio.com</domain>
@@ -56,7 +110,25 @@
         </trust-anchors>
     </domain-config>
 
-    <!-- ❌ دامنه‌های غیرمجاز: هیچ‌کدوم -->
-    <!-- فقط دامنه‌های بالا مجاز به ارتباط هستن -->
+    <!-- Tapsell -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">tapsell.ir</domain>
+        <domain includeSubdomains="true">api.tapsell.ir</domain>
+        <domain includeSubdomains="true">dashboard.tapsell.ir</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- تلگرام و اینستاگرام (برای باز شدن لینک) -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">t.me</domain>
+        <domain includeSubdomains="true">telegram.org</domain>
+        <domain includeSubdomains="true">instagram.com</domain>
+        <domain includeSubdomains="true">www.instagram.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
 
 </network-security-config>
