@@ -3,7 +3,6 @@ package com.chartyar.app.ui
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,10 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -32,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +41,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chartyar.app.ui.theme.AccentBlue
-import com.chartyar.app.ui.theme.AccentGreen
 import com.chartyar.app.ui.theme.AccentRed
 import com.chartyar.app.ui.theme.AccentYellow
 import com.chartyar.app.ui.theme.DarkBg
@@ -54,8 +51,7 @@ import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.ui.theme.TextSecondary
 import com.chartyar.app.util.TelegramVerifier
 import kotlinx.coroutines.delay
-
-private const val TELEGRAM_CHANNEL_URL = "https://t.me/viachart_app"
+import kotlinx.coroutines.launch
 
 @Composable
 fun TelegramGateScreen(
@@ -63,13 +59,13 @@ fun TelegramGateScreen(
     onDecline: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var session by remember { mutableStateOf<String?>(null) }
     var botUrl by remember { mutableStateOf<String?>(null) }
     var isRequesting by remember { mutableStateOf(false) }
     var isWaiting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var openCount by remember { mutableStateOf(0) }
 
     fun openUrl(url: String) {
         try {
@@ -81,7 +77,6 @@ fun TelegramGateScreen(
         }
     }
 
-    // Polling برای چک تأیید
     LaunchedEffect(session, isWaiting) {
         val s = session
         if (s != null && isWaiting) {
@@ -111,7 +106,6 @@ fun TelegramGateScreen(
     ) {
         Spacer(Modifier.weight(1f))
 
-        // آیکون اصلی
         Box(
             modifier = Modifier
                 .size(120.dp)
@@ -144,7 +138,7 @@ fun TelegramGateScreen(
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "برای استفاده از ViaChart، باید در کانال رسمی ما عضو شوی.\nاین کار برای اطلاع‌رسانی نسخه‌های جدید و تحلیل‌های ویژه است.",
+            text = "برای استفاده از ViaChart باید در کانال رسمی ما عضو شوی",
             color = TextSecondary,
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
@@ -153,9 +147,7 @@ fun TelegramGateScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // حالت‌ها
         when {
-            // حالت ۱: درخواست در حال ارسال
             isRequesting -> {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -177,7 +169,6 @@ fun TelegramGateScreen(
                 }
             }
 
-            // حالت ۲: منتظر تأیید
             isWaiting && session != null -> {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -221,7 +212,7 @@ fun TelegramGateScreen(
                         Spacer(Modifier.height(10.dp))
 
                         Text(
-                            "اگه ربات پیام تأیید نداده، برگرد به ربات و دکمه «عضو شدم» رو بزن",
+                            "برگرد به ربات و دکمه Start رو بزن",
                             color = TextSecondary,
                             fontSize = 11.sp,
                             textAlign = TextAlign.Center,
@@ -230,13 +221,11 @@ fun TelegramGateScreen(
 
                         Spacer(Modifier.height(16.dp))
 
-                        // دکمه باز کردن مجدد ربات
                         Button(
                             onClick = {
                                 val url = botUrl
                                 if (url != null) {
                                     openUrl(url)
-                                    openCount++
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -256,7 +245,7 @@ fun TelegramGateScreen(
                         Spacer(Modifier.height(8.dp))
 
                         Text(
-                            "بعد از تأیید، این صفحه خودکار می‌رود",
+                            "بعد از تأیید، خودکار وارد می‌شی",
                             color = TextSecondary,
                             fontSize = 10.sp,
                             textAlign = TextAlign.Center
@@ -265,24 +254,13 @@ fun TelegramGateScreen(
                 }
             }
 
-            // حالت ۳: شروع (دکمه عضویت)
             else -> {
-                // دکمه اصلی
                 Button(
                     onClick = {
                         if (isRequesting) return@Button
                         isRequesting = true
                         errorMessage = null
 
-                        // درخواست session
-                        kotlinx.coroutines.MainScope().let { scope ->
-                            // از LaunchedEffect استفاده نمی‌کنیم چون اینجا event-based است
-                        }
-
-                        // استفاده از یه coroutine دستی
-                        val scope = kotlinx.coroutines.CoroutineScope(
-                            kotlinx.coroutines.Dispatchers.Main
-                        )
                         scope.launch {
                             val result = TelegramVerifier.requestSession()
                             isRequesting = false
@@ -318,7 +296,6 @@ fun TelegramGateScreen(
 
                 Spacer(Modifier.height(10.dp))
 
-                // راهنما
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -326,17 +303,17 @@ fun TelegramGateScreen(
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(
-                            "📋 مراحل تأیید:",
+                            "مراحل تأیید:",
                             color = TextPrimary,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 13.sp
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "1. دکمه «عضویت در کانال» رو بزن\n" +
-                                    "2. تلگرام باز می‌شه → در کانال عضو شو\n" +
-                                    "3. برگرد به ربات و دکمه «Start» یا «عضو شدم» رو بزن\n" +
-                                    "4. اپ خودکار تأیید می‌کنه و می‌ره داخل",
+                            "1. دکمه عضویت رو بزن\n" +
+                                    "2. توی تلگرام عضو کانال شو\n" +
+                                    "3. برگرد به ربات و Start بزن\n" +
+                                    "4. اپ خودکار تأیید می‌کنه",
                             color = TextSecondary,
                             fontSize = 11.sp,
                             lineHeight = 20.sp
@@ -346,13 +323,14 @@ fun TelegramGateScreen(
             }
         }
 
-        // نمایش خطا
         if (errorMessage != null) {
             Spacer(Modifier.height(12.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = AccentRed.copy(alpha = 0.1f))
+                colors = CardDefaults.cardColors(
+                    containerColor = AccentRed.copy(alpha = 0.1f)
+                )
             ) {
                 Text(
                     text = errorMessage ?: "",
@@ -366,7 +344,6 @@ fun TelegramGateScreen(
 
         Spacer(Modifier.weight(1f))
 
-        // دکمه خروج
         TextButton(
             onClick = onDecline,
             modifier = Modifier.fillMaxWidth()
