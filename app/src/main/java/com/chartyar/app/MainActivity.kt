@@ -313,7 +313,7 @@ class MainActivity : ComponentActivity() {
                     val startTime = System.currentTimeMillis()
                     disclaimerAccepted = prefs.isDisclaimerAccepted.first()
                     val elapsed = System.currentTimeMillis() - startTime
-                    if (elapsed < 1500) delay(1500 - elapsed)
+                    if (elapsed < 4500) delay(4500 - elapsed)
                     isLoading = false
 
                     when (shortcutAction) {
