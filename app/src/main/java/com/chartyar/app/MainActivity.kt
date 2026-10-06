@@ -981,6 +981,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onDestroy() {
+        try {
+            AlertMonitorService.stop(applicationContext)
+        } catch (e: Exception) {
+        }
+        super.onDestroy()
+    }
+
     private suspend fun saveToHistory(result: AnalysisResult, timeframe: String) {
         try {
             val signalText = when (result.signal) {
