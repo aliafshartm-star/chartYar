@@ -11,7 +11,6 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.chartyar.app.MainActivity
-import com.chartyar.app.R
 import com.chartyar.app.data.AlertChecker
 import com.chartyar.app.data.AppDatabase
 import com.chartyar.app.data.CacheManager
@@ -34,7 +33,7 @@ class AlertMonitorService : Service() {
         private const val CHANNEL_NAME = "پایش قیمت"
         private const val CHANNEL_DESC = "پایش لحظه‌ای قیمت‌ها برای هشدارها"
         private const val NOTIFICATION_ID = 9999
-        private const val CHECK_INTERVAL_MS = 15_000L // ۱۵ ثانیه
+        private const val CHECK_INTERVAL_MS = 15_000L
 
         fun start(context: Context) {
             try {
@@ -45,7 +44,6 @@ class AlertMonitorService : Service() {
                     context.startService(intent)
                 }
             } catch (e: Exception) {
-                // silent
             }
         }
 
@@ -54,7 +52,6 @@ class AlertMonitorService : Service() {
                 val intent = Intent(context, AlertMonitorService::class.java)
                 context.stopService(intent)
             } catch (e: Exception) {
-                // silent
             }
         }
     }
@@ -73,10 +70,9 @@ class AlertMonitorService : Service() {
             startForeground(NOTIFICATION_ID, buildNotification())
             startMonitoring()
         } catch (e: Exception) {
-            // silent
         }
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun startMonitoring() {
@@ -87,7 +83,6 @@ class AlertMonitorService : Service() {
                     val cache = CacheManager(applicationContext)
                     AlertChecker.checkAllAlerts(applicationContext, db, cache)
                 } catch (e: Exception) {
-                    // silent
                 }
                 delay(CHECK_INTERVAL_MS)
             }
@@ -124,7 +119,7 @@ class AlertMonitorService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_compass)
-            .setContentTitle("چارت‌یار — پایش قیمت فعال")
+            .setContentTitle("ViaChart — پایش قیمت فعال")
             .setContentText("هشدارهای شما در حال پایش هستند")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
@@ -134,6 +129,12 @@ class AlertMonitorService : Service() {
 
     override fun onDestroy() {
         scope.cancel()
+        try {
+            stopForeground(true)
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.cancel(NOTIFICATION_ID)
+        } catch (e: Exception) {
+        }
         super.onDestroy()
     }
 }
