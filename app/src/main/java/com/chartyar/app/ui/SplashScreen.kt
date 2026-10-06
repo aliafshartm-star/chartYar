@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +17,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -24,18 +29,61 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chartyar.app.R
 import com.chartyar.app.ui.theme.AccentBlue
 import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.GradientBlueStart
 import com.chartyar.app.ui.theme.GradientPurpleEnd
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.ui.theme.TextSecondary
+import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen() {
+    var showFirstImage by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        delay(2500L) // ۲.۵ ثانیه تصویر اول
+        showFirstImage = false
+    }
+
+    if (showFirstImage) {
+        FirstSplashImage()
+    } else {
+        SecondSplashScreen()
+    }
+}
+
+/**
+ * صفحه اول — تصویر کامل ViaChart (full screen)
+ */
+@Composable
+private fun FirstSplashImage() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DarkBg),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.splash_image),
+            contentDescription = "ViaChart",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
+    }
+}
+
+/**
+ * صفحه دوم — لوگو V با انیمیشن + نام ViaChart
+ */
+@Composable
+private fun SecondSplashScreen() {
     val infiniteTransition = rememberInfiniteTransition(label = "splash")
 
     val scale by infiniteTransition.animateFloat(
