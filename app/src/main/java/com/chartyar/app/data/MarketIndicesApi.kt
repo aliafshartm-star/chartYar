@@ -1,5 +1,6 @@
 package com.chartyar.app.data
 
+import com.chartyar.app.util.RemoteLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -40,7 +41,12 @@ object MarketIndicesApi {
             conn.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             if (conn.responseCode != 200) {
+                val code = conn.responseCode
                 conn.disconnect()
+                RemoteLogger.logError(
+                    tag = "MarketIndicesApi",
+                    message = "fetchBtcDominance HTTP $code"
+                )
                 return@withContext 0.0
             }
 
@@ -52,6 +58,11 @@ object MarketIndicesApi {
             val marketCapPct = data.optJSONObject("market_cap_percentage") ?: return@withContext 0.0
             marketCapPct.optDouble("btc", 0.0)
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "MarketIndicesApi",
+                message = "fetchBtcDominance: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             0.0
         }
     }
@@ -67,7 +78,12 @@ object MarketIndicesApi {
             conn.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             if (conn.responseCode != 200) {
+                val code = conn.responseCode
                 conn.disconnect()
+                RemoteLogger.logError(
+                    tag = "MarketIndicesApi",
+                    message = "fetchAltcoinSeason HTTP $code"
+                )
                 return@withContext 0
             }
 
@@ -78,6 +94,11 @@ object MarketIndicesApi {
             val data = root.optJSONObject("data") ?: return@withContext 0
             data.optInt("altcoin_index", 0)
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "MarketIndicesApi",
+                message = "fetchAltcoinSeason: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             0
         }
     }
@@ -93,7 +114,12 @@ object MarketIndicesApi {
             conn.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             if (conn.responseCode != 200) {
+                val code = conn.responseCode
                 conn.disconnect()
+                RemoteLogger.logError(
+                    tag = "MarketIndicesApi",
+                    message = "fetchDefiTvl HTTP $code"
+                )
                 return@withContext Pair(0.0, 0.0)
             }
 
@@ -108,6 +134,11 @@ object MarketIndicesApi {
             }
             Pair(totalTvl, 0.0)
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "MarketIndicesApi",
+                message = "fetchDefiTvl: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             Pair(0.0, 0.0)
         }
     }
