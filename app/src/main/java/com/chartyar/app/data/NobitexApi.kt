@@ -1,6 +1,7 @@
 package com.chartyar.app.data
 
 import com.chartyar.app.analysis.Candle
+import com.chartyar.app.util.RemoteLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -48,10 +49,15 @@ object NobitexApi {
             connection.requestMethod = "GET"
             connection.connectTimeout = 15000
             connection.readTimeout = 15000
-            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
+            connection.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             if (connection.responseCode != 200) {
+                val code = connection.responseCode
                 connection.disconnect()
+                RemoteLogger.logError(
+                    tag = "NobitexApi",
+                    message = "fetchAllSymbols HTTP $code"
+                )
                 return@withContext cached ?: popularSymbols
             }
 
@@ -67,6 +73,11 @@ object NobitexApi {
 
             cached ?: popularSymbols
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "NobitexApi",
+                message = "fetchAllSymbols: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             cached ?: popularSymbols
         }
     }
@@ -85,7 +96,7 @@ object NobitexApi {
             connection.requestMethod = "GET"
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
-            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
+            connection.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             if (connection.responseCode != 200) {
                 connection.disconnect()
@@ -139,10 +150,15 @@ object NobitexApi {
             connection.requestMethod = "GET"
             connection.connectTimeout = 15000
             connection.readTimeout = 15000
-            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
+            connection.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             if (connection.responseCode != 200) {
+                val code = connection.responseCode
                 connection.disconnect()
+                RemoteLogger.logError(
+                    tag = "NobitexApi",
+                    message = "fetchCandles HTTP $code for $symbol ($timeframe)"
+                )
                 return@withContext null
             }
 
@@ -151,6 +167,11 @@ object NobitexApi {
 
             parseOhlcResponse(response)
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "NobitexApi",
+                message = "fetchCandles $symbol ($timeframe): ${e.message ?: "unknown"}",
+                throwable = e
+            )
             null
         }
     }
@@ -162,7 +183,7 @@ object NobitexApi {
             connection.connectTimeout = 5000
             connection.readTimeout = 5000
             connection.requestMethod = "GET"
-            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
+            connection.setRequestProperty("User-Agent", "ViaChart/1.0")
             val code = connection.responseCode
             connection.disconnect()
             code in 200..299
@@ -194,6 +215,11 @@ object NobitexApi {
 
             result.sortedBy { it.first }.ifEmpty { null }
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "NobitexApi",
+                message = "parseMarketStats: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             null
         }
     }
@@ -225,6 +251,11 @@ object NobitexApi {
             }
             if (candles.size >= 20) candles else null
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "NobitexApi",
+                message = "parseOhlcResponse: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             null
         }
     }
