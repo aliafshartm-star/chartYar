@@ -1,8 +1,8 @@
 package com.chartyar.app.data
 
+import com.chartyar.app.util.RemoteLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -29,9 +29,6 @@ object NewsApi {
 
     private const val BASE_URL = "https://min-api.cryptocompare.com/data/v2/news/"
 
-    /**
-     * دریافت آخرین اخبار کریپتو
-     */
     suspend fun fetchNews(limit: Int = 20): List<NewsItem>? = withContext(Dispatchers.IO) {
         try {
             val urlString = "$BASE_URL?lang=EN&sortOrder=latest"
@@ -42,11 +39,15 @@ object NewsApi {
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
             connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
+            connection.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             val responseCode = connection.responseCode
             if (responseCode != 200) {
                 connection.disconnect()
+                RemoteLogger.logError(
+                    tag = "NewsApi",
+                    message = "fetchNews HTTP $responseCode"
+                )
                 return@withContext null
             }
 
@@ -55,13 +56,15 @@ object NewsApi {
 
             parseNews(response, limit)
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "NewsApi",
+                message = "fetchNews: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             null
         }
     }
 
-    /**
-     * پارس JSON اخبار
-     */
     private fun parseNews(json: String, limit: Int): List<NewsItem>? {
         return try {
             val root = JSONObject(json)
@@ -105,21 +108,20 @@ object NewsApi {
 
             if (news.isNotEmpty()) news else null
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "NewsApi",
+                message = "parseNews: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             null
         }
     }
 
-    /**
-     * فیلتر اخبار بر اساس دسته
-     */
     fun filterByCategory(news: List<NewsItem>, category: String): List<NewsItem> {
         if (category == "همه") return news
         return news.filter { it.categories.contains(category, ignoreCase = true) }
     }
 
-    /**
-     * زمان نسبی
-     */
     fun formatRelativeTime(timestamp: Long): String {
         val diff = System.currentTimeMillis() - timestamp
         val minutes = diff / 60000
