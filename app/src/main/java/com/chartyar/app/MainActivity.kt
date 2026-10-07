@@ -100,6 +100,7 @@ import com.chartyar.app.ui.theme.DarkBg
 import com.chartyar.app.ui.theme.TextPrimary
 import com.chartyar.app.util.CameraHelper
 import com.chartyar.app.util.NotificationHelper
+import com.chartyar.app.util.RemoteLogger
 import com.chartyar.app.util.RewardedAdHelper
 import com.chartyar.app.work.AlertMonitorService
 import com.chartyar.app.work.WorkScheduler
@@ -1019,6 +1020,11 @@ class MainActivity : ComponentActivity() {
                 )
             )
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "MainActivity",
+                message = "saveToHistory: ${e.message ?: "unknown"}",
+                throwable = e
+            )
         }
     }
 }
