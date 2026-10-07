@@ -17,7 +17,7 @@
 -keep @androidx.room.Entity class * { *; }
 -dontwarn androidx.room.paging.**
 
-# ============ Retrofit / OkHttp (اختیاری) ============
+# ============ Retrofit / OkHttp ============
 -dontwarn okhttp3.**
 -dontwarn okio.**
 -dontwarn retrofit2.**
@@ -41,13 +41,22 @@
 -keep class ir.tapsell.mediation.adapter.** { *; }
 -dontwarn ir.tapsell.mediation.adapter.**
 
-# ============ حفظ نام کلاس‌های Compose ============
+# ============ Compose ============
 -keep class androidx.compose.** { *; }
 -dontwarn androidx.compose.**
 
 # ============ اطلاعات خطا برای دیباگ ============
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# ============ Firebase Crashlytics ============
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
 
 # ============ حفظ Serializable و Parcelable ============
 -keepclassmembers class * implements java.io.Serializable {
