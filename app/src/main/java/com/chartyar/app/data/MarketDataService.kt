@@ -1,6 +1,7 @@
 package com.chartyar.app.data
 
 import com.chartyar.app.analysis.Candle
+import com.chartyar.app.util.RemoteLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -37,9 +38,18 @@ object MarketDataService {
             if (candles != null && candles.size >= 20) {
                 cache.saveCandles(symbol, timeframe, candles)
                 return@withContext MarketDataResult(candles, Source.NOBITEX)
+            } else {
+                RemoteLogger.logError(
+                    tag = "MarketDataService",
+                    message = "getCandles: no valid data for $symbol ($timeframe)"
+                )
             }
         } catch (e: Exception) {
-            // ادامه بده
+            RemoteLogger.logError(
+                tag = "MarketDataService",
+                message = "getCandles $symbol ($timeframe): ${e.message ?: "unknown"}",
+                throwable = e
+            )
         }
 
         return@withContext MarketDataResult(null, Source.NONE)
