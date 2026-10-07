@@ -3,31 +3,31 @@ package com.chartyar.app
 import android.app.Application
 import android.util.Log
 import com.chartyar.app.security.GlobalExceptionHandler
-import com.google.firebase.FirebaseApp
-import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 class ChartyarApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
 
-        // ============ Firebase Initialization ============
-        try {
-            FirebaseApp.initializeApp(this)
-            FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
-        } catch (e: Exception) {
-            Log.e("ViaChart", "Firebase init failed: ${e.message}")
-        }
+        Log.e("ViaChart", "App onCreate started")
 
-        // ============ مدیریت خطاهای سراسری ============
+        // مدیریت خطاهای سراسری
         GlobalExceptionHandler.install(applicationContext) { throwable ->
             Log.e("ViaChart", "Uncaught exception", throwable)
-            // ارسال به Firebase Crashlytics
+
+            // تلاش برای ارسال به Firebase Crashlytics
             try {
-                FirebaseCrashlytics.getInstance().recordException(throwable)
+                val clazz = Class.forName("com.google.firebase.crashlytics.FirebaseCrashlytics")
+                val getInstance = clazz.getMethod("getInstance")
+                val instance = getInstance.invoke(null)
+                val recordMethod = clazz.getMethod("recordException", Throwable::class.java)
+                recordMethod.invoke(instance, throwable)
             } catch (e: Exception) {
-                // silent
+                // اگه Firebase نبود یا مشکل داشت، ساکت بمون
+                Log.e("ViaChart", "Firebase record failed: ${e.message}")
             }
         }
+
+        Log.e("ViaChart", "App onCreate completed")
     }
 }
