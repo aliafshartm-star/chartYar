@@ -1,5 +1,6 @@
 package com.chartyar.app.data
 
+import com.chartyar.app.util.RemoteLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -10,9 +11,9 @@ import java.net.URL
  * مدل شاخص ترس و طمع
  */
 data class FearGreedData(
-    val value: Int,              // ۰ تا ۱۰۰
-    val classification: String,   // Fear, Greed, Neutral, ...
-    val classificationFa: String, // فارسی
+    val value: Int,
+    val classification: String,
+    val classificationFa: String,
     val updateTime: String
 )
 
@@ -24,9 +25,6 @@ object FearGreedApi {
     private const val API_URL =
         "https://pro-api.coinmarketcap.com/public-api/v3/fear-and-greed/latest"
 
-    /**
-     * دریافت شاخص ترس و طمع
-     */
     suspend fun fetchFearGreed(): FearGreedData? = withContext(Dispatchers.IO) {
         try {
             val url = URL(API_URL)
@@ -35,10 +33,15 @@ object FearGreedApi {
             connection.connectTimeout = 15000
             connection.readTimeout = 15000
             connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("User-Agent", "ChartYar/1.0")
+            connection.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             if (connection.responseCode != 200) {
+                val code = connection.responseCode
                 connection.disconnect()
+                RemoteLogger.logError(
+                    tag = "FearGreedApi",
+                    message = "fetchFearGreed HTTP $code"
+                )
                 return@withContext null
             }
 
@@ -47,6 +50,11 @@ object FearGreedApi {
 
             parseResponse(response)
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "FearGreedApi",
+                message = "fetchFearGreed: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             null
         }
     }
@@ -69,13 +77,15 @@ object FearGreedApi {
                 updateTime = updateTime
             )
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "FearGreedApi",
+                message = "parseResponse: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             null
         }
     }
 
-    /**
-     * تبدیل کلاس‌بندی به فارسی
-     */
     private fun toPersian(classification: String): String {
         return when (classification.lowercase().trim()) {
             "extreme fear" -> "ترس شدید"
@@ -87,16 +97,13 @@ object FearGreedApi {
         }
     }
 
-    /**
-     * رنگ مناسب برای شاخص (برای UI)
-     */
     fun getColor(value: Int): Long {
         return when {
-            value <= 20 -> 0xFFF6465DL  // قرمز تیره (ترس شدید)
-            value <= 40 -> 0xFFF6465DL  // قرمز (ترس)
-            value <= 60 -> 0xFFF0B90BL  // زرد (خنثی)
-            value <= 80 -> 0xFF2EBD85L  // سبز (طمع)
-            else -> 0xFF2EBD85L         // سبز تیره (طمع شدید)
+            value <= 20 -> 0xFFF6465DL
+            value <= 40 -> 0xFFF6465DL
+            value <= 60 -> 0xFFF0B90BL
+            value <= 80 -> 0xFF2EBD85L
+            else -> 0xFF2EBD85L
         }
     }
 }
