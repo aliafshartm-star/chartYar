@@ -3,19 +3,31 @@ package com.chartyar.app
 import android.app.Application
 import android.util.Log
 import com.chartyar.app.security.GlobalExceptionHandler
+import com.google.firebase.FirebaseApp
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 class ChartyarApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
 
-        // ============ مدیریت خطاهای سراسری ============
-        GlobalExceptionHandler.install(applicationContext) { throwable ->
-            Log.e("ChartYar", "Uncaught exception", throwable)
+        // ============ Firebase Initialization ============
+        try {
+            FirebaseApp.initializeApp(this)
+            FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
+        } catch (e: Exception) {
+            Log.e("ViaChart", "Firebase init failed: ${e.message}")
         }
 
-        // ============ Tapsell ============
-        // تپسل خودش به صورت خودکار از روی AndroidManifest راه‌اندازی می‌شه
-        // نیازی به کد راه‌اندازی دستی نیست
+        // ============ مدیریت خطاهای سراسری ============
+        GlobalExceptionHandler.install(applicationContext) { throwable ->
+            Log.e("ViaChart", "Uncaught exception", throwable)
+            // ارسال به Firebase Crashlytics
+            try {
+                FirebaseCrashlytics.getInstance().recordException(throwable)
+            } catch (e: Exception) {
+                // silent
+            }
+        }
     }
 }
