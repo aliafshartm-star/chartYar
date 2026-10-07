@@ -97,10 +97,9 @@ dependencies {
 
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
-    // Firebase
+    // Firebase — فقط Crashlytics (Analytics حذف شد)
     implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
     implementation("com.google.firebase:firebase-crashlytics-ktx")
-    implementation("com.google.firebase:firebase-analytics-ktx")
 
     implementation("ir.tapsell.mediation:tapsell:1.4.0-alpha03") {
         exclude(group = "androidx.work", module = "work-runtime")
