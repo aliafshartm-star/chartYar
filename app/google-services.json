@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "26374667962",
+    "project_id": "viachart-d5289",
+    "storage_bucket": "viachart-d5289.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:26374667962:android:f3c5f7f732d4cb89930c83",
+        "android_client_info": {
+          "package_name": "com.viachart.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACPdA87mWzQTmB6cD_8oTdY4qOVNrRHKc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
