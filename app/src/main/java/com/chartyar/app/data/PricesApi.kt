@@ -1,5 +1,6 @@
 package com.chartyar.app.data
 
+import com.chartyar.app.util.RemoteLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -45,7 +46,12 @@ object PricesApi {
             connection.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             if (connection.responseCode != 200) {
+                val code = connection.responseCode
                 connection.disconnect()
+                RemoteLogger.logError(
+                    tag = "PricesApi",
+                    message = "fetchUsdtTomanRate HTTP $code"
+                )
                 return@withContext cachedUsdtToman
             }
 
@@ -64,6 +70,11 @@ object PricesApi {
             cachedUsdtTime = now
             tomanRate
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "PricesApi",
+                message = "fetchUsdtTomanRate: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             cachedUsdtToman
         }
     }
@@ -84,6 +95,10 @@ object PricesApi {
             val responseCode = connection.responseCode
             if (responseCode != 200) {
                 connection.disconnect()
+                RemoteLogger.logError(
+                    tag = "PricesApi",
+                    message = "fetchPrices HTTP $responseCode"
+                )
                 return@withContext null
             }
 
@@ -92,6 +107,11 @@ object PricesApi {
 
             parsePrices(response, usdtToman)
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "PricesApi",
+                message = "fetchPrices: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             null
         }
     }
@@ -138,6 +158,11 @@ object PricesApi {
 
             if (sorted.isNotEmpty()) sorted else null
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "PricesApi",
+                message = "parsePrices: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             null
         }
     }
