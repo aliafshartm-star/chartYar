@@ -49,7 +49,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="chartyar"
+                    android:scheme="viachart"
                     android:host="open" />
             </intent-filter>
 
@@ -59,7 +59,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="chartyar"
+                    android:scheme="viachart"
                     android:host="analysis" />
             </intent-filter>
 
