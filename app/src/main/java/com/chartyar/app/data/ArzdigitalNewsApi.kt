@@ -1,6 +1,7 @@
 package com.chartyar.app.data
 
 import android.util.Xml
+import com.chartyar.app.util.RemoteLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.xmlpull.v1.XmlPullParser
@@ -26,11 +27,16 @@ object ArzdigitalNewsApi {
             connection.requestMethod = "GET"
             connection.connectTimeout = 15000
             connection.readTimeout = 15000
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; ChartYar/1.0)")
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; ViaChart/1.0)")
             connection.setRequestProperty("Accept", "application/rss+xml, application/xml, text/xml")
 
             if (connection.responseCode != 200) {
+                val code = connection.responseCode
                 connection.disconnect()
+                RemoteLogger.logError(
+                    tag = "ArzdigitalNewsApi",
+                    message = "fetchNews HTTP $code"
+                )
                 return@withContext null
             }
 
@@ -41,6 +47,11 @@ object ArzdigitalNewsApi {
             if (newsList.isNotEmpty()) newsList else null
 
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "ArzdigitalNewsApi",
+                message = "fetchNews: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             null
         }
     }
