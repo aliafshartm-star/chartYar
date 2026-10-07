@@ -28,10 +28,6 @@ object TelegramVerifier {
         val error: String? = null
     )
 
-    /**
-     * درخواست Session جدید از سرور
-     * @return SessionResult با کد ۸ رقمی و لینک ربات
-     */
     suspend fun requestSession(): SessionResult = withContext(Dispatchers.IO) {
         try {
             val url = URL("$BASE_URL/telegram/new-session")
@@ -43,10 +39,15 @@ object TelegramVerifier {
             connection.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             if (connection.responseCode != 200) {
+                val code = connection.responseCode
                 connection.disconnect()
+                RemoteLogger.logError(
+                    tag = "TelegramVerifier",
+                    message = "requestSession HTTP $code"
+                )
                 return@withContext SessionResult(
                     success = false,
-                    error = "خطا در اتصال به سرور"
+                    error = "خطا در اتصال به سرور (کد $code)"
                 )
             }
 
@@ -67,6 +68,10 @@ object TelegramVerifier {
             val botUrl = root.optString("bot_url", "")
 
             if (session.isEmpty() || botUrl.isEmpty()) {
+                RemoteLogger.logError(
+                    tag = "TelegramVerifier",
+                    message = "requestSession: empty session or botUrl"
+                )
                 return@withContext SessionResult(
                     success = false,
                     error = "پاسخ ناقص"
@@ -79,6 +84,11 @@ object TelegramVerifier {
                 botUrl = botUrl
             )
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "TelegramVerifier",
+                message = "requestSession: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             SessionResult(
                 success = false,
                 error = e.message ?: "خطای نامشخص"
@@ -86,10 +96,6 @@ object TelegramVerifier {
         }
     }
 
-    /**
-     * چک کردن وضعیت تأیید
-     * @param session کد ۸ رقمی
-     */
     suspend fun checkVerification(session: String): CheckResult = withContext(Dispatchers.IO) {
         try {
             val url = URL("$BASE_URL/telegram/check?session=$session")
@@ -101,7 +107,12 @@ object TelegramVerifier {
             connection.setRequestProperty("User-Agent", "ViaChart/1.0")
 
             if (connection.responseCode != 200) {
+                val code = connection.responseCode
                 connection.disconnect()
+                RemoteLogger.logError(
+                    tag = "TelegramVerifier",
+                    message = "checkVerification HTTP $code"
+                )
                 return@withContext CheckResult(
                     status = "error",
                     verified = false,
@@ -119,7 +130,7 @@ object TelegramVerifier {
                 CheckResult(
                     status = "verified",
                     verified = true,
-                    firstName = root.optString("first_name", null)
+                    firstName = if (root.has("first_name")) root.getString("first_name") else null
                 )
             } else {
                 CheckResult(
@@ -128,6 +139,11 @@ object TelegramVerifier {
                 )
             }
         } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "TelegramVerifier",
+                message = "checkVerification: ${e.message ?: "unknown"}",
+                throwable = e
+            )
             CheckResult(
                 status = "error",
                 verified = false,
