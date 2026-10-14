@@ -5,7 +5,8 @@ enum class StrategyType {
     SWING,
     POSITION,
     MULTI_AI,
-    PRO
+    PRO,
+    PUMP
 }
 
 data class StrategyInfo(
@@ -85,6 +86,7 @@ object StrategyEngine {
             StrategyType.POSITION -> "1D"
             StrategyType.MULTI_AI -> "4H"
             StrategyType.PRO -> "4H"
+            StrategyType.PUMP -> "4H"
         }
     }
 
@@ -95,6 +97,7 @@ object StrategyEngine {
             StrategyType.POSITION -> positionWeights(timeframe)
             StrategyType.MULTI_AI -> multiAiWeights(timeframe)
             StrategyType.PRO -> proWeights(timeframe)
+            StrategyType.PUMP -> pumpWeights(timeframe)
         }
     }
 
@@ -212,6 +215,17 @@ object StrategyEngine {
             "Donchian" to 1.1,
             "PivotPoints" to 0.8,
             "ElderRay" to 1.0
+        )
+    }
+
+    // ============ PUMP — ۵ نیرو ============
+    private fun pumpWeights(timeframe: String): Map<String, Double> {
+        return mapOf(
+            "Volume" to 1.5,
+            "Trend" to 1.4,
+            "News" to 1.0,
+            "Momentum" to 1.2,
+            "Regime" to 1.1
         )
     }
 
