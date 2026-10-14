@@ -5,24 +5,14 @@ import com.chartyar.app.analysis.TechnicalIndicators
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * ScalpDetector — استراتژی ۳ لایه برای اسکالپ
- * 
- * لایه ۱: Trend (روند)
- * لایه ۲: Momentum (مومنتوم)
- * لایه ۳: Confirmation (تأییدیه)
- * 
- * هدف: Win Rate بالای ۵۵-۶۵٪
- * تایم‌فریم: 15m, 30m, 1H
- */
 object ScalpDetector {
 
     data class ScalpResult(
-        val totalScore: Int,      // 0-60
+        val totalScore: Int,
         val layers: Map<String, Int>,
         val reasons: List<String>,
         val warnings: List<String>,
-        val passed: Boolean       // آیا همه لایه‌ها تأیید شدن؟
+        val passed: Boolean
     )
 
     fun analyze(candles: List<Candle>): ScalpResult {
@@ -34,41 +24,27 @@ object ScalpDetector {
             return ScalpResult(0, layers, reasons, listOf("کندل کافی نیست"), false)
         }
 
-        // ═══════ لایه ۱: Trend (0-20) ═══════
         val (trendScore, trendReasons, trendWarnings) = analyzeTrend(candles)
         layers["Trend"] = trendScore
         reasons.addAll(trendReasons)
         warnings.addAll(trendWarnings)
 
-        // ═══════ لایه ۲: Momentum (0-20) ═══════
         val (momScore, momReasons, momWarnings) = analyzeMomentum(candles)
         layers["Momentum"] = momScore
         reasons.addAll(momReasons)
         warnings.addAll(momWarnings)
 
-        // ═══════ لایه ۳: Confirmation (0-20) ═══════
         val (confScore, confReasons, confWarnings) = analyzeConfirmation(candles)
         layers["Confirmation"] = confScore
         reasons.addAll(confReasons)
         warnings.addAll(confWarnings)
 
         val total = layers.values.sum()
-
-        // ✅ اگه هر ۳ لایه مثبت → passed = true
         val passed = trendScore >= 10 && momScore >= 8 && confScore >= 5
 
-        return ScalpResult(
-            totalScore = total,
-            layers = layers,
-            reasons = reasons,
-            warnings = warnings,
-            passed = passed
-        )
+        return ScalpResult(total, layers, reasons, warnings, passed)
     }
 
-    // ═══════════════════════════════════════
-    // لایه ۱: Trend (روند)
-    // ═══════════════════════════════════════
     private fun analyzeTrend(candles: List<Candle>): Triple<Int, List<String>, List<String>> {
         var score = 0
         val reasons = mutableListOf<String>()
@@ -81,7 +57,6 @@ object ScalpDetector {
         val ema21 = TechnicalIndicators.ema(closes, 21).lastOrNull() ?: price
         val ema50 = TechnicalIndicators.ema(closes, 50).lastOrNull() ?: price
 
-        // EMA9 > EMA21 = روند صعودی
         if (ema9 > ema21) {
             score += 8
             reasons.add("روند صعودی (EMA9 > EMA21)")
@@ -89,13 +64,11 @@ object ScalpDetector {
             warnings.add("EMA9 زیر EMA21 — روند نزولی")
         }
 
-        // قیمت بالای EMA50
         if (price > ema50) {
             score += 6
             reasons.add("قیمت بالای EMA50")
         }
 
-        // ADX قوی
         val adx = TechnicalIndicators.adx(candles, 14).lastOrNull()
         if (adx != null) {
             when {
@@ -117,9 +90,6 @@ object ScalpDetector {
         return Triple(max(0, min(20, score)), reasons, warnings)
     }
 
-    // ═══════════════════════════════════════
-    // لایه ۲: Momentum (مومنتوم)
-    // ═══════════════════════════════════════
     private fun analyzeMomentum(candles: List<Candle>): Triple<Int, List<String>, List<String>> {
         var score = 0
         val reasons = mutableListOf<String>()
@@ -128,7 +98,6 @@ object ScalpDetector {
         val closes = candles.map { it.close }
         val price = closes.last()
 
-        // RSI
         val rsi = TechnicalIndicators.rsi(closes, 14).lastOrNull() ?: 50.0
         when {
             rsi in 40.0..60.0 -> {
@@ -149,7 +118,6 @@ object ScalpDetector {
             }
         }
 
-        // VWAP
         val vwap = TechnicalIndicators.vwap(candles).lastOrNull()
         if (vwap != null && vwap > 0) {
             if (price > vwap) {
@@ -161,7 +129,6 @@ object ScalpDetector {
             }
         }
 
-        // Stochastic برای تأیید
         val stoch = TechnicalIndicators.stochastic(candles, 14, 3)
         val k = stoch.k.lastOrNull()
         val d = stoch.d.lastOrNull()
@@ -178,15 +145,11 @@ object ScalpDetector {
         return Triple(max(0, min(20, score)), reasons, warnings)
     }
 
-    // ═══════════════════════════════════════
-    // لایه ۳: Confirmation (تأییدیه)
-    // ═══════════════════════════════════════
     private fun analyzeConfirmation(candles: List<Candle>): Triple<Int, List<String>, List<String>> {
         var score = 0
         val reasons = mutableListOf<String>()
         val warnings = mutableListOf<String>()
 
-        // Volume تأیید
         val lastVol = candles.last().volume
         val avgVol = candles.dropLast(1).takeLast(20).map { it.volume }.average()
         if (avgVol > 0) {
@@ -206,14 +169,12 @@ object ScalpDetector {
             }
         }
 
-        // کندل اخیر صعودی
         val last = candles.last()
         if (last.isBullish && last.body > last.range * 0.4) {
             score += 5
             reasons.add("کندل صعودی قوی")
         }
 
-        // Bollinger
         val closes = candles.map { it.close }
         val bb = TechnicalIndicators.bollinger(closes, 20, 2.0)
         val upper = bb.upper.lastOrNull()
