@@ -3,6 +3,7 @@ package com.chartyar.app.ui
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.view.ViewGroup
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -87,6 +88,7 @@ import ir.tapsell.mediation.ad.views.banner.BannerContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+private const val TAG = "TapsellBanner"
 private const val TAPSELL_BANNER_ZONE_ID = "6abe61690a772b2b3f29c2a5"
 private const val TELEGRAM_URL = "https://t.me/viachart_app"
 private const val INSTAGRAM_URL = "https://www.instagram.com/viachart_app"
@@ -645,7 +647,7 @@ private fun openExternalUrl(context: android.content.Context, url: String) {
 fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val activity = context as? Activity
-    var adShown by remember { mutableStateOf(false) }
+    var requestDone by remember { mutableStateOf(false) }
 
     AndroidView(
         factory = { ctx ->
@@ -657,7 +659,10 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
             }
         },
         update = { container ->
-            if (activity != null && !adShown) {
+            if (activity != null && !requestDone) {
+                requestDone = true
+                Log.d(TAG, "Requesting banner for zone: $zoneId")
+
                 try {
                     Tapsell.requestBannerAd(
                         zoneId,
@@ -665,33 +670,25 @@ fun TapsellBannerAd(zoneId: String, modifier: Modifier = Modifier) {
                         activity,
                         object : RequestResultListener {
                             override fun onSuccess(adId: String) {
-                                adShown = tryShowAd(container, adId)
+                                Log.d(TAG, "Banner loaded successfully: $adId")
+                                try {
+                                    container.loadAd(adId)
+                                    Log.d(TAG, "loadAd called with id: $adId")
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "loadAd failed: ${e.message}", e)
+                                }
                             }
 
                             override fun onFailure(message: String) {
-                                adShown = false
+                                Log.e(TAG, "Banner request failed: $message")
                             }
                         }
                     )
                 } catch (e: Exception) {
-                    adShown = false
+                    Log.e(TAG, "Exception during request: ${e.message}", e)
                 }
             }
         },
         modifier = modifier.fillMaxWidth()
     )
-}
-
-private fun tryShowAd(container: BannerContainer, adId: String): Boolean {
-    val methodNames = listOf("showAd", "loadAd", "setAd", "setAdId", "show", "displayAd")
-    for (name in methodNames) {
-        try {
-            val method = container.javaClass.getMethod(name, String::class.java)
-            method.invoke(container, adId)
-            return true
-        } catch (e: Exception) {
-            continue
-        }
-    }
-    return false
 }
