@@ -12,40 +12,37 @@ class AnalysisLimitManager(context: Context) {
     companion object {
         private const val KEY_LAST_RESET = "last_reset_date"
         private const val KEY_REMAINING = "remaining_analyses"
-        private const val KEY_ADS_SINCE_REWARD = "ads_since_reward"
+        private const val KEY_AD_COUNT_TODAY = "ad_count_today"
+        private const val KEY_UNLIMITED_UNTIL = "unlimited_until"
         private const val KEY_TOTAL_ADS_WATCHED = "total_ads_watched"
         private const val KEY_UNLOCKED_STRATEGIES = "unlocked_strategies"
-        private const val KEY_STRATEGY_ADS_PREFIX = "strategy_ads_"
+        private const val KEY_ADS_SINCE_REWARD = "ads_since_reward"
 
         const val INITIAL_FREE = 3
-        const val ADS_PER_REWARD = 5
-        const val ANALYSES_PER_REWARD = 3
+        const val ADS_FOR_REWARD = 3
+        const val ANALYSES_PER_REWARD = 2
+        const val ADS_FOR_BONUS = 10
+        const val BONUS_HOURS = 3
         const val DEFAULT_STRATEGY = "SWING"
-
-        // برای سازگاری با کدهای قدیمی
-        const val ADS_FOR_REWARD = 5
-        const val ADS_FOR_BONUS = 5
-
-        // هزینه باز کردن هر استراتژی (تعداد تبلیغ)
-        val STRATEGY_UNLOCK_COSTS: Map<String, Int> = mapOf(
-            "SWING" to 0,       // رایگان
-            "SCALPING" to 2,
-            "POSITION" to 2,
-            "MULTI_AI" to 3,
-            "PRO" to 5
-        )
     }
 
     data class LimitStatus(
         val remainingFree: Int,
+        val adCountToday: Int,
         val adsSinceReward: Int,
+        val isUnlimited: Boolean,
+        val unlimitedUntil: Long,
         val canAnalyze: Boolean,
+        val hasReachedBonus: Boolean,
+        val adsNeededForBonus: Int,
         val adsNeededForNextReward: Int
     )
 
     data class AdWatchResult(
         val analysesGiven: Int,
-        val adsUntilNextReward: Int
+        val bonusActivated: Boolean,
+        val adsUntilNextReward: Int,
+        val adsUntilBonus: Int
     )
 
     init {
@@ -55,169 +52,165 @@ class AnalysisLimitManager(context: Context) {
     fun resetIfNewDay() {
         val today = getTodayKey()
         val lastReset = prefs.getString(KEY_LAST_RESET, null)
+
         if (lastReset != today) {
             prefs.edit {
                 putString(KEY_LAST_RESET, today)
                 putInt(KEY_REMAINING, INITIAL_FREE)
+                putInt(KEY_AD_COUNT_TODAY, 0)
                 putInt(KEY_ADS_SINCE_REWARD, 0)
+                putLong(KEY_UNLIMITED_UNTIL, 0L)
+                putStringSet(KEY_UNLOCKED_STRATEGIES, emptySet())
             }
         }
     }
 
     fun getStatus(): LimitStatus {
         resetIfNewDay()
+
         val remaining = prefs.getInt(KEY_REMAINING, INITIAL_FREE)
-        val adsSinceReward = prefs.getInt(KEY_ADS_SINCE_REWARD, 0)
-        val canAnalyze = remaining > 0
-        val adsNeeded = (ADS_PER_REWARD - adsSinceReward).coerceAtLeast(0)
+        val adCount = prefs.getInt(KEY_AD_COUNT_TODAY, 0)
+        val adsSinceReward = prefs.get }
+
+Int(KEY_ADS_SINCE_REWARD, 0)
+        val unlimitedUntil = prefs.getLong(KEY_UNLIMITED_UNTIL,        0L)
+        val now = System.currentTimeMillis()
+        val isUnlimited = unlimitedUntil > now
+
+        val canAnalyze = isUnlimited || remaining > 0
+        val hasReachedBonus = adCount >= ADS_FOR_BONUS
+        val adsNeededBonus = (ADS_FOR_BONUS - adCount).coerceAtLeast(0)
+        val adsNeededReward = (ADS_FOR_REWARD - adsSinceReward).coerceAtLeast(0)
+
         return LimitStatus(
             remainingFree = remaining,
+            adCountToday = adCount,
             adsSinceReward = adsSinceReward,
+            isUnlimited = isUnlimited,
+            unlimitedUntil = unlimitedUntil,
             canAnalyze = canAnalyze,
-            adsNeededForNextReward = adsNeeded
+            hasReachedBonus = hasReachedBonus,
+            adsNeededForBonus = adsNeededBonus,
+            adsNeededForNextReward = adsNeededReward
         )
     }
 
     fun consumeAnalysis(): Boolean {
         resetIfNewDay()
+
         val status = getStatus()
+
+        if (status.isUnlimited) return true
+
         if (status.remainingFree > 0) {
-            prefs.edit { putInt(KEY_REMAINING, status.remainingFree - 1) }
+            prefs.edit {
+                putInt(KEY_REMAINING, status.remainingFree - 1)
+            }
             return true
         }
+
         return false
     }
 
-    // ============================================================
-    // تبلیغ برای سهمیه تحلیل (۵ تبلیغ = ۳ تحلیل)
-    // ============================================================
     fun onAdWatched(): AdWatchResult {
         resetIfNewDay()
 
         val adsSinceRewardOld = prefs.getInt(KEY_ADS_SINCE_REWARD, 0)
         val adsSinceRewardNew = adsSinceRewardOld + 1
+        val totalAdsOld = prefs.getInt(KEY_AD_COUNT_TODAY, 0)
+        val totalAdsNew = totalAdsOld + 1
         val grandTotalAds = prefs.getInt(KEY_TOTAL_ADS_WATCHED, 0) + 1
 
         var analysesGiven = 0
-        val newAdsSinceReward: Int
+        var bonusActivated = false
 
-        if (adsSinceRewardNew >= ADS_PER_REWARD) {
+        if (adsSinceRewardNew >= ADS_FOR_REWARD) {
             val current = prefs.getInt(KEY_REMAINING, 0)
             analysesGiven = ANALYSES_PER_REWARD
-            newAdsSinceReward = 0
+
             prefs.edit {
                 putInt(KEY_REMAINING, current + ANALYSES_PER_REWARD)
                 putInt(KEY_ADS_SINCE_REWARD, 0)
+                putInt(KEY_AD_COUNT_TODAY, totalAdsNew)
                 putInt(KEY_TOTAL_ADS_WATCHED, grandTotalAds)
             }
         } else {
-            newAdsSinceReward = adsSinceRewardNew
             prefs.edit {
                 putInt(KEY_ADS_SINCE_REWARD, adsSinceRewardNew)
+                putInt(KEY_AD_COUNT_TODAY, totalAdsNew)
                 putInt(KEY_TOTAL_ADS_WATCHED, grandTotalAds)
             }
         }
 
-        val adsUntilNext = if (analysesGiven > 0) ADS_PER_REWARD
-        else ADS_PER_REWARD - newAdsSinceReward
+        if (totalAdsNew >= ADS_FOR_BONUS) {
+            activateBonus()
+            bonusActivated = true
+        val adsUntilNext = if (analysesGiven > 0) ADS_FOR_REWARD else ADS_FOR_REWARD - adsSinceRewardNew
+        val adsUntilBonus = (ADS_FOR_BONUS - totalAdsNew).coerceAtLeast(0)
 
         return AdWatchResult(
             analysesGiven = analysesGiven,
-            adsUntilNextReward = adsUntilNext
+            bonusActivated = bonusActivated,
+            adsUntilNextReward = adsUntilNext,
+            adsUntilBonus = adsUntilBonus
         )
     }
 
-    // ============================================================
-    // استراتژی‌ها — قفل / باز کردن
-    // ============================================================
-
-    /**
-     * تعداد تبلیغ موردنیاز برای باز کردن این استراتژی
-     */
-    fun getStrategyUnlockCost(strategyType: String): Int {
-        return STRATEGY_UNLOCK_COSTS[strategyType] ?: 0
-    }
-
-    /**
-     * آیا استراتژی باز است؟
-     */
     fun isStrategyUnlocked(strategyType: String): Boolean {
+        resetIfNewDay()
+
         if (strategyType == DEFAULT_STRATEGY) return true
+
         val set = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
         return set.contains(strategyType)
     }
 
-    /**
-     * تبلیغ برای باز کردن استراتژی دیده شد
-     * @return true اگه استراتژی باز شد
-     */
-    fun onStrategyUnlockAdWatched(strategyType: String): Boolean {
-        if (strategyType == DEFAULT_STRATEGY) return true
-        if (isStrategyUnlocked(strategyType)) return true
-
-        val cost = getStrategyUnlockCost(strategyType)
-        if (cost <= 0) {
-            // رایگان — مستقیم باز کن
-            unlockStrategy(strategyType)
-            return true
-        }
-
-        val key = "$KEY_STRATEGY_ADS_PREFIX$strategyType"
-        val current = prefs.getInt(key, 0)
-        val newValue = current + 1
-
-        if (newValue >= cost) {
-            // باز کن
-            val set = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
-            val newSet = set + strategyType
-            prefs.edit {
-                putStringSet(KEY_UNLOCKED_STRATEGIES, newSet)
-                putInt(key, 0)
-            }
-            return true
-        } else {
-            prefs.edit {
-                putInt(key, newValue)
-            }
-            return false
-        }
-    }
-
-    /**
-     * تعداد تبلیغ دیده‌شده برای این استراتژی (پیشرفت فعلی)
-     */
-    fun getStrategyAdsProgress(strategyType: String): Int {
-        val key = "$KEY_STRATEGY_ADS_PREFIX$strategyType"
-        return prefs.getInt(key, 0)
-    }
-
-    /**
-     * باز کردن مستقیم استراتژی
-     */
     fun unlockStrategy(strategyType: String) {
+        resetIfNewDay()
+
         if (strategyType == DEFAULT_STRATEGY) return
-        val set = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
-        val newSet = set + strategyType
+
+        val current = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
+        val newSet = current + strategyType
         prefs.edit { putStringSet(KEY_UNLOCKED_STRATEGIES, newSet) }
     }
 
     fun getUnlockedStrategies(): Set<String> {
+        resetIfNewDay()
         val set = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
         return set + DEFAULT_STRATEGY
     }
 
-    // ============================================================
-    // Getter های کمکی
-    // ============================================================
+    private fun activateBonus() {
+        val now = System.currentTimeMillis()
+        val bonusEnd = now + (BONUS_HOURS * 60 * 60 * 1000L)
+        prefs.edit {
+            putLong(KEY_UNLIMITED_UNTIL, bonusEnd)
+        }
+    }
 
     fun getRemainingFree(): Int {
         resetIfNewDay()
         return prefs.getInt(KEY_REMAINING, INITIAL_FREE)
     }
 
+    fun getAdCountToday(): Int {
+        resetIfNewDay()
+        return prefs.getInt(KEY_AD_COUNT_TODAY, 0)
+    }
+
     fun getAdsSinceReward(): Int {
         resetIfNewDay()
         return prefs.getInt(KEY_ADS_SINCE_REWARD, 0)
+    }
+
+    fun isUnlimitedActive(): Boolean {
+        val until = prefs.getLong(KEY_UNLIMITED_UNTIL, 0L)
+        return until > System.currentTimeMillis()
+    }
+
+    fun getUnlimitedUntil(): Long {
+        return prefs.getLong(KEY_UNLIMITED_UNTIL, 0L)
     }
 
     fun getTotalAdsWatched(): Int {
