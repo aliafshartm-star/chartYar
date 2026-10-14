@@ -70,10 +70,8 @@ class AnalysisLimitManager(context: Context) {
 
         val remaining = prefs.getInt(KEY_REMAINING, INITIAL_FREE)
         val adCount = prefs.getInt(KEY_AD_COUNT_TODAY, 0)
-        val adsSinceReward = prefs.get }
-
-Int(KEY_ADS_SINCE_REWARD, 0)
-        val unlimitedUntil = prefs.getLong(KEY_UNLIMITED_UNTIL,        0L)
+        val adsSinceReward = prefs.getInt(KEY_ADS_SINCE_REWARD, 0)
+        val unlimitedUntil = prefs.getLong(KEY_UNLIMITED_UNTIL, 0L)
         val now = System.currentTimeMillis()
         val isUnlimited = unlimitedUntil > now
 
@@ -145,6 +143,8 @@ Int(KEY_ADS_SINCE_REWARD, 0)
         if (totalAdsNew >= ADS_FOR_BONUS) {
             activateBonus()
             bonusActivated = true
+        }
+
         val adsUntilNext = if (analysesGiven > 0) ADS_FOR_REWARD else ADS_FOR_REWARD - adsSinceRewardNew
         val adsUntilBonus = (ADS_FOR_BONUS - totalAdsNew).coerceAtLeast(0)
 
