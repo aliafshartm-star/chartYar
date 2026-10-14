@@ -19,11 +19,14 @@ class AnalysisLimitManager(context: Context) {
         private const val KEY_ADS_SINCE_REWARD = "ads_since_reward"
 
         const val INITIAL_FREE = 3
-        const val ADS_FOR_REWARD = 3
+        const val ADS_PER_REWARD = 3
         const val ANALYSES_PER_REWARD = 2
         const val ADS_FOR_BONUS = 10
         const val BONUS_HOURS = 3
         const val DEFAULT_STRATEGY = "SWING"
+
+        private const val STRATEGY_UNLOCK_COST = 3
+        private const val STRATEGY_ADS_PREFIX = "strategy_ads_"
     }
 
     data class LimitStatus(
@@ -78,7 +81,7 @@ class AnalysisLimitManager(context: Context) {
         val canAnalyze = isUnlimited || remaining > 0
         val hasReachedBonus = adCount >= ADS_FOR_BONUS
         val adsNeededBonus = (ADS_FOR_BONUS - adCount).coerceAtLeast(0)
-        val adsNeededReward = (ADS_FOR_REWARD - adsSinceReward).coerceAtLeast(0)
+        val adsNeededReward = (ADS_PER_REWARD - adsSinceReward).coerceAtLeast(0)
 
         return LimitStatus(
             remainingFree = remaining,
@@ -122,7 +125,7 @@ class AnalysisLimitManager(context: Context) {
         var analysesGiven = 0
         var bonusActivated = false
 
-        if (adsSinceRewardNew >= ADS_FOR_REWARD) {
+        if (adsSinceRewardNew >= ADS_PER_REWARD) {
             val current = prefs.getInt(KEY_REMAINING, 0)
             analysesGiven = ANALYSES_PER_REWARD
 
@@ -145,7 +148,7 @@ class AnalysisLimitManager(context: Context) {
             bonusActivated = true
         }
 
-        val adsUntilNext = if (analysesGiven > 0) ADS_FOR_REWARD else ADS_FOR_REWARD - adsSinceRewardNew
+        val adsUntilNext = if (analysesGiven > 0) ADS_PER_REWARD else ADS_PER_REWARD - adsSinceRewardNew
         val adsUntilBonus = (ADS_FOR_BONUS - totalAdsNew).coerceAtLeast(0)
 
         return AdWatchResult(
@@ -155,6 +158,8 @@ class AnalysisLimitManager(context: Context) {
             adsUntilBonus = adsUntilBonus
         )
     }
+
+    // ============ استراتژی‌های قفل ============
 
     fun isStrategyUnlocked(strategyType: String): Boolean {
         resetIfNewDay()
@@ -180,6 +185,45 @@ class AnalysisLimitManager(context: Context) {
         val set = prefs.getStringSet(KEY_UNLOCKED_STRATEGIES, emptySet()) ?: emptySet()
         return set + DEFAULT_STRATEGY
     }
+
+    fun getStrategyUnlockCost(strategyType: String): Int {
+        if (strategyType == DEFAULT_STRATEGY) return 0
+        return STRATEGY_UNLOCK_COST
+    }
+
+    fun getStrategyAdsProgress(strategyType: String): Int {
+        resetIfNewDay()
+        return prefs.getInt("$STRATEGY_ADS_PREFIX$strategyType", 0)
+    }
+
+    /**
+     * وقتی کاربر یه تبلیغ برای باز کردن استراتژی دید
+     * @return true اگه استراتژی باز شد
+     */
+    fun onStrategyUnlockAdWatched(strategyType: String): Boolean {
+        resetIfNewDay()
+
+        if (strategyType == DEFAULT_STRATEGY) return true
+        if (isStrategyUnlocked(strategyType)) return true
+
+        val current = getStrategyAdsProgress(strategyType)
+        val newCount = current + 1
+
+        if (newCount >= STRATEGY_UNLOCK_COST) {
+            unlockStrategy(strategyType)
+            prefs.edit {
+                putInt("$STRATEGY_ADS_PREFIX$strategyType", 0)
+            }
+            return true
+        } else {
+            prefs.edit {
+                putInt("$STRATEGY_ADS_PREFIX$strategyType", newCount)
+            }
+            return false
+        }
+    }
+
+    // ============ پاداش ============
 
     private fun activateBonus() {
         val now = System.currentTimeMillis()
