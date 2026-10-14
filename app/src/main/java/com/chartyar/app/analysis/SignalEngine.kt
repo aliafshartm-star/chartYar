@@ -45,7 +45,7 @@ object SignalEngine {
         fearGreed: Int = 50
     ): AnalysisResult? {
         try {
-            if (candles.size < 50) {
+            if (candles.size < 30) {
                 RemoteLogger.logError(
                     tag = "SignalEngine",
                     message = "analyze: not enough candles (${candles.size}) for $timeframe"
@@ -54,11 +54,23 @@ object SignalEngine {
             }
 
             // ═══════════════════════════════════════════
-            // 🚀 PUMP Strategy — مسیر جداگانه
+            // 🏃 SCALPING Strategy
+            // ═══════════════════════════════════════════
+            if (strategy == StrategyType.SCALPING) {
+                return analyzeScalp(candles, timeframe)
+            }
+
+            // ═══════════════════════════════════════════
+            // 🚀 PRO = PUMP Strategy
             // ═══════════════════════════════════════════
             if (strategy == StrategyType.PRO) {
                 return analyzePump(candles, timeframe, btcChange24h, fearGreed)
             }
+
+            // ═══════════════════════════════════════════
+            // 📊 سایر استراتژی‌ها (سوئینگ، پوزیشن، Multi-AI)
+            // ═══════════════════════════════════════════
+            if (candles.size < 50) return null
 
             val closes = candles.map { it.close }
             val currentPrice = closes.last()
@@ -495,7 +507,101 @@ object SignalEngine {
     }
 
     // ═══════════════════════════════════════════
-    // 🚀 PUMP Strategy
+    // 🏃 Scalping Strategy — ۳ لایه
+    // ═══════════════════════════════════════════
+    private fun analyzeScalp(candles: List<Candle>, timeframe: String): AnalysisResult? {
+        try {
+            if (candles.size < 30) return null
+
+            val currentPrice = candles.last().close
+
+            // اجرای ScalpDetector
+            val scalpResult = com.chartyar.app.analysis.scalp.ScalpDetector.analyze(candles)
+
+            val score = scalpResult.totalScore
+            val layers = scalpResult.layers
+            val reasons = scalpResult.reasons.toMutableList()
+            val warnings = scalpResult.warnings.toMutableList()
+
+            // ─── سیگنال ───
+            val signal = when {
+                score >= 45 && scalpResult.passed -> SignalType.STRONG_BUY
+                score >= 35 && scalpResult.passed -> SignalType.BUY
+                score >= 25 -> SignalType.NEUTRAL
+                score >= 15 -> SignalType.SELL
+                else -> SignalType.STRONG_SELL
+            }
+
+            // ─── Trend ───
+            val trendScore = layers["Trend"] ?: 0
+            val trend = when {
+                trendScore >= 12 -> TrendType.UPTREND
+                trendScore <= 5 -> TrendType.DOWNTREND
+                else -> TrendType.RANGE
+            }
+
+            // ─── Confidence ───
+            val confidence = min(95, max(30, score + 30))
+
+            val isBuy = signal == SignalType.BUY || signal == SignalType.STRONG_BUY
+            val entry = currentPrice
+
+            // ─── SL/TP مخصوص اسکالپ با کارمزد ───
+            val stopLossPercent = if (isBuy) entry * 0.992 else entry * 1.008
+            val finalStop = stopLossPercent
+
+            val risk = abs(entry - finalStop)
+            val target1 = if (isBuy) entry + risk * 1.8 else entry - risk * 1.8
+            val target2 = if (isBuy) entry + risk * 3.0 else entry - risk * 3.0
+            val target3 = if (isBuy) entry + risk * 5.0 else entry - risk * 5.0
+            val rr = if (risk > 0) abs(target2 - entry) / risk else 0.0
+
+            // ─── S/R ───
+            val (supports, resistances) = TechnicalIndicators.findSupportResistance(candles, 50)
+
+            // ─── هشدارها ───
+            if (!scalpResult.passed) warnings.add("همه ۳ لایه تأیید نشدن — ریسک بالا")
+            if (score < 35) warnings.add("امتیاز پایین")
+            if (trend == TrendType.RANGE) warnings.add("بازار رنج — احتمال شکست بالاتر")
+
+            return AnalysisResult(
+                signal = signal,
+                trend = trend,
+                confidence = confidence,
+                currentPrice = currentPrice,
+                entry = entry,
+                stopLoss = finalStop,
+                target1 = target1,
+                target2 = target2,
+                target3 = target3,
+                riskReward = rr,
+                supportLevels = supports.take(5),
+                resistanceLevels = resistances.take(5),
+                reasons = reasons,
+                warnings = warnings,
+                timeframe = timeframe,
+                indicatorScores = layers,
+                patterns = emptyList(),
+                visionTrendLines = emptyList(),
+                visionDominantTrend = 0,
+                strategy = StrategyType.SCALPING,
+                engineVotes = emptyList(),
+                volumeSpike = false,
+                vwap = null,
+                fibonacciLevels = emptyMap()
+            )
+        } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "SignalEngine",
+                message = "analyzeScalp $timeframe: ${e.message ?: "unknown"}",
+                throwable = e
+            )
+            return null
+        }
+    }
+
+    // ═══════════════════════════════════════════
+    // 🚀 PUMP Strategy (PRO)
     // ═══════════════════════════════════════════
     private fun analyzePump(
         candles: List<Candle>,
@@ -508,7 +614,6 @@ object SignalEngine {
 
             val currentPrice = candles.last().close
 
-            // اجرای PumpDetector با مقادیر واقعی
             val pumpResult = com.chartyar.app.analysis.pump.PumpDetector.analyze(
                 candles = candles,
                 btcChange24h = btcChange24h,
@@ -520,7 +625,6 @@ object SignalEngine {
             val reasons = pumpResult.reasons.toMutableList()
             val warnings = pumpResult.warnings.toMutableList()
 
-            // ─── سیگنال ───
             val signal = when {
                 score >= 70 -> SignalType.STRONG_BUY
                 score >= 55 -> SignalType.BUY
@@ -529,7 +633,6 @@ object SignalEngine {
                 else -> SignalType.STRONG_SELL
             }
 
-            // ─── Trend ───
             val trendScore = forces["Trend"] ?: 0
             val trend = when {
                 trendScore >= 12 -> TrendType.UPTREND
@@ -537,17 +640,14 @@ object SignalEngine {
                 else -> TrendType.RANGE
             }
 
-            // ─── Confidence ───
             val confidence = min(95, max(30, score + 20))
 
-            // ─── ATR ───
             val atrList = TechnicalIndicators.atr(candles, 14)
             val atr = atrList.lastOrNull() ?: (currentPrice * 0.05)
 
             val isBuy = signal == SignalType.BUY || signal == SignalType.STRONG_BUY
             val entry = currentPrice
 
-            // ─── SL منطقی ───
             val stopLossPercent = if (isBuy) entry * 0.95 else entry * 1.05
             val stopLossAtr = if (isBuy) entry - (atr * 1.3) else entry + (atr * 1.3)
             val finalStop = if (isBuy) max(stopLossPercent, stopLossAtr) else min(stopLossPercent, stopLossAtr)
@@ -558,10 +658,8 @@ object SignalEngine {
             val target3 = if (isBuy) entry + risk * 4.0 else entry - risk * 4.0
             val rr = if (risk > 0) abs(target2 - entry) / risk else 0.0
 
-            // ─── S/R ───
             val (supports, resistances) = TechnicalIndicators.findSupportResistance(candles, 50)
 
-            // ─── هشدارها ───
             if (score < 50) warnings.add("امتیاز پایین — احتمال موفقیت کمتر")
             if (rr < 2.0) warnings.add("R:R زیر ۲")
             if (trend == TrendType.RANGE) warnings.add("بازار رنج — احتمال شکست بالاتر")
@@ -619,28 +717,29 @@ object SignalEngine {
 
         var score = 0
         if (highs.size >= 2 && lows.size >= 2) {
-            val higherHighs = highs.last() > highs[highs.size - 2]
+            val higherHighs = highs.last() > highs[ highs.size - 2]
             val higherLows = lows.last() > lows[lows.size - 2]
-            val lowerHighs = highs.last() < highs[highs.size - 2]
+            val lowerHighs = highs.last() < highs[highs.size50 - 2]
             val lowerLows = lows.last() < lows[lows.size - 2]
 
             score = when {
-                higherHighs && higherLows -> {
+                higherHighs && higher
+Lows -> {
                     reasons.add("Bullish structure HH+HL")
                     80
                 }
-                lowerHighs && lowerLows -> {
+                lowerHighs            && lowerLows -> {
                     reasons.add("Bearish structure LH+LL")
                     -80
                 }
-                else -> 0
+                reasons else -> 0
             }
         }
         return score
     }
 
     private fun analyzePriceAction(
-        candles: List<Candle>,
+        candles: List<.addCandle>,
         reasons: MutableList<String>,
         warnings: MutableList<String>
     ): Int {
@@ -669,8 +768,7 @@ object SignalEngine {
 
         if (prev.isBullish && last.isBearish &&
             last.open >= prev.close && last.close <= prev.open && last.body > prev.body) {
-            score -= 50
-            reasons.add("Bearish Engulfing")
+            score -=("Bearish Engulfing")
         }
 
         if (prev2.isBearish && prev.body < prev2.body * 0.5 &&
