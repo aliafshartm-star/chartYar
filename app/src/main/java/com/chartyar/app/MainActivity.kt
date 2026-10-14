@@ -674,32 +674,36 @@ class MainActivity : ComponentActivity() {
                                                     statusMessage = "در حال محاسبه اندیکاتورها"
                                                     delay(300)
 
-                                                    if (dataResult.candles != null && dataResult.candles.size >= 50) {
+                                                    if (dataResult.candles != null && dataResult.candles.isNotEmpty()) {
                                                         analyzeProgress = 0.7f
                                                         statusMessage = "در حال تحلیل روند"
                                                         delay(300)
                                                         analyzeProgress = 0.9f
                                                         statusMessage = "در حال بررسی الگوها"
 
-                                                        // دریافت Fear & Greed
-                                                        val fearGreedValue = try {
-                                                            withContext(Dispatchers.IO) {
-                                                                FearGreedApi.fetchFearGreed()
-                                                            }?.value ?: 50
-                                                        } catch (e: Exception) { 50 }
+                                                        // ─── فقط برای PRO: دریافت Fear&Greed + BTC Change ───
+                                                        var btcChange = 0.0
+                                                        var fearGreedValue = 50
 
-                                                        // محاسبه BTC Change 24h
-                                                        val btcChange = try {
-                                                            val btcResult = withContext(Dispatchers.IO) {
-                                                                MarketDataService.getCandles("BTCUSDT", "4H", cache)
-                                                            }
-                                                            val btcCandles = btcResult.candles
-                                                            if (btcCandles != null && btcCandles.size >= 6) {
-                                                                val now = btcCandles.last().close
-                                                                val before = btcCandles[btcCandles.size - 6].close
-                                                                if (before > 0) ((now - before) / before) * 100 else 0.0
-                                                            } else 0.0
-                                                        } catch (e: Exception) { 0.0 }
+                                                        if (strategy == StrategyType.PRO) {
+                                                            try {
+                                                                fearGreedValue = withContext(Dispatchers.IO) {
+                                                                    FearGreedApi.fetchFearGreed()
+                                                                }?.value ?: 50
+                                                            } catch (e: Exception) { fearGreedValue = 50 }
+
+                                                            try {
+                                                                val btcResult = withContext(Dispatchers.IO) {
+                                                                    MarketDataService.getCandles("BTCUSDT", "4H", cache)
+                                                                }
+                                                                val btcCandles = btcResult.candles
+                                                                if (btcCandles != null && btcCandles.size >= 6) {
+                                                                    val now = btcCandles.last().close
+                                                                    val before = btcCandles[btcCandles.size - 6].close
+                                                                    if (before > 0) btcChange = ((now - before) / before) * 100
+                                                                }
+                                                            } catch (e: Exception) { btcChange = 0.0 }
+                                                        }
 
                                                         val result = withContext(Dispatchers.Default) {
                                                             SignalEngine.analyze(
@@ -718,7 +722,7 @@ class MainActivity : ComponentActivity() {
                                                             if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
                                                             currentScreen = "result"
                                                         } else {
-                                                            errorMessage = NetworkError.DATA_EMPTY.message
+                                                            errorMessage = "کندل کافی برای این استراتژی وجود نداره"
                                                             currentScreen = "error"
                                                         }
                                                     } else {
@@ -875,32 +879,35 @@ class MainActivity : ComponentActivity() {
                                                     statusMessage = "در حال محاسبه اندیکاتورها"
                                                     delay(300)
 
-                                                    if (dataResult.candles != null && dataResult.candles.size >= 50) {
+                                                    if (dataResult.candles != null && dataResult.candles.isNotEmpty()) {
                                                         analyzeProgress = 0.7f
                                                         statusMessage = "در حال تحلیل روند"
                                                         delay(300)
                                                         analyzeProgress = 0.9f
                                                         statusMessage = "در حال بررسی الگوها"
 
-                                                        // دریافت Fear & Greed
-                                                        val fearGreedValue = try {
-                                                            withContext(Dispatchers.IO) {
-                                                                FearGreedApi.fetchFearGreed()
-                                                            }?.value ?: 50
-                                                        } catch (e: Exception) { 50 }
+                                                        var btcChange = 0.0
+                                                        var fearGreedValue = 50
 
-                                                        // محاسبه BTC Change 24h
-                                                        val btcChange = try {
-                                                            val btcResult = withContext(Dispatchers.IO) {
-                                                                MarketDataService.getCandles("BTCUSDT", "4H", cache)
-                                                            }
-                                                            val btcCandles = btcResult.candles
-                                                            if (btcCandles != null && btcCandles.size >= 6) {
-                                                                val now = btcCandles.last().close
-                                                                val before = btcCandles[btcCandles.size - 6].close
-                                                                if (before > 0) ((now - before) / before) * 100 else 0.0
-                                                            } else 0.0
-                                                        } catch (e: Exception) { 0.0 }
+                                                        if (selectedStrategy == StrategyType.PRO) {
+                                                            try {
+                                                                fearGreedValue = withContext(Dispatchers.IO) {
+                                                                    FearGreedApi.fetchFearGreed()
+                                                                }?.value ?: 50
+                                                            } catch (e: Exception) { fearGreedValue = 50 }
+
+                                                            try {
+                                                                val btcResult = withContext(Dispatchers.IO) {
+                                                                    MarketDataService.getCandles("BTCUSDT", "4H", cache)
+                                                                }
+                                                                val btcCandles = btcResult.candles
+                                                                if (btcCandles != null && btcCandles.size >= 6) {
+                                                                    val now = btcCandles.last().close
+                                                                    val before = btcCandles[btcCandles.size - 6].close
+                                                                    if (before > 0) btcChange = ((now - before) / before) * 100
+                                                                }
+                                                            } catch (e: Exception) { btcChange = 0.0 }
+                                                        }
 
                                                         val result = withContext(Dispatchers.Default) {
                                                             SignalEngine.analyze(
@@ -919,7 +926,7 @@ class MainActivity : ComponentActivity() {
                                                             if (autoSaveHistory) saveToHistory(result, selectedTimeframe)
                                                             currentScreen = "result"
                                                         } else {
-                                                            errorMessage = NetworkError.DATA_EMPTY.message
+                                                            errorMessage = "کندل کافی برای این استراتژی وجود نداره"
                                                             currentScreen = "error"
                                                         }
                                                     } else {
