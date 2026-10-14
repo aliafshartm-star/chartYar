@@ -46,6 +46,7 @@ import com.chartyar.app.data.CacheManager
 import com.chartyar.app.data.CoinPrice
 import com.chartyar.app.data.ConnectivityChecker
 import com.chartyar.app.data.DataManager
+import com.chartyar.app.data.FearGreedApi
 import com.chartyar.app.data.LegalManager
 import com.chartyar.app.data.LocalAnalytics
 import com.chartyar.app.data.MarketDataService
@@ -679,11 +680,34 @@ class MainActivity : ComponentActivity() {
                                                         delay(300)
                                                         analyzeProgress = 0.9f
                                                         statusMessage = "در حال بررسی الگوها"
+
+                                                        // دریافت Fear & Greed
+                                                        val fearGreedValue = try {
+                                                            withContext(Dispatchers.IO) {
+                                                                FearGreedApi.fetchFearGreed()
+                                                            }?.value ?: 50
+                                                        } catch (e: Exception) { 50 }
+
+                                                        // محاسبه BTC Change 24h
+                                                        val btcChange = try {
+                                                            val btcResult = withContext(Dispatchers.IO) {
+                                                                MarketDataService.getCandles("BTCUSDT", "4H", cache)
+                                                            }
+                                                            val btcCandles = btcResult.candles
+                                                            if (btcCandles != null && btcCandles.size >= 6) {
+                                                                val now = btcCandles.last().close
+                                                                val before = btcCandles[btcCandles.size - 6].close
+                                                                if (before > 0) ((now - before) / before) * 100 else 0.0
+                                                            } else 0.0
+                                                        } catch (e: Exception) { 0.0 }
+
                                                         val result = withContext(Dispatchers.Default) {
                                                             SignalEngine.analyze(
                                                                 dataResult.candles,
                                                                 selectedTimeframe,
-                                                                strategy
+                                                                strategy,
+                                                                btcChange,
+                                                                fearGreedValue
                                                             )
                                                         }
                                                         analyzeProgress = 1f
@@ -857,11 +881,34 @@ class MainActivity : ComponentActivity() {
                                                         delay(300)
                                                         analyzeProgress = 0.9f
                                                         statusMessage = "در حال بررسی الگوها"
+
+                                                        // دریافت Fear & Greed
+                                                        val fearGreedValue = try {
+                                                            withContext(Dispatchers.IO) {
+                                                                FearGreedApi.fetchFearGreed()
+                                                            }?.value ?: 50
+                                                        } catch (e: Exception) { 50 }
+
+                                                        // محاسبه BTC Change 24h
+                                                        val btcChange = try {
+                                                            val btcResult = withContext(Dispatchers.IO) {
+                                                                MarketDataService.getCandles("BTCUSDT", "4H", cache)
+                                                            }
+                                                            val btcCandles = btcResult.candles
+                                                            if (btcCandles != null && btcCandles.size >= 6) {
+                                                                val now = btcCandles.last().close
+                                                                val before = btcCandles[btcCandles.size - 6].close
+                                                                if (before > 0) ((now - before) / before) * 100 else 0.0
+                                                            } else 0.0
+                                                        } catch (e: Exception) { 0.0 }
+
                                                         val result = withContext(Dispatchers.Default) {
                                                             SignalEngine.analyze(
                                                                 dataResult.candles,
                                                                 selectedTimeframe,
-                                                                selectedStrategy
+                                                                selectedStrategy,
+                                                                btcChange,
+                                                                fearGreedValue
                                                             )
                                                         }
                                                         analyzeProgress = 1f
