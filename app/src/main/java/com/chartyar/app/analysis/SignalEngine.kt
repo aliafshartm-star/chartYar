@@ -51,6 +51,13 @@ object SignalEngine {
                 return null
             }
 
+            // ═══════════════════════════════════════════
+            // 🚀 PUMP Strategy — مسیر جداگانه
+            // ═══════════════════════════════════════════
+            if (strategy == StrategyType.PRO) {
+                return analyzePump(candles, timeframe)
+            }
+
             val closes = candles.map { it.close }
             val currentPrice = closes.last()
             val reasons = mutableListOf<String>()
@@ -224,7 +231,7 @@ object SignalEngine {
             val priceActionScore = analyzePriceAction(candles, reasons, warnings)
             scores["Price Action"] = priceActionScore
 
-            // ============ ۱۰. الگوهای کلاسیک و کندلی ============
+            // ============ ۱۰. الگوها ============
             val detectedPatterns = PatternDetector.detectAll(candles)
             var patternScore = 0
             if (detectedPatterns.isNotEmpty()) {
@@ -325,91 +332,6 @@ object SignalEngine {
             }
             scores["WilliamsR"] = williamsScore
 
-            // ============ ۱۰ اندیکاتور پیشرفته (فقط برای PRO) ============
-            var ichimokuScore = 0
-            var obvScore = 0
-            var mfiScore = 0
-            var psarScore = 0
-            var aroonScore = 0
-            var supertrendScore = 0
-            var keltnerScore = 0
-            var donchianScore = 0
-            var pivotScore = 0
-            var elderRayScore = 0
-
-            if (strategy == StrategyType.PRO) {
-                val ichimoku = AdvancedIndicators.ichimoku(candles)
-                if (ichimoku != null) {
-                    val (s, desc) = AdvancedIndicators.scoreIchimoku(ichimoku, currentPrice)
-                    ichimokuScore = s
-                    if (desc.isNotEmpty()) reasons.add("Ichimoku: $desc")
-                }
-                scores["Ichimoku"] = ichimokuScore
-
-                val obvList = AdvancedIndicators.obv(candles)
-                obvScore = AdvancedIndicators.scoreObv(obvList, 20)
-                if (obvScore > 20) reasons.add("OBV rising")
-                else if (obvScore < -20) reasons.add("OBV falling")
-                scores["OBV"] = obvScore
-
-                val mfiList = AdvancedIndicators.mfi(candles, 14)
-                mfiScore = AdvancedIndicators.scoreMfi(mfiList)
-                if (mfiScore > 20) reasons.add("MFI oversold")
-                else if (mfiScore < -20) reasons.add("MFI overbought")
-                scores["MFI"] = mfiScore
-
-                val psarList = AdvancedIndicators.psar(candles)
-                psarScore = AdvancedIndicators.scorePsar(psarList, candles)
-                if (psarScore > 40) reasons.add("PSAR flip bullish")
-                else if (psarScore < -40) reasons.add("PSAR flip bearish")
-                scores["PSAR"] = psarScore
-
-                val aroon = AdvancedIndicators.aroon(candles, 25)
-                if (aroon != null) {
-                    aroonScore = AdvancedIndicators.scoreAroon(aroon)
-                    if (aroonScore > 30) reasons.add("Aroon strong uptrend")
-                    else if (aroonScore < -30) reasons.add("Aroon strong downtrend")
-                }
-                scores["Aroon"] = aroonScore
-
-                val supertrend = AdvancedIndicators.supertrend(candles, 10, 3.0)
-                if (supertrend != null) {
-                    supertrendScore = AdvancedIndicators.scoreSupertrend(supertrend)
-                    if (supertrend.trend == 1) reasons.add("Supertrend bullish")
-                    else reasons.add("Supertrend bearish")
-                }
-                scores["Supertrend"] = supertrendScore
-
-                val keltner = AdvancedIndicators.keltner(candles, 20, 2.0)
-                keltnerScore = AdvancedIndicators.scoreKeltner(keltner, currentPrice)
-                scores["Keltner"] = keltnerScore
-
-                val donchian = AdvancedIndicators.donchian(candles, 20)
-                donchianScore = AdvancedIndicators.scoreDonchian(donchian, currentPrice)
-                if (donchianScore > 30) reasons.add("Donchian breakout up")
-                else if (donchianScore < -30) reasons.add("Donchian breakout down")
-                scores["Donchian"] = donchianScore
-
-                val pivots = AdvancedIndicators.pivotPoints(candles, 24)
-                if (pivots != null) {
-                    val (levelName, levelPrice) = AdvancedIndicators.nearestPivotLevel(pivots, currentPrice)
-                    val diff = ((currentPrice - levelPrice) / levelPrice) * 100.0
-                    pivotScore = when {
-                        levelName.startsWith("S") && diff > -1.0 -> 30
-                        levelName.startsWith("R") && diff < 1.0 -> -30
-                        else -> 0
-                    }
-                    if (pivotScore != 0) {
-                        reasons.add("Near pivot $levelName (${"%.2f".format(levelPrice)})")
-                    }
-                }
-                scores["PivotPoints"] = pivotScore
-
-                val elderRay = AdvancedIndicators.elderRay(candles, 13)
-                elderRayScore = AdvancedIndicators.scoreElderRay(elderRay)
-                scores["ElderRay"] = elderRayScore
-            }
-
             // ============ وزن‌دهی بر اساس استراتژی ============
             val weights = StrategyEngine.getWeights(strategy, timeframe)
 
@@ -498,6 +420,7 @@ object SignalEngine {
                 StrategyType.POSITION -> 2.0
                 StrategyType.MULTI_AI -> 1.5
                 StrategyType.PRO -> 1.3
+                StrategyType.PUMP -> 1.3
             }
 
             val isBuy = signal == SignalType.BUY || signal == SignalType.STRONG_BUY
@@ -563,6 +486,109 @@ object SignalEngine {
             RemoteLogger.logError(
                 tag = "SignalEngine",
                 message = "analyze $timeframe ($strategy): ${e.message ?: "unknown"}",
+                throwable = e
+            )
+            return null
+        }
+    }
+
+    // ═══════════════════════════════════════════
+    // 🚀 PUMP Strategy — تحلیل ۵ نیرو
+    // ═══════════════════════════════════════════
+    private fun analyzePump(candles: List<Candle>, timeframe: String): AnalysisResult? {
+        try {
+            if (candles.size < 60) return null
+
+            val currentPrice = candles.last().close
+
+            // اجرای PumpDetector
+            val pumpResult = com.chartyar.app.analysis.pump.PumpDetector.analyze(
+                candles = candles,
+                btcChange24h = 0.0,
+                fearGreed = 50
+            )
+
+            val score = pumpResult.totalScore
+            val forces = pumpResult.forces
+            val reasons = pumpResult.reasons.toMutableList()
+            val warnings = pumpResult.warnings.toMutableList()
+
+            // ─── سیگنال بر اساس امتیاز ───
+            val signal = when {
+                score >= 70 -> SignalType.STRONG_BUY
+                score >= 55 -> SignalType.BUY
+                score >= 40 -> SignalType.NEUTRAL
+                score >= 25 -> SignalType.SELL
+                else -> SignalType.STRONG_SELL
+            }
+
+            // ─── Trend ───
+            val trendScore = forces["Trend"] ?: 0
+            val trend = when {
+                trendScore >= 12 -> TrendType.UPTREND
+                trendScore <= 5 -> TrendType.DOWNTREND
+                else -> TrendType.RANGE
+            }
+
+            // ─── Confidence ───
+            val confidence = min(95, max(30, score + 20))
+
+            // ─── ATR برای SL ───
+            val atrList = TechnicalIndicators.atr(candles, 14)
+            val atr = atrList.lastOrNull() ?: (currentPrice * 0.05)
+
+            val isBuy = signal == SignalType.BUY || signal == SignalType.STRONG_BUY
+            val entry = currentPrice
+
+            // ─── SL با درصد ثابت (منطقی‌تر برای نوبیتکس) ───
+            val stopLossPercent = if (isBuy) entry * 0.95 else entry * 1.05
+            val stopLossAtr = if (isBuy) entry - (atr * 1.3) else entry + (atr * 1.3)
+            val finalStop = if (isBuy) max(stopLossPercent, stopLossAtr) else min(stopLossPercent, stopLossAtr)
+
+            val risk = abs(entry - finalStop)
+            val target1 = if (isBuy) entry + risk * 1.5 else entry - risk * 1.5
+            val target2 = if (isBuy) entry + risk * 2.5 else entry - risk * 2.5
+            val target3 = if (isBuy) entry + risk * 4.0 else entry - risk * 4.0
+            val rr = if (risk > 0) abs(target2 - entry) / risk else 0.0
+
+            // ─── Support / Resistance ───
+            val (supports, resistances) = TechnicalIndicators.findSupportResistance(candles, 50)
+
+            // ─── هشدارها ───
+            if (score < 50) warnings.add("امتیاز پایین — احتمال موفقیت کمتر")
+            if (rr < 2.0) warnings.add("R:R زیر ۲")
+            if (trend == TrendType.RANGE) warnings.add("بازار رنج — احتمال شکست بالاتر")
+
+            return AnalysisResult(
+                signal = signal,
+                trend = trend,
+                confidence = confidence,
+                currentPrice = currentPrice,
+                entry = entry,
+                stopLoss = finalStop,
+                target1 = target1,
+                target2 = target2,
+                target3 = target3,
+                riskReward = rr,
+                supportLevels = supports.take(5),
+                resistanceLevels = resistances.take(5),
+                reasons = reasons,
+                warnings = warnings,
+                timeframe = timeframe,
+                indicatorScores = forces,
+                patterns = emptyList(),
+                visionTrendLines = emptyList(),
+                visionDominantTrend = 0,
+                strategy = StrategyType.PRO,
+                engineVotes = emptyList(),
+                volumeSpike = (forces["News"] ?: 0) >= 10,
+                vwap = null,
+                fibonacciLevels = emptyMap()
+            )
+        } catch (e: Exception) {
+            RemoteLogger.logError(
+                tag = "SignalEngine",
+                message = "analyzePump $timeframe: ${e.message ?: "unknown"}",
                 throwable = e
             )
             return null
