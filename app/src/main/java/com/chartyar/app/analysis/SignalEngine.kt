@@ -40,7 +40,9 @@ object SignalEngine {
     fun analyze(
         candles: List<Candle>,
         timeframe: String,
-        strategy: StrategyType = StrategyType.SWING
+        strategy: StrategyType = StrategyType.SWING,
+        btcChange24h: Double = 0.0,
+        fearGreed: Int = 50
     ): AnalysisResult? {
         try {
             if (candles.size < 50) {
@@ -55,7 +57,7 @@ object SignalEngine {
             // 🚀 PUMP Strategy — مسیر جداگانه
             // ═══════════════════════════════════════════
             if (strategy == StrategyType.PRO) {
-                return analyzePump(candles, timeframe)
+                return analyzePump(candles, timeframe, btcChange24h, fearGreed)
             }
 
             val closes = candles.map { it.close }
@@ -332,7 +334,7 @@ object SignalEngine {
             }
             scores["WilliamsR"] = williamsScore
 
-            // ============ وزن‌دهی بر اساس استراتژی ============
+            // ============ وزن‌دهی ============
             val weights = StrategyEngine.getWeights(strategy, timeframe)
 
             var totalScore = 0.0
@@ -410,7 +412,7 @@ object SignalEngine {
 
             val confidence = min(95, max(30, (abs(normalizedScore) + 40).toInt()))
 
-            // ============ محاسبه ورود/حد ضرر/اهداف ============
+            // ============ ورود/SL/TP ============
             val atrList = TechnicalIndicators.atr(candles, 14)
             val atr = atrList.lastOrNull() ?: (currentPrice * 0.02)
 
@@ -433,7 +435,7 @@ object SignalEngine {
             val target3 = if (isBuy) entry + risk * 4.0 else entry - risk * 4.0
             val rr = if (risk > 0) abs(target2 - entry) / risk else 0.0
 
-            // ============ سطوح حمایت/مقاومت ============
+            // ============ S/R ============
             val (techSupports, techResistances) = TechnicalIndicators.findSupportResistance(candles, 50)
             val visionSupports = vision.supportLevels.map { it.price }
             val visionResistances = vision.resistanceLevels.map { it.price }
@@ -493,19 +495,24 @@ object SignalEngine {
     }
 
     // ═══════════════════════════════════════════
-    // 🚀 PUMP Strategy — تحلیل ۵ نیرو
+    // 🚀 PUMP Strategy
     // ═══════════════════════════════════════════
-    private fun analyzePump(candles: List<Candle>, timeframe: String): AnalysisResult? {
+    private fun analyzePump(
+        candles: List<Candle>,
+        timeframe: String,
+        btcChange24h: Double,
+        fearGreed: Int
+    ): AnalysisResult? {
         try {
             if (candles.size < 60) return null
 
             val currentPrice = candles.last().close
 
-            // اجرای PumpDetector
+            // اجرای PumpDetector با مقادیر واقعی
             val pumpResult = com.chartyar.app.analysis.pump.PumpDetector.analyze(
                 candles = candles,
-                btcChange24h = 0.0,
-                fearGreed = 50
+                btcChange24h = btcChange24h,
+                fearGreed = fearGreed
             )
 
             val score = pumpResult.totalScore
@@ -513,7 +520,7 @@ object SignalEngine {
             val reasons = pumpResult.reasons.toMutableList()
             val warnings = pumpResult.warnings.toMutableList()
 
-            // ─── سیگنال بر اساس امتیاز ───
+            // ─── سیگنال ───
             val signal = when {
                 score >= 70 -> SignalType.STRONG_BUY
                 score >= 55 -> SignalType.BUY
@@ -533,14 +540,14 @@ object SignalEngine {
             // ─── Confidence ───
             val confidence = min(95, max(30, score + 20))
 
-            // ─── ATR برای SL ───
+            // ─── ATR ───
             val atrList = TechnicalIndicators.atr(candles, 14)
             val atr = atrList.lastOrNull() ?: (currentPrice * 0.05)
 
             val isBuy = signal == SignalType.BUY || signal == SignalType.STRONG_BUY
             val entry = currentPrice
 
-            // ─── SL با درصد ثابت (منطقی‌تر برای نوبیتکس) ───
+            // ─── SL منطقی ───
             val stopLossPercent = if (isBuy) entry * 0.95 else entry * 1.05
             val stopLossAtr = if (isBuy) entry - (atr * 1.3) else entry + (atr * 1.3)
             val finalStop = if (isBuy) max(stopLossPercent, stopLossAtr) else min(stopLossPercent, stopLossAtr)
@@ -551,7 +558,7 @@ object SignalEngine {
             val target3 = if (isBuy) entry + risk * 4.0 else entry - risk * 4.0
             val rr = if (risk > 0) abs(target2 - entry) / risk else 0.0
 
-            // ─── Support / Resistance ───
+            // ─── S/R ───
             val (supports, resistances) = TechnicalIndicators.findSupportResistance(candles, 50)
 
             // ─── هشدارها ───
