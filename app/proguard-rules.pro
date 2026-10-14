@@ -1,23 +1,26 @@
-# ============ Tapsell Mediation ============
--keep class ir.tapsell.mediation.** { *; }
--keep interface ir.tapsell.mediation.** { *; }
--keep class ir.tapsell.plus.** { *; }
--keep interface ir.tapsell.plus.** { *; }
--keep class ir.tapsell.sdk.** { *; }
--keep interface ir.tapsell.sdk.** { *; }
+# ============ Tapsell ProGuard Rules ============
+-keep class ir.tapsell.** { *; }
 -keepclassmembers class ir.tapsell.** { *; }
 -dontwarn ir.tapsell.**
--dontwarn ir.tapsell.mediation.**
 
-# ============ Google Play Services (Tapsell) ============
--keep class com.google.android.gms.ads.identifier.** { *; }
--keep class com.google.android.gms.common.** { *; }
--dontwarn com.google.android.gms.**
+# ============ AndroidX ============
+-keep class androidx.** { *; }
+-dontwarn androidx.**
+
+# ============ Kotlin ============
+-keep class kotlin.** { *; }
+-keepclassmembers class kotlin.** { *; }
+-dontwarn kotlin.**
 
 # ============ Room ============
 -keep class * extends androidx.room.RoomDatabase { *; }
 -keep @androidx.room.Entity class * { *; }
 -dontwarn androidx.room.paging.**
+
+# ============ Retrofit / OkHttp ============
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn retrofit2.**
 
 # ============ ML Kit ============
 -keep class com.google.mlkit.** { *; }
@@ -27,6 +30,7 @@
 -dontwarn coil.**
 
 # ============ DataStore ============
+-keep class androidx.datastore.** { *; }
 -dontwarn androidx.datastore.**
 
 # ============ WorkManager ============
@@ -37,15 +41,22 @@
 -keep class ir.tapsell.mediation.adapter.** { *; }
 -dontwarn ir.tapsell.mediation.adapter.**
 
-# ============ Retrofit / OkHttp ============
--dontwarn okhttp3.**
--dontwarn okio.**
--dontwarn retrofit2.**
+# ============ Compose ============
+-keep class androidx.compose.** { *; }
+-dontwarn androidx.compose.**
 
-# ============ حفظ اطلاعات خطا برای دیباگ ============
+# ============ اطلاعات خطا برای دیباگ ============
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# ============ Firebase Crashlytics ============
 -keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
 
 # ============ حفظ Serializable و Parcelable ============
 -keepclassmembers class * implements java.io.Serializable {
