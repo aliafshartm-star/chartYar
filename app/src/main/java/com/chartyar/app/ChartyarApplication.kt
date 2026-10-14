@@ -5,7 +5,6 @@ import android.util.Log
 import com.chartyar.app.security.GlobalExceptionHandler
 import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import ir.tapsell.mediation.Tapsell
 
 class ChartyarApplication : Application() {
 
@@ -17,14 +16,6 @@ class ChartyarApplication : Application() {
 
         Log.e("ViaChart", "App started")
 
-        // فعال‌سازی حالت دیباگ Tapsell برای دیدن لاگ‌ها
-        try {
-            Tapsell.setDebugMode(true)
-            Log.e("ViaChart", "Tapsell debug mode enabled")
-        } catch (e: Exception) {
-            Log.e("ViaChart", "Tapsell debug failed: ${e.message}")
-        }
-
         GlobalExceptionHandler.install(applicationContext) { throwable ->
             Log.e("ViaChart", "Uncaught exception", throwable)
             sendToFirebase(throwable)
@@ -33,9 +24,6 @@ class ChartyarApplication : Application() {
         Log.e("ViaChart", "App ready")
     }
 
-    /**
-     * Lazy Firebase initialization
-     */
     private fun sendToFirebase(throwable: Throwable) {
         if (firebaseFailed) return
 
